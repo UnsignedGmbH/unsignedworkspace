@@ -1,0 +1,22 @@
+---
+// Vellum-style iframe wrapper. The iframe gets id="portalFrame" so
+// portal.astro JS can swap its src on tab change.
+---
+
+<section class="px-6 lg:px-12 pb-12">
+  <div
+    class="relative mx-auto max-w-[1240px] rounded-[14px] bg-card shadow-[0_24px_60px_-30px_rgba(26,24,22,0.45)] border-[0.5px] border-line overflow-hidden"
+  >
+    <div
+      aria-hidden="true"
+      class="absolute inset-x-0 -top-px h-[2px] bg-gradient-to-r from-transparent via-brand/40 to-transparent"
+    >
+    </div>
+    <iframe
+      id="portalFrame"
+      src="about:blank"
+      title="Tool"
+      loading="lazy"
+      class="block w-full h-[calc(100vh-360px)] min-h-[480px] border-0 bg-paper"></iframe>
+  </div>
+</section>

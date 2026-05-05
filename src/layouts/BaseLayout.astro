@@ -1,0 +1,71 @@
+---
+import "../styles/global.css";
+
+interface Props {
+  title?: string;
+}
+
+const { title = "Unsigned Workspace" } = Astro.props;
+---
+
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <title>{title}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,700;1,900&family=Dancing+Script:wght@700&display=swap"
+      rel="stylesheet"
+    />
+    <script is:inline src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script is:inline src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script is:inline src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script is:inline>
+      window.FB_CFG = {
+        apiKey: "AIzaSyDJqdh3apGM4fcsjRYI7vZ4VrT1_A6L92U",
+        authDomain: "unsignedworkspace.firebaseapp.com",
+        databaseURL:
+          "https://unsignedworkspace-default-rtdb.europe-west1.firebasedatabase.app",
+        projectId: "unsignedworkspace",
+        storageBucket: "unsignedworkspace.firebasestorage.app",
+        messagingSenderId: "144491079509",
+        appId: "1:144491079509:web:c7dcc1c14b8daf404231dc",
+      };
+      if (window.firebase && !window.firebase.apps.length) {
+        window.firebase.initializeApp(window.FB_CFG);
+        // Persist auth across reloads (LOCAL = IndexedDB, default but explicit).
+        try {
+          window.firebase
+            .auth()
+            .setPersistence(window.firebase.auth.Auth.Persistence.LOCAL)
+            .catch(function (e) {
+              console.error("[fb] setPersistence failed:", e);
+            });
+        } catch (e) {
+          console.error("[fb] setPersistence threw:", e);
+        }
+      }
+      window.fb = {
+        auth: () => window.firebase.auth(),
+        db: () => window.firebase.database(),
+        ref: (path) => window.firebase.database().ref(path),
+        ts: () => Date.now(),
+      };
+      try {
+        var savedAccent = localStorage.getItem("uw.accent");
+        if (savedAccent) {
+          document.documentElement.style.setProperty(
+            "--color-brand",
+            savedAccent
+          );
+        }
+      } catch (e) {}
+    </script>
+  </head>
+  <body>
+    <slot />
+  </body>
+</html>

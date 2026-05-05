@@ -1,0 +1,197 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+---
+
+<BaseLayout title="Login · Unsigned Workspace">
+  <main class="min-h-screen flex items-center justify-center px-5 py-10 bg-page">
+    <div
+      class="w-full max-w-[400px] bg-card rounded-[20px] p-9 px-7 border-[0.5px] border-line"
+    >
+      <div class="flex items-baseline gap-2">
+        <span class="brand-wordmark text-[20px]">Unsigned Workspace</span>
+        <span class="text-[9px] text-ink-mute">v3</span>
+      </div>
+      <span class="brand-script text-[16px] block mb-[22px]">
+        Brand Identity &amp; Tools
+      </span>
+
+      <h2 class="text-[15px] font-extrabold mb-1">Willkommen</h2>
+      <p class="text-[12px] text-ink-mute mb-[18px] leading-relaxed">
+        Meld dich an um auf deine Kunden und Tools zuzugreifen.
+      </p>
+
+      <div
+        class="flex border-[1.5px] border-line rounded-[9px] overflow-hidden mb-4"
+      >
+        <button
+          id="tabLogin"
+          type="button"
+          data-mode="login"
+          class="auth-tab flex-1 py-[9px] text-[12px] font-bold cursor-pointer border-0 bg-brand text-white"
+        >
+          Einloggen
+        </button>
+        <button
+          id="tabRegister"
+          type="button"
+          data-mode="register"
+          class="auth-tab flex-1 py-[9px] text-[12px] font-bold cursor-pointer border-0 bg-[#f5f5f5] text-ink-mute"
+        >
+          Registrieren
+        </button>
+      </div>
+
+      <form id="authForm" class="space-y-3" novalidate>
+        <div>
+          <label
+            for="aEmail"
+            class="block text-[10px] font-bold tracking-[0.1em] uppercase text-ink-mute mb-1"
+          >
+            E-Mail
+          </label>
+          <input
+            id="aEmail"
+            name="email"
+            type="email"
+            autocomplete="email"
+            placeholder="deine@email.com"
+            class="block w-full text-[13px] font-semibold border-[1.5px] border-line rounded-lg px-[14px] py-[11px] outline-none text-ink bg-white focus:border-brand"
+          />
+        </div>
+        <div>
+          <label
+            for="aPass"
+            class="block text-[10px] font-bold tracking-[0.1em] uppercase text-ink-mute mb-1"
+          >
+            Passwort
+          </label>
+          <input
+            id="aPass"
+            name="password"
+            type="password"
+            autocomplete="current-password"
+            placeholder="Passwort"
+            class="block w-full text-[13px] font-semibold border-[1.5px] border-line rounded-lg px-[14px] py-[11px] outline-none text-ink bg-white focus:border-brand"
+          />
+        </div>
+
+        <div
+          id="aErr"
+          class="hidden text-[12px] font-bold text-white px-[14px] py-[10px] bg-brand rounded-lg"
+        >
+        </div>
+
+        <button
+          id="aBtn"
+          type="submit"
+          class="block w-full mt-4 py-[14px] bg-brand hover:bg-brand-dark text-white rounded-[10px] text-[14px] font-extrabold cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        >
+          Einloggen
+        </button>
+      </form>
+
+      <p class="text-[10px] text-ink-mute mt-4 text-center">
+        Status: <span id="fbStatus">verbinde…</span>
+      </p>
+    </div>
+  </main>
+</BaseLayout>
+
+<script is:inline>
+  (function () {
+    var mode = "login";
+    var tabs = document.querySelectorAll(".auth-tab");
+    var btn = document.getElementById("aBtn");
+    var err = document.getElementById("aErr");
+    var form = document.getElementById("authForm");
+    var emailInput = document.getElementById("aEmail");
+    var passInput = document.getElementById("aPass");
+    var status = document.getElementById("fbStatus");
+
+    function waitFb(cb) {
+      if (window.firebase && window.firebase.auth) return cb();
+      setTimeout(function () {
+        waitFb(cb);
+      }, 60);
+    }
+
+    function safeNext() {
+      var n = new URLSearchParams(location.search).get("next") || "";
+      if (!n.startsWith("/") || n.startsWith("//")) return "/dashboard";
+      return n;
+    }
+
+    waitFb(function () {
+      status.textContent = "verbunden — prüfe Anmeldung…";
+      status.style.color = "var(--color-success)";
+      window.firebase.auth().onAuthStateChanged(function (u) {
+        if (u) {
+          status.textContent = "eingeloggt als " + (u.email || u.uid);
+          window.location.replace(safeNext());
+        } else {
+          status.textContent = "verbunden — nicht eingeloggt";
+        }
+      });
+    });
+
+    function setMode(next) {
+      mode = next;
+      tabs.forEach(function (t) {
+        var active = t.dataset.mode === next;
+        t.classList.toggle("bg-brand", active);
+        t.classList.toggle("text-white", active);
+        t.classList.toggle("bg-[#f5f5f5]", !active);
+        t.classList.toggle("text-ink-mute", !active);
+      });
+      btn.textContent = next === "login" ? "Einloggen" : "Registrieren";
+      hideErr();
+    }
+    function showErr(msg) {
+      err.textContent = msg;
+      err.classList.remove("hidden");
+    }
+    function hideErr() {
+      err.textContent = "";
+      err.classList.add("hidden");
+    }
+
+    tabs.forEach(function (t) {
+      t.addEventListener("click", function () {
+        setMode(t.dataset.mode);
+      });
+    });
+
+    var msgs = {
+      "auth/user-not-found": "E-Mail nicht gefunden.",
+      "auth/wrong-password": "Falsches Passwort.",
+      "auth/email-already-in-use": "Bereits registriert — einloggen.",
+      "auth/weak-password": "Passwort zu kurz (min. 6 Zeichen).",
+      "auth/invalid-email": "Ungültige E-Mail.",
+      "auth/invalid-credential": "E-Mail oder Passwort falsch.",
+      "auth/network-request-failed": "Keine Verbindung zu Firebase.",
+    };
+
+    form.addEventListener("submit", function (e) {
+      e.preventDefault();
+      hideErr();
+      var email = emailInput.value.trim();
+      var pass = passInput.value;
+      if (!email || !pass) return showErr("Bitte E-Mail und Passwort eingeben.");
+      if (!window.firebase) return showErr("Firebase nicht verbunden.");
+
+      btn.disabled = true;
+      btn.textContent = "Lädt…";
+      var p =
+        mode === "login"
+          ? window.firebase.auth().signInWithEmailAndPassword(email, pass)
+          : window.firebase.auth().createUserWithEmailAndPassword(email, pass);
+      p.then(function () {
+        window.location.replace(safeNext());
+      }).catch(function (e) {
+        showErr(msgs[e.code] || e.code || e.message);
+        btn.disabled = false;
+        btn.textContent = mode === "login" ? "Einloggen" : "Registrieren";
+      });
+    });
+  })();
+</script>

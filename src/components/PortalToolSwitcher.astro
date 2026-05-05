@@ -1,0 +1,78 @@
+---
+const tools = [
+  {
+    id: "bi",
+    num: "01",
+    label: "Brand Identity",
+    caption: "Werte. Positionierung. Bildwelt.",
+  },
+  {
+    id: "sh",
+    num: "02",
+    label: "Shooting",
+    caption: "Vor dem Dreh: alle Punkte abhaken.",
+  },
+  {
+    id: "cr",
+    num: "03",
+    label: "Creator Guide",
+    caption: "Wie Content für dich aussieht.",
+  },
+];
+---
+
+<section
+  class="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] gap-x-12 gap-y-6 px-6 lg:px-12 py-10"
+>
+  <div class="space-y-3">
+    <span
+      class="block font-display italic text-[13px] tracking-[0.12em] uppercase text-ink-warm/60"
+      >Aktuell offen</span
+    >
+    <h2
+      id="portalActiveLabel"
+      class="font-display text-[clamp(44px,7vw,84px)] leading-[0.95] tracking-[-0.02em] text-ink-warm"
+      style="font-variation-settings: 'opsz' 144;"
+    >
+      Brand Identity
+    </h2>
+    <p
+      id="portalActiveCaption"
+      class="font-sans text-[14px] text-ink-soft max-w-[40ch]"
+    >
+      Werte. Positionierung. Bildwelt.
+    </p>
+  </div>
+
+  <ol id="portalSwitcher" class="grid gap-2 self-end font-sans">
+    {
+      tools.map((t, i) => (
+        <li>
+          <button
+            type="button"
+            data-tool={t.id}
+            data-num={t.num}
+            data-label={t.label}
+            data-caption={t.caption}
+            class:list={[
+              "ptab w-full grid grid-cols-[60px_1fr_auto] items-baseline gap-4 px-4 py-3 text-left rounded-md border-l-[3px] transition-colors duration-300",
+              i === 0
+                ? "bg-brand-dim border-l-brand text-ink-warm"
+                : "border-l-transparent text-ink-warm/60 hover:bg-brand/5 hover:text-ink-warm",
+            ]}
+          >
+            <span class="font-display italic text-[20px] tracking-[0.06em] opacity-70">
+              {t.num}
+            </span>
+            <span class="font-display text-[22px] leading-tight">
+              {t.label}
+            </span>
+            <span class="font-sans text-[10px] tracking-[0.18em] uppercase opacity-50">
+              öffnen
+            </span>
+          </button>
+        </li>
+      ))
+    }
+  </ol>
+</section>

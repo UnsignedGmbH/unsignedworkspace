@@ -1,0 +1,171 @@
+---
+interface NavItem {
+  href: string;
+  label: string;
+  icon: string;
+  badge?: string;
+  badgeVariant?: "default" | "success";
+}
+interface NavSection {
+  title: string;
+  items: NavItem[];
+}
+
+const { active = "dashboard" } = Astro.props as { active?: string };
+
+const sections: NavSection[] = [
+  {
+    title: "Übersicht",
+    items: [
+      { href: "/dashboard", label: "Dashboard", icon: "📊" },
+      { href: "/customers", label: "Kunden", icon: "👥", badge: "0" },
+    ],
+  },
+  {
+    title: "Meine Tools",
+    items: [
+      { href: "/ai-guide", label: "Ai Guide", icon: "🤖" },
+      { href: "/brand-identity", label: "Brand Identity", icon: "🪪" },
+      { href: "/shooting", label: "Shooting Check", icon: "📸" },
+      { href: "/creator", label: "Creator Guide", icon: "📋" },
+      { href: "/design", label: "Design", icon: "🎨" },
+    ],
+  },
+  {
+    title: "Team & Admin",
+    items: [
+      {
+        href: "/team",
+        label: "Team",
+        icon: "🧑‍💼",
+        badge: "0",
+        badgeVariant: "success",
+      },
+      { href: "/settings", label: "Einstellungen", icon: "⚙️" },
+    ],
+  },
+];
+
+function isActive(href: string) {
+  return href.replace("/", "") === active;
+}
+---
+
+<aside
+  class="w-[215px] shrink-0 h-screen bg-sidebar flex flex-col overflow-hidden"
+>
+  <div
+    class="px-[14px] pt-4 pb-[13px] border-b-[0.5px] border-white/10 flex items-center gap-[10px]"
+  >
+    <div>
+      <span class="block brand-wordmark text-[13px]">Unsigned</span>
+      <span class="block brand-script text-[12px] text-white/35">Workspace</span>
+    </div>
+  </div>
+
+  <nav class="flex-1 overflow-y-auto pt-2">
+    {
+      sections.map((s) => (
+        <div>
+          <div class="px-[14px] pt-[10px] pb-[3px] text-[9px] font-bold tracking-[0.14em] uppercase text-white/20">
+            {s.title}
+          </div>
+          {s.items.map((it) => (
+            <a
+              href={it.href}
+              class:list={[
+                "flex items-center gap-[9px] px-3 py-2 mx-[6px] my-[1px] rounded-lg cursor-pointer select-none",
+                isActive(it.href)
+                  ? "bg-brand/20"
+                  : "hover:bg-white/5",
+              ]}
+            >
+              <span class="text-[14px] w-5 text-center shrink-0">
+                {it.icon}
+              </span>
+              <span
+                class:list={[
+                  "text-[12px] font-medium flex-1",
+                  isActive(it.href) ? "text-white" : "text-white/55",
+                ]}
+              >
+                {it.label}
+              </span>
+              {it.badge !== undefined && (
+                <span
+                  data-badge={it.href}
+                  class:list={[
+                    "text-[9px] font-bold px-[7px] py-[2px] rounded-[10px]",
+                    it.badgeVariant === "success"
+                      ? "bg-success/30 text-[#9FE1CB]"
+                      : "bg-white/10 text-white/40",
+                  ]}
+                >
+                  {it.badge}
+                </span>
+              )}
+            </a>
+          ))}
+        </div>
+      ))
+    }
+  </nav>
+
+  <div
+    class="mt-auto border-t-[0.5px] border-white/10 px-3 py-[11px] flex items-center gap-[9px]"
+  >
+    <span
+      id="sbAvatar"
+      class="w-7 h-7 rounded-full bg-brand text-white text-[11px] font-bold flex items-center justify-center shrink-0"
+      >?</span
+    >
+    <span
+      id="sbUserLabel"
+      class="text-[11px] text-white/55 flex-1 truncate"
+      >…</span
+    >
+    <button
+      type="button"
+      id="sbLogout"
+      class="text-[10px] text-white/40 hover:text-white bg-transparent border-0 cursor-pointer"
+      title="Abmelden">↪</button
+    >
+  </div>
+</aside>
+
+<script is:inline>
+  (function () {
+    var custBadge = document.querySelector('[data-badge="/customers"]');
+    var teamBadge = document.querySelector('[data-badge="/team"]');
+    var label = document.getElementById("sbUserLabel");
+    var avatar = document.getElementById("sbAvatar");
+
+    window.appUI.onAuth(function (me) {
+      label.textContent = (me && (me.email || me.name)) || "Du";
+      avatar.textContent = window.appUI.initials(me && (me.email || me.name));
+
+      if (custBadge) {
+        window.appUI.subscribeCustomers(function (state) {
+          var n = state.list.filter(function (c) { return !c.arch; }).length;
+          custBadge.textContent = String(n);
+        });
+      }
+      if (teamBadge) {
+        window.fb.ref("presence").on("value", function (s) {
+          var v = s.val() || {};
+          var n = Object.keys(v).filter(function (k) {
+            return v[k] && v[k].online;
+          }).length;
+          teamBadge.textContent = String(n);
+        });
+      }
+    });
+
+    var logout = document.getElementById("sbLogout");
+    if (logout) {
+      logout.addEventListener("click", function () {
+        window.appUI.logout();
+      });
+    }
+  })();
+</script>

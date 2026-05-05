@@ -1,0 +1,508 @@
+---
+import AppLayout from "../layouts/AppLayout.astro";
+---
+
+<AppLayout title="Kunde" active="customers">
+  <!-- ═══════════════ TOP BAR ═══════════════ -->
+  <div class="flex items-center gap-3 mb-4 flex-wrap">
+    <a
+      href="/customers"
+      class="text-[12px] font-bold text-ink-soft no-underline hover:text-brand"
+      >← Zurück</a
+    >
+    <span class="text-ink-mute text-[12px]">·</span>
+    <span id="topName" class="text-[14px] font-extrabold text-ink truncate max-w-[260px]">…</span>
+    <div class="ml-auto flex gap-2 flex-wrap">
+      <a
+        href="/customers?new=1"
+        class="text-[11px] font-bold text-brand bg-brand-dim border-[0.5px] border-brand-border rounded-lg px-3 py-2 cursor-pointer no-underline"
+        >+ Neuer Kunde</a
+      >
+      <button
+        type="button"
+        id="btnLogout"
+        class="text-[11px] font-bold text-ink-soft bg-card border-[0.5px] border-line rounded-lg px-3 py-2 cursor-pointer hover:border-brand hover:text-brand"
+        >Ausloggen</button
+      >
+    </div>
+  </div>
+
+  <!-- ═══════════════ OVERVIEW MODE ═══════════════ -->
+  <div id="overviewMode">
+    <!-- Customer Hero Card -->
+    <div
+      class="bg-card border-[0.5px] border-line rounded-xl p-5 mb-4 flex items-center gap-4 flex-wrap"
+    >
+      <span
+        id="cAvatar"
+        class="w-14 h-14 rounded-full bg-brand-dim text-brand text-[18px] font-bold flex items-center justify-center shrink-0"
+        >?</span
+      >
+      <div class="flex-1 min-w-0">
+        <div class="flex items-center gap-2 flex-wrap">
+          <span
+            id="cName"
+            class="text-[18px] font-extrabold text-ink"
+            title="Klick zum Bearbeiten"
+            >Lade…</span
+          >
+          <button
+            type="button"
+            id="cNameEdit"
+            class="text-[10px] text-ink-mute bg-transparent border-0 cursor-pointer hover:text-brand"
+            title="Namen bearbeiten">✎</button
+          >
+        </div>
+        <div id="cMeta" class="text-[11px] text-ink-mute mt-[2px] truncate">—</div>
+      </div>
+      <span
+        id="cClientLive"
+        class="hidden text-[10px] font-bold text-success bg-success/10 px-3 py-[6px] rounded-full whitespace-nowrap"
+      >
+        ● Kunde arbeitet gerade an <span id="cClientTool">…</span>
+      </span>
+      <div class="flex gap-2 flex-wrap">
+        <button
+          type="button"
+          id="copyPortal"
+          class="text-[11px] font-bold text-brand bg-brand-dim border-[0.5px] border-brand-border rounded-lg px-3 py-2 cursor-pointer"
+          title="Kunden-Portal-Link kopieren"
+          >🔗 Kunden-Link</button
+        >
+        <button
+          type="button"
+          id="btnExport"
+          class="text-[11px] font-bold text-ink-soft bg-card border-[0.5px] border-line rounded-lg px-3 py-2 cursor-pointer hover:border-brand hover:text-brand"
+          title="Komplette Daten als JSON sichern"
+          >⬇ Backup</button
+        >
+        <button
+          type="button"
+          id="btnArchive"
+          class="text-[11px] font-bold text-ink-soft bg-card border-[0.5px] border-line rounded-lg px-3 py-2 cursor-pointer hover:border-brand hover:text-brand"
+          >Archivieren</button
+        >
+        <button
+          type="button"
+          id="btnDelete"
+          class="text-[11px] font-bold text-[#b00020] bg-card border-[0.5px] border-line rounded-lg px-3 py-2 cursor-pointer hover:border-[#b00020]"
+          >🗑 Löschen</button
+        >
+      </div>
+    </div>
+
+    <!-- Tool Cards Grid -->
+    <h2
+      class="text-[10px] font-bold tracking-[0.12em] uppercase text-ink-mute mb-[10px]"
+    >
+      Tools & Fortschritt
+    </h2>
+    <section
+      id="toolGrid"
+      class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-[10px] mb-5"
+    >
+      <!-- gefüllt per JS -->
+    </section>
+  </div>
+
+  <!-- ═══════════════ TOOL FULLSCREEN MODE ═══════════════ -->
+  <div id="toolMode" class="hidden">
+    <div class="flex items-center gap-3 mb-3 flex-wrap">
+      <button
+        type="button"
+        id="toolBack"
+        class="text-[11px] font-bold text-ink-soft bg-card border-[0.5px] border-line rounded-lg px-3 py-2 cursor-pointer hover:border-brand hover:text-brand"
+        >← Übersicht</button
+      >
+      <span id="toolCrumb" class="text-[12px] font-bold text-ink">…</span>
+      <div class="ml-auto flex gap-2">
+        <button
+          type="button"
+          id="copyTool"
+          class="text-[11px] font-bold text-ink-soft bg-card border-[0.5px] border-line rounded-lg px-3 py-2 cursor-pointer hover:border-brand hover:text-brand"
+          title="Direkt-Link zu diesem Tool für den Kunden"
+          >🔗 Tool-Link</button
+        >
+      </div>
+    </div>
+
+    <div
+      class="bg-card border-[0.5px] border-line rounded-xl overflow-hidden h-[calc(100vh-200px)]"
+    >
+      <iframe
+        id="toolFrame"
+        src="about:blank"
+        title="Tool"
+        class="w-full h-full block border-0"
+        loading="lazy"></iframe>
+    </div>
+  </div>
+</AppLayout>
+
+<script is:inline>
+  (function () {
+    var params = new URLSearchParams(location.search);
+    var customerId = params.get("id");
+    var initialTool = params.get("tool") || "";
+
+    if (!customerId) {
+      document.getElementById("topName").textContent = "Kein Kunde gewählt";
+      return;
+    }
+
+    var ui = window.appUI;
+    var $ = function (id) { return document.getElementById(id); };
+    var customer = null;
+
+    // Tool-Definitionen mit Files & Render-Logik
+    var TOOLS = [
+      { id: "ai_guide", file: "ai_guide", label: "Ai Guide", icon: "🤖",
+        desc: "Moodboard, Prompts & Planung" },
+      { id: "bi", file: "bi", label: "Brand Identity", icon: "🪪",
+        desc: "Logos, Farben, Typo & Vibe" },
+      { id: "sh", file: "sh", label: "Shooting Check", icon: "📸",
+        desc: "Locations, Styling & Equipment" },
+      { id: "cr", file: "cr", label: "Creator Guide", icon: "📋",
+        desc: "Briefing & Skripts" },
+      { id: "dn", file: "design", label: "Design", icon: "🎨",
+        desc: "Layouts & Visuals" },
+    ];
+    var TOOL_BY_FILE = {};
+    TOOLS.forEach(function (t) { TOOL_BY_FILE[t.file] = t; });
+
+    function clamp(n) {
+      n = parseInt(n, 10) || 0;
+      return Math.max(0, Math.min(100, n));
+    }
+
+    // ── progress sources ─────────────────────────────────────
+    var lastBiP = null, lastShP = null, lastCrP = null, lastAgP = null, lastDnP = null;
+
+    var bumpLastActive = ui.throttle(function () {
+      if (!customer) return;
+      window.fb
+        .ref("workspace/customers/" + customerId + "/lastActive")
+        .set(window.fb.ts());
+    }, ui.CONST.LAST_ACTIVE_MIN_GAP_MS);
+
+    // SH/CR/AG postMessage progress
+    window.addEventListener("message", function (e) {
+      var d = e.data || {};
+      if (!customer) return;
+      if (d.type === "shPct") {
+        var p = clamp(d.pct);
+        if (p !== lastShP) {
+          lastShP = p;
+          window.fb.ref("workspace/customers/" + customerId + "/shP").set(p);
+        }
+        bumpLastActive();
+      } else if (d.type === "crPct") {
+        var p2 = clamp(d.pct);
+        if (p2 !== lastCrP) {
+          lastCrP = p2;
+          window.fb.ref("workspace/customers/" + customerId + "/crP").set(p2);
+        }
+        bumpLastActive();
+      } else if (d.type === "agPct") {
+        var p3 = clamp(d.pct);
+        if (p3 !== lastAgP) {
+          lastAgP = p3;
+          window.fb.ref("workspace/customers/" + customerId + "/agP").set(p3);
+        }
+        bumpLastActive();
+      }
+    });
+
+    // BI: derive from rooms/<room>/data/fields
+    function attachBIProgress(room) {
+      window.fb.ref("rooms/" + room + "/data/fields").on("value", function (s) {
+        if (!customer) return;
+        var v = s.val() || {};
+        var keys = Object.keys(v);
+        if (!keys.length) return;
+        var filled = 0;
+        keys.forEach(function (k) {
+          var f = v[k] || {};
+          var hasText = (f.text || "").trim().length > 0;
+          var hasImg = Array.isArray(f.images) && f.images.length > 0;
+          if (hasText || hasImg) filled++;
+        });
+        var pct = Math.round((filled / keys.length) * 100);
+        if (pct === lastBiP) return;
+        lastBiP = pct;
+        window.fb.ref("workspace/customers/" + customerId + "/biP").set(pct);
+        bumpLastActive();
+      });
+    }
+
+    // Design: derive from rooms/<room>/design (count of items, capped)
+    function attachDesignProgress(room) {
+      window.fb.ref("rooms/" + room + "/design").on("value", function (s) {
+        if (!customer) return;
+        var v = s.val() || {};
+        var n = 0;
+        Object.keys(v).forEach(function (k) {
+          var node = v[k];
+          if (node && typeof node === "object") n += Object.keys(node).length;
+        });
+        var pct = Math.min(100, n * 5);
+        if (pct === lastDnP) return;
+        lastDnP = pct;
+        window.fb.ref("workspace/customers/" + customerId + "/dP").set(pct);
+        bumpLastActive();
+      });
+    }
+
+    // Live presence indicator
+    function attachClientPresence(room) {
+      function check(v) {
+        var ts = v && v.ts;
+        var fresh = ts && Date.now() - ts < ui.CONST.CLIENT_ACTIVE_MS;
+        $("cClientLive").classList.toggle("hidden", !fresh);
+        if (fresh) {
+          var t = TOOL_BY_FILE[v.tool] || { label: v.tool || "?" };
+          $("cClientTool").textContent = t.label;
+        }
+      }
+      window.fb.ref("rooms/" + room + "/clientActivity").on("value", function (s) {
+        check(s.val() || {});
+      });
+      setInterval(function () {
+        window.fb.ref("rooms/" + room + "/clientActivity").once("value")
+          .then(function (s) { check(s.val() || {}); });
+      }, 30 * 1000);
+    }
+
+    // ── Render Tool-Cards ────────────────────────────────────
+    function pctOf(c, key) {
+      return clamp(c && c[key]);
+    }
+    function progressMap(c) {
+      return {
+        ai_guide: pctOf(c, "agP"),
+        bi: pctOf(c, "biP"),
+        sh: pctOf(c, "shP"),
+        cr: pctOf(c, "crP"),
+        dn: pctOf(c, "dP"),
+      };
+    }
+    function renderToolGrid(c) {
+      var pm = progressMap(c);
+      var totalDone = 0;
+      var grid = $("toolGrid");
+      grid.innerHTML = TOOLS.map(function (t) {
+        var pct = pm[t.id] || 0;
+        totalDone += pct;
+        var pctTxt = pct + "% ausgefüllt";
+        return (
+          '<a href="/customer?id=' + encodeURIComponent(customerId) +
+          '&tool=' + encodeURIComponent(t.file) + '"' +
+          ' class="bg-card border-[0.5px] border-line rounded-xl p-4 no-underline ' +
+          'hover:border-brand-border hover:bg-brand-dim transition-colors block">' +
+          '<div class="flex items-center gap-3 mb-3">' +
+          '<span class="w-10 h-10 rounded-lg bg-brand-dim flex items-center justify-center text-[20px] shrink-0">' +
+          t.icon + '</span>' +
+          '<div class="flex-1 min-w-0">' +
+          '<div class="text-[13px] font-extrabold text-ink truncate">' +
+          ui.escapeHtml(t.label) + '</div>' +
+          '<div class="text-[10px] text-ink-mute truncate">' +
+          ui.escapeHtml(t.desc) + '</div>' +
+          '</div>' +
+          '<span class="text-[11px] font-bold text-ink shrink-0">' + pct + '%</span>' +
+          '</div>' +
+          '<div class="h-[6px] rounded-full bg-[#eee] overflow-hidden">' +
+          '<div class="h-full bg-brand transition-all" style="width:' + pct + '%"></div>' +
+          '</div>' +
+          '<div class="text-[10px] text-ink-mute mt-2">' + pctTxt + '</div>' +
+          '</a>'
+        );
+      }).join("");
+
+      // PDF / Drucken card
+      grid.insertAdjacentHTML(
+        "beforeend",
+        '<button type="button" id="btnPrint" ' +
+        'class="bg-card border-[0.5px] border-line rounded-xl p-4 text-left ' +
+        'hover:border-brand-border hover:bg-brand-dim transition-colors cursor-pointer">' +
+        '<div class="flex items-center gap-3 mb-3">' +
+        '<span class="w-10 h-10 rounded-lg bg-brand-dim flex items-center justify-center text-[20px]">📄</span>' +
+        '<div class="flex-1 min-w-0">' +
+        '<div class="text-[13px] font-extrabold text-ink">PDF / Drucken</div>' +
+        '<div class="text-[10px] text-ink-mute">Briefing als PDF exportieren</div>' +
+        '</div></div>' +
+        '<div class="text-[11px] text-ink-soft">→ Druckansicht öffnen</div>' +
+        '</button>'
+      );
+      var btnPrint = $("btnPrint");
+      if (btnPrint) btnPrint.addEventListener("click", function () { window.print(); });
+
+      // Update meta line with avg progress
+      var avg = Math.round(totalDone / TOOLS.length);
+      $("cMeta").textContent =
+        "Raum " + (c.room || "—") +
+        " · Ø " + avg + "% · seit " + ui.fmtAgo(c.created || c.lastActive);
+    }
+
+    // ── Mode Switch ──────────────────────────────────────────
+    function showOverview() {
+      $("overviewMode").classList.remove("hidden");
+      $("toolMode").classList.add("hidden");
+      $("toolFrame").src = "about:blank";
+    }
+    function showTool(toolFile) {
+      var t = TOOL_BY_FILE[toolFile];
+      if (!t || !customer) return;
+      $("overviewMode").classList.add("hidden");
+      $("toolMode").classList.remove("hidden");
+      $("toolCrumb").textContent = t.icon + " " + t.label;
+      $("toolFrame").src =
+        "/tools/" + t.file + ".html?room=" +
+        encodeURIComponent(customer.room) + "&owner=1";
+    }
+    $("toolBack").addEventListener("click", function () {
+      var url = "/customer?id=" + encodeURIComponent(customerId);
+      history.pushState({}, "", url);
+      showOverview();
+    });
+    window.addEventListener("popstate", function () {
+      var p = new URLSearchParams(location.search);
+      var t = p.get("tool");
+      if (t) showTool(t); else showOverview();
+    });
+
+    // ── Buttons ──────────────────────────────────────────────
+    $("copyPortal").addEventListener("click", function () {
+      if (!customer) return;
+      ui.copyWithFlash(
+        $("copyPortal"),
+        "Portal-Link",
+        location.origin + "/portal?room=" + encodeURIComponent(customer.room)
+      );
+    });
+    $("copyTool").addEventListener("click", function () {
+      if (!customer) return;
+      var p = new URLSearchParams(location.search);
+      var t = p.get("tool") || "ai_guide";
+      ui.copyWithFlash(
+        $("copyTool"),
+        "Tool-Link",
+        location.origin + "/tools/" + t + ".html?room=" +
+        encodeURIComponent(customer.room)
+      );
+    });
+
+    $("cNameEdit").addEventListener("click", function () {
+      if (!customer) return;
+      ui.prompt({
+        title: "Name bearbeiten",
+        value: customer.name || "",
+      }).then(function (v) {
+        if (v == null || !v.trim()) return;
+        window.fb
+          .ref("workspace/customers/" + customerId + "/name")
+          .set(v.trim());
+      });
+    });
+
+    $("btnArchive").addEventListener("click", function () {
+      if (!customer) return;
+      var willArchive = !customer.arch;
+      ui.confirm({
+        title: willArchive ? "Archivieren?" : "Reaktivieren?",
+        description: willArchive
+          ? "Der Kunde wird im Tab 'Archiviert' erscheinen."
+          : "Der Kunde wird wieder als aktiv geführt.",
+      }).then(function (ok) {
+        if (!ok) return;
+        window.fb
+          .ref("workspace/customers/" + customerId + "/arch")
+          .set(willArchive);
+      });
+    });
+
+    $("btnDelete").addEventListener("click", function () {
+      if (!customer) return;
+      ui.confirm({
+        title: "Kunde löschen?",
+        description: "Daten in Brand Identity, Shooting, Creator, Design, Ai Guide bleiben im Raum. Eintrag wird aus der Kunden-Liste entfernt.",
+        okLabel: "Löschen",
+      }).then(function (ok) {
+        if (!ok) return;
+        window.fb
+          .ref("workspace/customers/" + customerId)
+          .remove()
+          .then(function () { location.href = "/customers"; });
+      });
+    });
+
+    $("btnExport").addEventListener("click", function () {
+      if (!customer) return;
+      var room = customer.room;
+      window.fb.ref("rooms/" + room).once("value").then(function (s) {
+        var bundle = {
+          exportedAt: new Date().toISOString(),
+          customer: customer,
+          room: { id: room, data: s.val() || null },
+        };
+        var blob = new Blob([JSON.stringify(bundle, null, 2)], {
+          type: "application/json",
+        });
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement("a");
+        a.href = url;
+        var safeName = (customer.name || "kunde")
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, "-")
+          .replace(/^-|-$/g, "") || "kunde";
+        var d = new Date().toISOString().slice(0, 10);
+        a.download = "unsigned-backup-" + safeName + "-" + d + ".json";
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+        ui.toast("Backup heruntergeladen ✓");
+      }).catch(function (e) {
+        ui.toast("Backup fehlgeschlagen: " + (e.code || e.message));
+      });
+    });
+
+    $("btnLogout").addEventListener("click", function () { ui.logout(); });
+
+    // ── Boot ─────────────────────────────────────────────────
+    function start() {
+      window.fb.ref("workspace/customers/" + customerId).on("value", function (snap) {
+        var c = snap.val();
+        if (!c) {
+          $("topName").textContent = "Kunde nicht gefunden";
+          $("cName").textContent = "Kunde nicht gefunden";
+          $("cMeta").textContent = "Möglicherweise gelöscht.";
+          $("cAvatar").textContent = "?";
+          $("cClientLive").classList.add("hidden");
+          customer = null;
+          return;
+        }
+        var first = customer === null;
+        customer = c;
+        lastBiP = c.biP == null ? null : clamp(c.biP);
+        lastShP = c.shP == null ? null : clamp(c.shP);
+        lastCrP = c.crP == null ? null : clamp(c.crP);
+        lastAgP = c.agP == null ? null : clamp(c.agP);
+        lastDnP = c.dP == null ? null : clamp(c.dP);
+
+        $("topName").textContent = c.name || "Unbenannt";
+        $("cName").textContent = c.name || "Unbenannt";
+        $("cAvatar").textContent = ui.initials(c.name);
+        renderToolGrid(c);
+
+        if (first) {
+          attachBIProgress(c.room);
+          attachDesignProgress(c.room);
+          attachClientPresence(c.room);
+          if (initialTool && TOOL_BY_FILE[initialTool]) showTool(initialTool);
+          else showOverview();
+        }
+      });
+    }
+    ui.onAuth(start);
+  })();
+</script>

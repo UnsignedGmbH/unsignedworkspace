@@ -1,0 +1,23 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+---
+
+<BaseLayout title="404 · Unsigned Workspace">
+  <main class="min-h-screen flex items-center justify-center px-5 py-10 bg-page">
+    <div class="text-center max-w-[420px]">
+      <div class="brand-wordmark text-[20px]">Unsigned Workspace</div>
+      <span class="brand-script text-[16px] block mb-6">404</span>
+      <h1 class="text-[16px] font-extrabold text-ink mb-2">
+        Diese Seite gibt's nicht.
+      </h1>
+      <p class="text-[12px] text-ink-mute mb-6">
+        Falsche URL? Oder das Element wurde verschoben.
+      </p>
+      <a
+        href="/dashboard"
+        class="inline-block px-5 py-3 bg-brand text-white rounded-lg text-[12px] font-bold no-underline hover:bg-brand-dark"
+        >Zum Dashboard</a
+      >
+    </div>
+  </main>
+</BaseLayout>

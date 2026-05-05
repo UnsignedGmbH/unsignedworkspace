@@ -1,0 +1,266 @@
+---
+import AppLayout from "../layouts/AppLayout.astro";
+
+const filters = [
+  { id: "all", label: "Alle" },
+  { id: "mine", label: "Meine" },
+  { id: "active", label: "Aktiv" },
+  { id: "archived", label: "Archiviert" },
+];
+---
+
+<AppLayout title="Kunden" active="customers">
+  <div class="flex gap-[6px] mb-[14px] flex-wrap items-center" id="filterBar">
+    {
+      filters.map((f, i) => (
+        <button
+          type="button"
+          data-filter={f.id}
+          class:list={[
+            "filter-pill px-[14px] py-[5px] rounded-full border-[0.5px] text-[11px] font-bold cursor-pointer",
+            i === 0
+              ? "bg-brand border-brand text-white"
+              : "border-line text-ink-mute bg-transparent",
+          ]}
+        >
+          {f.label}
+        </button>
+      ))
+    }
+
+    <button
+      id="newCustomerBtn"
+      type="button"
+      class="ml-auto px-[14px] py-[5px] rounded-full bg-brand text-white text-[11px] font-bold cursor-pointer hover:bg-brand-dark"
+      >➕ Neuer Kunde</button
+    >
+  </div>
+
+  <p id="loadingMsg" class="text-[12px] text-ink-mute py-6 text-center">
+    Lade Kunden aus Firebase…
+  </p>
+  <p id="emptyMsg" class="hidden text-[13px] text-ink-mute py-10 text-center">
+    Noch keine Kunden — leg den ersten an.
+  </p>
+
+  <div class="flex flex-col gap-[7px]" id="customerList"></div>
+</AppLayout>
+
+<script is:inline>
+  (function () {
+    var listEl = document.getElementById("customerList");
+    var loadingEl = document.getElementById("loadingMsg");
+    var emptyEl = document.getElementById("emptyMsg");
+    var pills = document.querySelectorAll(".filter-pill");
+    var newBtn = document.getElementById("newCustomerBtn");
+    var currentFilter = "all";
+    var lastState = { list: [] };
+
+    function progressOf(c) {
+      var keys = ["agP", "biP", "shP", "crP", "dP"];
+      var sum = 0;
+      keys.forEach(function (k) { sum += c[k] || 0; });
+      return Math.round(sum / keys.length);
+    }
+
+    function render() {
+      var ui = window.appUI;
+      var me = (window.ME && window.ME.uid) || null;
+      var rows = lastState.list.filter(function (c) {
+        if (currentFilter === "mine") return c.createdBy === me;
+        if (currentFilter === "active") return !c.arch;
+        if (currentFilter === "archived") return c.arch;
+        return true;
+      });
+
+      loadingEl.classList.add("hidden");
+      emptyEl.classList.toggle("hidden", rows.length > 0);
+      listEl.innerHTML = rows
+        .map(function (c) {
+          var pct = progressOf(c);
+          var nameSafe = ui.escapeHtml(c.name || "Unbenannt");
+          var roomSafe = ui.escapeHtml(c.room || "");
+          var initialsSafe = ui.escapeHtml(ui.initials(c.name));
+          var idSafe = ui.escapeHtml(c.id);
+          var archBadge = c.arch
+            ? ' <span class="text-[9px] font-bold px-[7px] py-[2px] rounded-full bg-[#f5f5f5] text-ink-mute ml-1">Archiv</span>'
+            : "";
+          return (
+            '<div class="bg-card border-[0.5px] border-line rounded-[10px] px-4 py-3 flex items-center gap-3 hover:border-brand-border" data-id="' +
+            idSafe + '">' +
+            '<span class="w-2 h-2 rounded-full shrink-0 ' +
+            (c.arch ? "bg-line" : "bg-success") + '"></span>' +
+            '<a href="/customer?id=' + encodeURIComponent(c.id) +
+            '" class="w-[34px] h-[34px] rounded-full bg-brand-dim text-brand text-[12px] font-bold flex items-center justify-center shrink-0 no-underline">' +
+            initialsSafe + "</a>" +
+            '<a href="/customer?id=' + encodeURIComponent(c.id) +
+            '" class="flex-1 min-w-0 no-underline">' +
+            '<div class="text-[13px] font-bold text-ink truncate">' +
+            nameSafe + archBadge + "</div>" +
+            '<div class="text-[11px] text-ink-mute truncate mt-[1px]">Raum ' +
+            roomSafe + " · " +
+            ui.escapeHtml(ui.fmtAgo(c.lastActive || c.created)) +
+            "</div></a>" +
+            '<div class="w-[80px] shrink-0">' +
+            '<div class="h-[3px] bg-[#eee] rounded-sm overflow-hidden"><div class="h-full bg-brand rounded-sm" style="width:' +
+            pct + '%"></div></div>' +
+            '<div class="text-[10px] text-ink-mute mt-[3px] text-right">' +
+            pct + "%</div></div>" +
+            '<div class="flex gap-1 shrink-0 ml-2">' +
+            '<button type="button" data-act="rename" data-id="' + idSafe +
+            '" class="text-[11px] text-ink-mute hover:text-brand bg-transparent border-0 cursor-pointer px-1" title="Umbenennen">✎</button>' +
+            '<button type="button" data-act="archive" data-id="' + idSafe +
+            '" class="text-[11px] text-ink-mute hover:text-brand bg-transparent border-0 cursor-pointer px-1" title="' +
+            (c.arch ? "Wiederherstellen" : "Archivieren") + '">' +
+            (c.arch ? "↺" : "🗄") + "</button>" +
+            '<button type="button" data-act="delete" data-id="' + idSafe +
+            '" class="text-[11px] text-ink-mute hover:text-brand bg-transparent border-0 cursor-pointer px-1" title="Löschen">✕</button>' +
+            "</div></div>"
+          );
+        })
+        .join("");
+
+      listEl.querySelectorAll("[data-act]").forEach(function (b) {
+        b.addEventListener("click", function (e) {
+          e.preventDefault();
+          e.stopPropagation();
+          var id = b.dataset.id;
+          var c = lastState.list.find(function (x) { return x.id === id; });
+          if (!c) return;
+          if (b.dataset.act === "rename") {
+            ui.prompt({
+              title: "Kunde umbenennen",
+              description: "Neuer Name für „" + (c.name || "?") + "“",
+              value: c.name || "",
+              placeholder: "Name",
+            }).then(function (val) {
+              if (val && val.trim())
+                window.fb
+                  .ref("workspace/customers/" + id + "/name")
+                  .set(val.trim())
+                  .catch(function (e) { ui.toast("Fehler: " + e.code); });
+            });
+          } else if (b.dataset.act === "archive") {
+            window.fb
+              .ref("workspace/customers/" + id + "/arch")
+              .set(!c.arch)
+              .catch(function (e) { ui.toast("Fehler: " + e.code); });
+          } else if (b.dataset.act === "delete") {
+            ui.confirm({
+              title: "Kunde löschen?",
+              description:
+                "„" + (c.name || "?") +
+                "“ wird entfernt. Tool-Daten unter rooms/" +
+                c.room + " bleiben erhalten.",
+              okLabel: "Löschen",
+            }).then(function (ok) {
+              if (ok)
+                window.fb
+                  .ref("workspace/customers/" + id)
+                  .remove()
+                  .catch(function (e) { ui.toast("Fehler: " + e.code); });
+            });
+          }
+        });
+      });
+    }
+
+    var renderThrottled = window.appUI.throttle(render, 250);
+
+    pills.forEach(function (p) {
+      p.addEventListener("click", function () {
+        currentFilter = p.dataset.filter;
+        window.appUI.setActiveTab(
+          pills,
+          p,
+          "bg-brand border-brand text-white",
+          "border-line text-ink-mute bg-transparent"
+        );
+        render();
+      });
+    });
+
+    function openNewCustomer() {
+      if (!window.ME || !window.ME.uid) {
+        window.appUI.toast("Bitte erst einloggen — bin noch nicht bereit.");
+        return;
+      }
+      window.appUI
+        .prompt({
+          title: "Neuer Kunde",
+          description: "Wie heißt der Kunde?",
+          placeholder: "z. B. Maria Kaufmann",
+          okLabel: "Anlegen",
+        })
+        .then(function (name) {
+          if (!name) return;
+          var id =
+            Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+          var room = window.appUI.genRoom();
+          var rec = {
+            id: id,
+            name: name,
+            room: room,
+            arch: false,
+            created: window.fb.ts(),
+            lastActive: window.fb.ts(),
+            agP: 0,
+            biP: 0,
+            shP: 0,
+            crP: 0,
+            dP: 0,
+            createdBy: window.ME.uid,
+          };
+          var path = "workspace/customers/" + id;
+          console.log("[customer] WRITE →", path, rec);
+          window.fb
+            .ref(path)
+            .set(rec)
+            .then(function () {
+              console.log("[customer] WRITE OK ✓", path);
+              return window.fb.ref(path).once("value");
+            })
+            .then(function (snap) {
+              var v = snap.val();
+              console.log("[customer] READBACK →", v);
+              if (!v || v.id !== id) {
+                throw new Error(
+                  "Schreibung nicht persistiert — Readback leer."
+                );
+              }
+              window.appUI.toast("✓ Kunde gespeichert (Raum " + room + ")");
+              setTimeout(function () {
+                location.href = "/customer?id=" + encodeURIComponent(id);
+              }, 350);
+            })
+            .catch(function (e) {
+              console.error("[customer] WRITE FAILED:", e);
+              window.appUI.toast(
+                "Fehler beim Speichern: " + (e.code || e.message)
+              );
+            });
+        });
+    }
+
+    function gateNewBtn(disabled) {
+      newBtn.disabled = disabled;
+      newBtn.style.opacity = disabled ? "0.5" : "";
+      newBtn.style.cursor = disabled ? "not-allowed" : "";
+      newBtn.title = disabled ? "Warte auf Anmeldung…" : "";
+    }
+    gateNewBtn(true);
+    newBtn.addEventListener("click", openNewCustomer);
+
+    window.appUI.onAuth(function () {
+      gateNewBtn(false);
+      window.appUI.subscribeCustomers(function (state) {
+        console.log("[customers] snapshot:", state.list.length, "rows");
+        lastState = state;
+        renderThrottled();
+      });
+      if (new URLSearchParams(location.search).get("new") === "1") {
+        openNewCustomer();
+      }
+    });
+  })();
+</script>

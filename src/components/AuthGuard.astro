@@ -1,0 +1,57 @@
+---
+// Redirects to / if not signed in. Place inside AppLayout.
+// Preserves the original requested URL via ?next= so login can return there.
+---
+
+<script is:inline>
+  (function () {
+    function check() {
+      if (!window.firebase || !window.firebase.auth) {
+        return setTimeout(check, 60);
+      }
+      window.firebase.auth().onAuthStateChanged(function (user) {
+        if (!user) {
+          var here = location.pathname + location.search;
+          var next = here && here !== "/" ? "?next=" + encodeURIComponent(here) : "";
+          window.location.replace("/" + next);
+          return;
+        }
+        window.ME = {
+          uid: user.uid,
+          email: user.email,
+          name: (user.email || "").split("@")[0],
+        };
+
+        // Profile: never overwrite role on a re-auth.
+        var teamRef = window.fb.ref("team/" + user.uid);
+        teamRef.once("value").then(function (snap) {
+          var existing = snap.val() || {};
+          var patch = {
+            uid: user.uid,
+            email: user.email,
+            name: existing.name || window.ME.name,
+          };
+          if (!existing.role) patch.role = "member";
+          teamRef.update(patch);
+        });
+
+        var pres = window.fb.ref("presence/" + user.uid);
+        pres.update({
+          online: true,
+          lastSeen: window.fb.ts(),
+          uid: user.uid,
+          email: user.email,
+          name: window.ME.name,
+        });
+        pres.onDisconnect().update({
+          online: false,
+          lastSeen: window.fb.ts(),
+        });
+        document.dispatchEvent(
+          new CustomEvent("auth-ready", { detail: window.ME })
+        );
+      });
+    }
+    check();
+  })();
+</script>

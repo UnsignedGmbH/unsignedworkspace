@@ -1,0 +1,306 @@
+---
+// Shared client-side helpers + a generic confirm/prompt modal.
+// Included once per authenticated page via AppLayout.
+---
+
+<dialog
+  id="appModal"
+  class="rounded-2xl border-[0.5px] border-line p-0 bg-card backdrop:bg-black/50 max-w-[420px] w-[90vw]"
+>
+  <form method="dialog" id="appModalForm" class="p-6 space-y-3">
+    <h3 id="appModalTitle" class="text-[15px] font-extrabold text-ink">
+      Titel
+    </h3>
+    <p id="appModalDesc" class="text-[12px] text-ink-mute"></p>
+    <input
+      id="appModalInput"
+      class="block w-full text-[14px] font-semibold border-[1.5px] border-line rounded-lg px-[14px] py-[11px] outline-none text-ink bg-white focus:border-brand"
+    />
+    <div class="flex gap-2 pt-1">
+      <button
+        type="button"
+        id="appModalCancel"
+        class="flex-1 px-3 py-2 rounded-lg bg-[#f5f5f5] text-ink-mute text-[12px] font-bold border-0 cursor-pointer"
+        >Abbrechen</button
+      >
+      <button
+        type="submit"
+        id="appModalOk"
+        class="flex-1 px-3 py-2 rounded-lg bg-brand text-white text-[12px] font-bold border-0 cursor-pointer"
+        >OK</button
+      >
+    </div>
+  </form>
+</dialog>
+
+<script is:inline>
+  (function () {
+    if (window.appUI) return;
+
+    var CONST = {
+      CLIENT_ACTIVE_MS: 5 * 60 * 1000,
+      HEARTBEAT_MS: 60 * 1000,
+      LAST_ACTIVE_MIN_GAP_MS: 10 * 1000,
+      ROOM_LEN: 6,
+      ROOM_ALPHABET: "ABCDEFGHJKLMNPQRSTUVWXYZ23456789",
+      STORAGE: { ACCENT: "uw.accent", NOTIF: "uw.notif" },
+      TOOLS: [
+        { id: "ag", label: "Ai Guide", icon: "🤖", file: "ai_guide" },
+        { id: "bi", label: "Brand Identity", icon: "🪪", file: "bi" },
+        { id: "sh", label: "Shooting", icon: "📸", file: "sh" },
+        { id: "cr", label: "Creator Guide", icon: "📋", file: "cr" },
+        { id: "dn", label: "Design", icon: "🎨", file: "design" },
+      ],
+    };
+
+    function escapeHtml(str) {
+      return String(str == null ? "" : str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    }
+    function fmtAgo(ts) {
+      if (!ts) return "—";
+      var d = (Date.now() - ts) / 1000;
+      if (d < 60) return "gerade eben";
+      if (d < 3600) return "vor " + Math.floor(d / 60) + " Min";
+      if (d < 86400) return "vor " + Math.floor(d / 3600) + " Std";
+      return "vor " + Math.floor(d / 86400) + " Tagen";
+    }
+    function initials(s) {
+      var p = (s || "?").trim().split(/\s+/).slice(0, 2);
+      return (
+        p
+          .map(function (x) { return x[0]; })
+          .join("")
+          .toUpperCase() || "?"
+      );
+    }
+    function colorFor(uid) {
+      var palette = ["bg-brand", "bg-info", "bg-success", "bg-brand-dark"];
+      if (!uid) return palette[0];
+      var sum = 0;
+      for (var i = 0; i < uid.length; i++) sum += uid.charCodeAt(i);
+      return palette[sum % palette.length];
+    }
+    function genRoom() {
+      var s = "";
+      for (var i = 0; i < CONST.ROOM_LEN; i++)
+        s += CONST.ROOM_ALPHABET[
+          Math.floor(Math.random() * CONST.ROOM_ALPHABET.length)
+        ];
+      return s;
+    }
+    function throttle(fn, ms) {
+      var lastT = 0;
+      var pendingArgs = null;
+      var pendingTimer = null;
+      return function () {
+        var args = arguments;
+        var now = Date.now();
+        var rem = ms - (now - lastT);
+        if (rem <= 0) {
+          lastT = now;
+          fn.apply(null, args);
+        } else {
+          pendingArgs = args;
+          if (!pendingTimer) {
+            pendingTimer = setTimeout(function () {
+              lastT = Date.now();
+              pendingTimer = null;
+              fn.apply(null, pendingArgs);
+            }, rem);
+          }
+        }
+      };
+    }
+
+    // Auth-bootstrap helper — replaces the 6× repeated pattern.
+    function onAuth(fn) {
+      if (window.ME) {
+        try { fn(window.ME); } catch (e) { console.error(e); }
+      }
+      document.addEventListener("auth-ready", function (e) {
+        try { fn(e.detail || window.ME); } catch (err) { console.error(err); }
+      });
+    }
+
+    // Single shared subscription to workspace/customers — pages and the sidebar
+    // hook in here instead of calling .on() directly. Listener attaches once.
+    var customersState = { ready: false, list: [], byId: {} };
+    var customersSubs = [];
+    var customersAttached = false;
+    function ensureCustomersListener() {
+      if (customersAttached || !window.fb) return;
+      customersAttached = true;
+      console.log("[fb] subscribing workspace/customers");
+      window.fb.ref("workspace/customers").on(
+        "value",
+        function (snap) {
+          var v = snap.val() || {};
+          var byId = {};
+          var list = Object.keys(v)
+            .map(function (k) {
+              var c = v[k];
+              c.id = c.id || k;
+              byId[c.id] = c;
+              return c;
+            })
+            .sort(function (a, b) {
+              return (
+                (b.lastActive || b.created || 0) -
+                (a.lastActive || a.created || 0)
+              );
+            });
+          customersState = { ready: true, list: list, byId: byId };
+          customersSubs.slice().forEach(function (cb) {
+            try { cb(customersState); } catch (e) { console.error(e); }
+          });
+        },
+        function (err) {
+          console.error("[fb] customers listener error:", err);
+          toast(
+            "Lese-Fehler workspace/customers: " + (err.code || err.message)
+          );
+        }
+      );
+    }
+    function subscribeCustomers(cb) {
+      customersSubs.push(cb);
+      onAuth(ensureCustomersListener);
+      if (customersState.ready) {
+        try { cb(customersState); } catch (e) { console.error(e); }
+      }
+      return function unsubscribe() {
+        var i = customersSubs.indexOf(cb);
+        if (i >= 0) customersSubs.splice(i, 1);
+      };
+    }
+
+    // Active-tab toggle helper — `nodes` is a NodeList/array of buttons,
+    // `activeNode` is the one to mark as on. `on`/`off` are class-name strings.
+    function setActiveTab(nodes, activeNode, on, off) {
+      var onCls = (on || "").split(/\s+/).filter(Boolean);
+      var offCls = (off || "").split(/\s+/).filter(Boolean);
+      [].forEach.call(nodes, function (n) {
+        var isActive = n === activeNode;
+        onCls.forEach(function (c) { n.classList.toggle(c, isActive); });
+        offCls.forEach(function (c) { n.classList.toggle(c, !isActive); });
+      });
+    }
+
+    // Copy a URL to clipboard, flash button label, toast.
+    function copyWithFlash(btn, label, url) {
+      navigator.clipboard
+        .writeText(url)
+        .then(function () {
+          var prev = btn.textContent;
+          btn.textContent = "✓ Link kopiert";
+          toast(label + " kopiert");
+          setTimeout(function () { btn.textContent = prev; }, 1800);
+        })
+        .catch(function () { toast("Kopieren fehlgeschlagen"); });
+    }
+
+    // Logout flow — used by Sidebar + settings.
+    function logout() {
+      if (!window.firebase) return;
+      var afterPresence = function () {
+        window.firebase
+          .auth()
+          .signOut()
+          .then(function () { window.location.href = "/"; })
+          .catch(function (e) { toast("Abmelden fehlgeschlagen: " + e.code); });
+      };
+      if (window.ME && window.ME.uid) {
+        window.fb
+          .ref("presence/" + window.ME.uid)
+          .update({ online: false, lastSeen: window.fb.ts() })
+          .then(afterPresence, afterPresence);
+      } else {
+        afterPresence();
+      }
+    }
+
+    // ---- Modal (prompt + confirm) ----
+    var dlg = document.getElementById("appModal");
+    var form = document.getElementById("appModalForm");
+    var titleEl = document.getElementById("appModalTitle");
+    var descEl = document.getElementById("appModalDesc");
+    var input = document.getElementById("appModalInput");
+    var cancelBtn = document.getElementById("appModalCancel");
+    var okBtn = document.getElementById("appModalOk");
+    var pendingResolve = null;
+
+    function close(value) {
+      if (pendingResolve) {
+        pendingResolve(value);
+        pendingResolve = null;
+      }
+      try { dlg.close(); } catch (e) {}
+    }
+    cancelBtn.addEventListener("click", function () { close(null); });
+    form.addEventListener("submit", function (e) {
+      e.preventDefault();
+      close(input.style.display === "none" ? true : input.value.trim());
+    });
+    dlg.addEventListener("cancel", function (e) {
+      e.preventDefault();
+      close(null);
+    });
+    dlg.addEventListener("click", function (e) {
+      if (e.target === dlg) close(null);
+    });
+
+    function showDialog(opts, hasInput) {
+      titleEl.textContent = opts.title || "";
+      descEl.textContent = opts.description || "";
+      descEl.style.display = opts.description ? "block" : "none";
+      input.style.display = hasInput ? "block" : "none";
+      if (hasInput) {
+        input.value = opts.value || "";
+        input.placeholder = opts.placeholder || "";
+      }
+      okBtn.textContent = opts.okLabel || "OK";
+      cancelBtn.textContent = opts.cancelLabel || "Abbrechen";
+      try { dlg.showModal(); } catch (e) {}
+      if (hasInput) setTimeout(function () { input.focus(); input.select(); }, 30);
+      return new Promise(function (resolve) { pendingResolve = resolve; });
+    }
+    function prompt(opts) { return showDialog(opts, true); }
+    function confirm(opts) { return showDialog(opts, false); }
+
+    function toast(msg) {
+      var t = document.createElement("div");
+      t.textContent = msg;
+      t.style.cssText =
+        "position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#111;color:#fff;padding:10px 18px;border-radius:8px;font:600 12px Montserrat,sans-serif;z-index:9999;box-shadow:0 8px 24px rgba(0,0,0,.18);opacity:0;transition:opacity .2s";
+      document.body.appendChild(t);
+      requestAnimationFrame(function () { t.style.opacity = "1"; });
+      setTimeout(function () {
+        t.style.opacity = "0";
+        setTimeout(function () { t.remove(); }, 250);
+      }, 2200);
+    }
+
+    window.appUI = {
+      CONST: CONST,
+      escapeHtml: escapeHtml,
+      fmtAgo: fmtAgo,
+      initials: initials,
+      colorFor: colorFor,
+      genRoom: genRoom,
+      throttle: throttle,
+      onAuth: onAuth,
+      subscribeCustomers: subscribeCustomers,
+      setActiveTab: setActiveTab,
+      copyWithFlash: copyWithFlash,
+      logout: logout,
+      prompt: prompt,
+      confirm: confirm,
+      toast: toast,
+    };
+  })();
+</script>

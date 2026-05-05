@@ -1,0 +1,170 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import PortalLiveBadge from "../components/PortalLiveBadge.astro";
+import PortalFooter from "../components/PortalFooter.astro";
+---
+
+<BaseLayout title="Kunden-Portal · Unsigned Workspace">
+  <div
+    class="min-h-screen flex flex-col bg-paper text-ink-warm grain-overlay relative overflow-x-hidden"
+  >
+    <header
+      class="relative w-full bg-brand text-white fade-up shrink-0"
+      style="animation-delay:60ms"
+    >
+      <div
+        aria-hidden="true"
+        class="absolute inset-y-0 right-[-80px] w-[260px] rotate-12 bg-brand-dark opacity-25 pointer-events-none"
+      >
+      </div>
+      <div
+        class="relative px-6 lg:px-12 py-5 flex items-center gap-6 flex-wrap"
+      >
+        <div class="flex items-baseline gap-3">
+          <span
+            class="font-display italic font-extrabold text-[28px] leading-none tracking-[-0.01em]"
+            >Unsigned</span
+          >
+          <span
+            class="brand-script text-[18px] text-white/90 leading-none"
+            style="color:#fff"
+            >Workspace</span
+          >
+        </div>
+        <span class="hidden md:block ml-2 h-6 w-px bg-white/30"></span>
+        <span
+          class="hidden md:block font-sans uppercase tracking-[0.22em] text-[10px] text-white/70"
+          >Brand Identity &amp; Tools</span
+        >
+        <div class="ml-auto" id="portalLiveSlot">
+          <PortalLiveBadge />
+        </div>
+      </div>
+    </header>
+
+    <main
+      class="flex-1 px-6 lg:px-12 py-5 fade-up"
+      style="animation-delay:200ms"
+    >
+      <div class="flex gap-2 mb-3 flex-wrap" id="portalTabs">
+        <button
+          type="button"
+          data-tool="ai_guide"
+          class="ptab px-4 py-2 rounded-full text-[12px] font-bold cursor-pointer border-0 bg-brand text-white"
+          >🤖 Ai Guide</button
+        >
+        <button
+          type="button"
+          data-tool="bi"
+          class="ptab px-4 py-2 rounded-full text-[12px] font-bold cursor-pointer border-[0.5px] bg-card text-ink-mute border-line"
+          >🪪 Brand Identity</button
+        >
+        <button
+          type="button"
+          data-tool="sh"
+          class="ptab px-4 py-2 rounded-full text-[12px] font-bold cursor-pointer border-[0.5px] bg-card text-ink-mute border-line"
+          >📸 Shooting</button
+        >
+        <button
+          type="button"
+          data-tool="cr"
+          class="ptab px-4 py-2 rounded-full text-[12px] font-bold cursor-pointer border-[0.5px] bg-card text-ink-mute border-line"
+          >📋 Creator Guide</button
+        >
+        <button
+          type="button"
+          data-tool="design"
+          class="ptab px-4 py-2 rounded-full text-[12px] font-bold cursor-pointer border-[0.5px] bg-card text-ink-mute border-line"
+          >🎨 Design</button
+        >
+      </div>
+
+      <div
+        class="bg-card border-[0.5px] border-line rounded-xl overflow-hidden h-[calc(100vh-220px)]"
+      >
+        <iframe
+          id="portalFrame"
+          src="about:blank"
+          title="Tool"
+          class="w-full h-full block border-0"></iframe>
+      </div>
+
+      <p
+        id="portalEmpty"
+        class="hidden text-center text-[13px] text-ink-soft py-12"
+      >
+        Kein Raum-Code in der URL. Bitte den Link von Unsigned öffnen.
+      </p>
+    </main>
+
+    <PortalFooter />
+  </div>
+</BaseLayout>
+
+<script is:inline>
+  (function () {
+    var room = new URLSearchParams(location.search).get("room");
+    var liveSlot = document.getElementById("portalLiveSlot");
+    var frame = document.getElementById("portalFrame");
+    var tabsContainer = document.getElementById("portalTabs");
+    var tabs = tabsContainer.querySelectorAll(".ptab");
+    var emptyMsg = document.getElementById("portalEmpty");
+
+    if (!room) {
+      frame.style.display = "none";
+      tabsContainer.style.display = "none";
+      emptyMsg.classList.remove("hidden");
+      return;
+    }
+
+    var roomEl = liveSlot.querySelector("[data-room]");
+    if (roomEl) roomEl.textContent = room;
+
+    function ping(tool) {
+      if (window.fb && window.firebase) {
+        window.fb
+          .ref("rooms/" + room + "/clientActivity")
+          .set({ tool: tool, ts: window.fb.ts() })
+          .catch(function () {});
+      } else {
+        setTimeout(function () { ping(tool); }, 200);
+      }
+    }
+
+    var currentTool = "bi";
+    function setTool(tool) {
+      var btn = tabsContainer.querySelector('[data-tool="' + tool + '"]');
+      if (!btn) return;
+      currentTool = tool;
+      tabs.forEach(function (b) {
+        var on = b === btn;
+        b.classList.toggle("bg-brand", on);
+        b.classList.toggle("text-white", on);
+        b.classList.toggle("border-0", on);
+        b.classList.toggle("bg-card", !on);
+        b.classList.toggle("text-ink-mute", !on);
+        b.classList.toggle("border-[0.5px]", !on);
+        b.classList.toggle("border-line", !on);
+      });
+      // owner=1 here lets the customer fully edit (same UI as you in /customer)
+      frame.src =
+        "/tools/" + tool + ".html?room=" + encodeURIComponent(room) + "&owner=1";
+      ping(tool);
+    }
+    tabs.forEach(function (b) {
+      b.addEventListener("click", function () { setTool(b.dataset.tool); });
+    });
+
+    var heartbeat = setInterval(function () {
+      if (document.visibilityState === "visible") ping(currentTool);
+    }, 60000);
+    document.addEventListener("visibilitychange", function () {
+      if (document.visibilityState === "visible") ping(currentTool);
+    });
+    window.addEventListener("beforeunload", function () {
+      clearInterval(heartbeat);
+    });
+
+    setTool("ai_guide");
+  })();
+</script>

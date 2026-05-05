@@ -1,0 +1,86 @@
+---
+import AppLayout from "../layouts/AppLayout.astro";
+---
+
+<AppLayout title="Team" active="team">
+  <div id="teamList" class="flex flex-col gap-2">
+    <p class="text-[12px] text-ink-mute py-3 text-center">Lade Team…</p>
+  </div>
+</AppLayout>
+
+<script is:inline>
+  (function () {
+    var listEl = document.getElementById("teamList");
+    var members = {};
+    var presence = {};
+
+    function render() {
+      var ui = window.appUI;
+      var keys = Object.keys(members);
+      if (!keys.length) {
+        listEl.innerHTML =
+          '<p class="text-[12px] text-ink-mute py-3 text-center">Noch keine Mitglieder.</p>';
+        return;
+      }
+      listEl.innerHTML = keys
+        .map(function (uid) {
+          var m = members[uid] || {};
+          var p = presence[uid] || {};
+          var online = p && p.online;
+          var isMe = window.ME && window.ME.uid === uid;
+          var role = isMe ? "owner" : m.role || "member";
+          return (
+            '<div class="bg-card border-[0.5px] border-line rounded-[10px] px-4 py-[14px] flex items-center gap-[14px]">' +
+            '<span class="w-10 h-10 rounded-full text-white text-[13px] font-bold flex items-center justify-center shrink-0 ' +
+            ui.colorFor(uid) +
+            '">' +
+            ui.escapeHtml(ui.initials(m.name || m.email)) +
+            "</span>" +
+            '<div class="flex-1 min-w-0">' +
+            '<div class="text-[13px] font-bold text-ink truncate">' +
+            ui.escapeHtml(m.name || m.email || "Unbekannt") +
+            "</div>" +
+            '<div class="text-[11px] text-ink-mute mt-[1px] truncate">' +
+            ui.escapeHtml(m.email || "") +
+            "</div>" +
+            "</div>" +
+            '<div class="flex items-center gap-1 text-[11px] text-ink-mute whitespace-nowrap">' +
+            '<span class="w-2 h-2 rounded-full ' +
+            (online ? "bg-success" : "bg-line") +
+            '"></span>' +
+            (online ? "Online" : "Offline") +
+            "</div>" +
+            '<span class="ml-3 text-[9px] font-bold px-[9px] py-[3px] rounded-full whitespace-nowrap ' +
+            (role === "owner"
+              ? "bg-[#fde8e8] text-[#A32D2D]"
+              : "bg-[#E6F1FB] text-[#0C447C]") +
+            '">' +
+            (isMe ? "Du" : role === "owner" ? "Owner" : "Member") +
+            "</span>" +
+            "</div>"
+          );
+        })
+        .join("");
+    }
+
+    var renderThrottled = function () {
+      if (renderThrottled._raf) return;
+      renderThrottled._raf = requestAnimationFrame(function () {
+        renderThrottled._raf = null;
+        render();
+      });
+    };
+
+    function start() {
+      window.fb.ref("team").on("value", function (s) {
+        members = s.val() || {};
+        renderThrottled();
+      });
+      window.fb.ref("presence").on("value", function (s) {
+        presence = s.val() || {};
+        renderThrottled();
+      });
+    }
+    window.appUI.onAuth(start);
+  })();
+</script>

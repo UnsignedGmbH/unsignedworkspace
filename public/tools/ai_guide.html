@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Unsigned · Ai Guide</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,700;1,900&family=Dancing+Script:wght@700&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+<script>
+var _ROOM = new URLSearchParams(location.search).get('room');
+var _IS_OWNER = new URLSearchParams(location.search).get('owner') === '1';
+var _IS_CLIENT = !!_ROOM && !_IS_OWNER;
+var _DB = null;
+try {
+  firebase.initializeApp({apiKey:"AIzaSyDJqdh3apGM4fcsjRYI7vZ4VrT1_A6L92U",authDomain:"unsignedworkspace.firebaseapp.com",databaseURL:"https://unsignedworkspace-default-rtdb.europe-west1.firebasedatabase.app",projectId:"unsignedworkspace",storageBucket:"unsignedworkspace.firebasestorage.app",messagingSenderId:"144491079509",appId:"1:144491079509:web:c7dcc1c14b8daf404231dc"});
+  _DB = firebase.database();
+} catch(e) { try { _DB = firebase.database(); } catch(e2) {} }
+</script>
+<style>
+:root {
+  --a: #C13030;
+  --bg: #f4f3f0;
+  --cd: #ffffff;
+  --cd2: #f9f9f9;
+  --bd: rgba(0,0,0,.09);
+  --t: #111111;
+  --td: #555555;
+  --tdd: #aaaaaa;
+  --g: #1D9E75;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Montserrat', sans-serif;
+  background: var(--bg);
+  color: var(--t);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* HEADER */
+.hdr {
+  position: sticky; top: 0; z-index: 100;
+  background: rgba(255,255,255,.95);
+  backdrop-filter: blur(20px);
+  border-bottom: .5px solid var(--bd);
+  padding: 0 24px;
+  display: flex; align-items: center; gap: 16px;
+  height: 56px;
+  box-shadow: 0 1px 0 rgba(0,0,0,.02);
+}
+.hdr-logo { font-size: 15px; font-weight: 900; font-style: italic; color: var(--a); line-height: 1; }
+.hdr-logo span { font-family: 'Dancing Script', cursive; font-size: 13px; color: var(--tdd); font-style: normal; display: block; line-height: 1; margin-top: 2px; }
+.hdr-tabs { display: flex; gap: 4px; margin-left: 24px; }
+.htab {
+  padding: 6px 16px; border-radius: 20px; border: .5px solid transparent;
+  font-family: 'Montserrat', sans-serif; font-size: 11px; font-weight: 700;
+  cursor: pointer; background: none; color: var(--td); transition: all .2s;
+  letter-spacing: .04em;
+}
+.htab:hover { color: var(--t); }
+.htab.on { background: var(--a); border-color: var(--a); color: #fff; }
+.hdr-live { margin-left: auto; display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 700; color: var(--g); }
+.live-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--g); animation: pulse 2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+/* SECTIONS */
+.section { display: none; padding: 32px 24px; max-width: 900px; margin: 0 auto; }
+.section.on { display: block; }
+
+/* GUIDE BLOCKS */
+.guide-block {
+  background: var(--cd); border: .5px solid var(--bd);
+  border-radius: 16px; padding: 28px; margin-bottom: 16px;
+  position: relative;
+}
+.guide-block-num {
+  font-size: 10px; font-weight: 800; letter-spacing: .15em;
+  text-transform: uppercase; color: var(--a); margin-bottom: 8px;
+}
+.guide-block-title {
+  font-size: 18px; font-weight: 900; color: var(--t); margin-bottom: 16px;
+}
+.guide-block-body {
+  font-size: 13px; line-height: 1.8; color: var(--td);
+  outline: none;
+  white-space: pre-wrap;
+}
+.guide-block-body:focus { color: var(--t); }
+.guide-block-body.editable { cursor: text; }
+.guide-block-title.editable { cursor: text; outline: none; }
+.guide-block-title.editable:focus { color: var(--a); }
+.guide-block-body.editable::after {
+  content: ''; display: block; height: 1px;
+  background: var(--a); margin-top: 8px; opacity: 0;
+  transition: opacity .2s;
+}
+.guide-block-body.editable:focus::after { opacity: 1; }
+.edit-hint {
+  position: absolute; top: 12px; right: 12px;
+  font-size: 10px; font-weight: 700; color: var(--tdd);
+  padding: 4px 10px; border-radius: 4px;
+  border: .5px solid var(--bd);
+  background: var(--cd2);
+}
+
+/* MOODBOARD TABS */
+.mb-tabs {
+  display: flex; gap: 8px; margin-bottom: 28px;
+  overflow-x: auto; scrollbar-width: none; padding-bottom: 4px;
+}
+.mb-tabs::-webkit-scrollbar { display: none; }
+.mbtab {
+  flex-shrink: 0; padding: 8px 20px; border-radius: 24px;
+  border: 1px solid var(--bd); background: var(--cd);
+  font-family: 'Montserrat', sans-serif; font-size: 11px;
+  font-weight: 700; color: var(--td); cursor: pointer;
+  transition: all .2s; display: flex; align-items: center; gap: 6px;
+}
+.mbtab:hover { color: var(--t); border-color: rgba(0,0,0,.18); }
+.mbtab.on { background: var(--a); border-color: var(--a); color: #fff; }
+.mbtab .cnt {
+  background: rgba(0,0,0,.06); border-radius: 10px;
+  padding: 1px 7px; font-size: 10px; color: var(--td);
+}
+.mbtab.on .cnt { background: rgba(255,255,255,.25); color: #fff; }
+
+/* UPLOAD AREA */
+.mb-upload-area {
+  border: 1.5px dashed var(--bd); border-radius: 16px;
+  padding: 32px; margin-bottom: 24px;
+  display: flex; align-items: center; justify-content: center;
+  gap: 24px; flex-wrap: wrap;
+  transition: border-color .2s, background .2s; cursor: pointer;
+  background: var(--cd);
+}
+.mb-upload-area:hover, .mb-upload-area.drag { border-color: var(--a); background: rgba(193,48,48,.04); }
+.upload-btn {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--a); color: #fff; border: none; border-radius: 10px;
+  padding: 11px 20px; font-family: 'Montserrat', sans-serif;
+  font-size: 12px; font-weight: 700; cursor: pointer;
+}
+.url-input-wrap { display: flex; gap: 8px; flex: 1; min-width: 240px; }
+.url-input {
+  flex: 1; background: var(--cd2); border: .5px solid var(--bd);
+  border-radius: 10px; padding: 10px 14px;
+  font-family: 'Montserrat', sans-serif; font-size: 12px;
+  color: var(--t); outline: none;
+}
+.url-input::placeholder { color: var(--tdd); }
+.url-input:focus { border-color: rgba(193,48,48,.5); }
+.url-add-btn {
+  background: var(--cd2); border: .5px solid var(--bd);
+  border-radius: 10px; padding: 10px 16px;
+  font-family: 'Montserrat', sans-serif; font-size: 12px;
+  font-weight: 700; color: var(--t); cursor: pointer;
+  white-space: nowrap; transition: all .15s;
+}
+.url-add-btn:hover { border-color: var(--a); color: var(--a); }
+
+/* MASONRY GRID */
+.mb-grid { columns: 3 260px; gap: 12px; }
+.mb-item {
+  break-inside: avoid; margin-bottom: 12px;
+  position: relative; border-radius: 12px; overflow: hidden;
+  background: var(--cd2);
+  cursor: pointer;
+  border: .5px solid var(--bd);
+}
+.mb-item img {
+  width: 100%; display: block;
+  transition: transform .3s; border-radius: 12px;
+}
+.mb-item:hover img { transform: scale(1.03); }
+.mb-item-overlay {
+  position: absolute; inset: 0;
+  background: linear-gradient(180deg, transparent 30%, rgba(0,0,0,.85) 100%);
+  opacity: 0; transition: opacity .2s; border-radius: 12px;
+  display: flex; align-items: flex-end; padding: 10px;
+  pointer-events: none;
+}
+.mb-item:hover .mb-item-overlay { opacity: 1; }
+.mb-item-note {
+  flex: 1; font-size: 11px; color: rgba(255,255,255,.95);
+  outline: none; background: none; border: none;
+  font-family: 'Montserrat', sans-serif; font-weight: 600;
+  cursor: text; pointer-events: all;
+}
+.mb-item-note::placeholder { color: rgba(255,255,255,.5); }
+.mb-item-del {
+  background: rgba(193,48,48,.85); border: none; border-radius: 6px;
+  width: 30px; height: 30px; display: flex; align-items: center;
+  justify-content: center; cursor: pointer; color: #fff;
+  font-size: 15px; flex-shrink: 0; margin-left: 8px;
+  transition: background .15s; pointer-events: all;
+}
+.mb-item-del:hover { background: var(--a); }
+
+/* LIGHTBOX */
+.lb {
+  display: none; position: fixed; inset: 0; z-index: 9999;
+  background: rgba(20,20,20,.92); backdrop-filter: blur(16px);
+  align-items: center; justify-content: center; flex-direction: column;
+  padding: 50px 12px 16px;
+}
+.lb.open { display: flex; }
+.lb-img-wrap {
+  flex: 1; display: flex; align-items: center; justify-content: center;
+  max-width: 100%; overflow: visible; position: relative;
+}
+.lb-img-wrap img {
+  max-width: 94vw; max-height: 82vh;
+  border-radius: 10px; object-fit: contain;
+  cursor: zoom-in; transition: transform .35s cubic-bezier(.4,0,.2,1);
+  box-shadow: 0 20px 80px rgba(0,0,0,.6);
+  user-select: none;
+}
+.lb-img-wrap img.zoomed {
+  max-width: none; max-height: none;
+  width: 94vw; transform: scale(2.2);
+  cursor: zoom-out;
+}
+.lb-bottom {
+  display: flex; align-items: center; gap: 10px;
+  margin-top: 16px; flex-wrap: wrap; justify-content: center;
+  max-width: 700px; width: 100%;
+}
+.lb-note {
+  flex: 1; min-width: 200px; font-size: 12px;
+  outline: none; background: rgba(255,255,255,.1); border: .5px solid rgba(255,255,255,.2);
+  border-radius: 8px; padding: 8px 14px; width: 100%; color: #fff;
+  font-family: 'Montserrat', sans-serif;
+}
+.lb-note::placeholder { color: rgba(255,255,255,.4); }
+.lb-action-btn {
+  background: rgba(255,255,255,.1); border: .5px solid rgba(255,255,255,.2);
+  border-radius: 8px; padding: 8px 14px; color: rgba(255,255,255,.9);
+  cursor: pointer; font-family: 'Montserrat', sans-serif; font-size: 11px;
+  font-weight: 700; white-space: nowrap; text-decoration: none;
+  display: flex; align-items: center; gap: 5px; transition: all .15s;
+}
+.lb-action-btn:hover { background: rgba(255,255,255,.2); color: #fff; }
+.lb-close {
+  position: fixed; top: 16px; right: 20px; background: rgba(255,255,255,.1);
+  border: .5px solid rgba(255,255,255,.2); border-radius: 8px;
+  color: #fff; font-size: 18px; cursor: pointer;
+  width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;
+  transition: all .15s;
+}
+.lb-close:hover { background: rgba(255,255,255,.2); }
+.lb-nav-row {
+  position: fixed; top: 50%; left: 0; right: 0;
+  display: flex; justify-content: space-between; padding: 0 16px;
+  pointer-events: none; transform: translateY(-50%);
+}
+.lb-nav-btn {
+  pointer-events: all;
+  background: rgba(0,0,0,.5); border: .5px solid rgba(255,255,255,.2);
+  border-radius: 50%; width: 44px; height: 44px; color: #fff; cursor: pointer;
+  font-size: 18px; display: flex; align-items: center; justify-content: center;
+  transition: all .15s; backdrop-filter: blur(8px);
+}
+.lb-nav-btn:hover { background: rgba(255,255,255,.2); }
+
+/* EMPTY STATE */
+.mb-empty {
+  text-align: center; padding: 60px 24px; color: var(--tdd);
+}
+.mb-empty-icon { font-size: 48px; margin-bottom: 16px; opacity: .4; }
+.mb-empty-text { font-size: 13px; font-weight: 600; }
+
+/* TOAST */
+#toast {
+  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+  background: #111; border: .5px solid rgba(0,0,0,.1);
+  color: #fff; padding: 10px 20px; border-radius: 10px;
+  font-size: 12px; font-weight: 700; z-index: 99999;
+  opacity: 0; transition: opacity .3s; pointer-events: none;
+  white-space: nowrap;
+}
+#toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div class="hdr-logo">Ai Guide <span>Unsigned</span></div>
+  <div class="hdr-tabs">
+    <button class="htab on" onclick="switchTab('how')">Wie es funktioniert</button>
+    <button class="htab" onclick="switchTab('plan')">Planung</button>
+    <button class="htab" onclick="switchTab('mood')">Moodboard</button>
+  </div>
+  <div class="hdr-live" id="liveStatus" style="display:none;">
+    <div class="live-dot"></div>Live
+  </div>
+</div>
+
+<div class="section on" id="sec-how">
+
+  <div class="guide-block">
+    <div class="guide-block-num">01 — Freepik</div>
+    <div class="guide-block-title editable" id="text-t-freepik" contenteditable="false" spellcheck="false">Was ist Freepik AI?</div>
+    <div class="guide-block-body editable" id="text-freepik" contenteditable="false" spellcheck="false">Freepik ist die KI-Plattform die wir für hochwertige Shooting-Referenzen und Konzepte nutzen. Mit den richtigen Prompts kannst du in Minuten professionelle Moodboards und Shooting-Konzepte erstellen — ohne teuren Fotografen für die Planung.</div>
+    <div class="edit-hint" id="hint-freepik" style="display:none;">✎ Bearbeiten</div>
+  </div>
+
+  <div class="guide-block">
+    <div class="guide-block-num">02 — Prompts</div>
+    <div class="guide-block-title editable" id="text-t-prompts" contenteditable="false" spellcheck="false">Die richtigen Prompts</div>
+    <div class="guide-block-body editable" id="text-prompts" contenteditable="false" spellcheck="false">Ein guter Prompt beschreibt: Stil, Lighting, Setting, Kleidung und Stimmung. Beispiel: "Editorial fashion photography, streetwear brand, golden hour lighting, urban setting Berlin, clean aesthetic, minimalist composition, high contrast". Je präziser dein Prompt, desto besser das Ergebnis.</div>
+    <div class="edit-hint" id="hint-prompts" style="display:none;">✎ Bearbeiten</div>
+  </div>
+
+  <div class="guide-block">
+    <div class="guide-block-num">03 — Umsetzung</div>
+    <div class="guide-block-title editable" id="text-t-umsetzung" contenteditable="false" spellcheck="false">Von der KI zum echten Shooting</div>
+    <div class="guide-block-body editable" id="text-umsetzung" contenteditable="false" spellcheck="false">Die KI-Bilder sind dein Briefing für den Fotografen. Exportiere die besten Ergebnisse, zeig sie deinem Team und nutze sie als Referenz am Shooting-Tag. Das spart Zeit, reduziert Missverständnisse und sorgt für ein konsistentes Ergebnis.</div>
+    <div class="edit-hint" id="hint-umsetzung" style="display:none;">✎ Bearbeiten</div>
+  </div>
+
+</div>
+
+<div class="section" id="sec-plan">
+
+  <div class="guide-block">
+    <div class="guide-block-num">01 — Social Media</div>
+    <div class="guide-block-title editable" id="text-t-social" contenteditable="false" spellcheck="false">Social Media Planung</div>
+    <div class="guide-block-body editable" id="text-social" contenteditable="false" spellcheck="false">Plane deine Content-Kategorien: Outfits, Behind the Scenes, Product Shots, Model Content. Nutze Freepik um für jede Kategorie einen konsistenten Look zu definieren bevor das Shooting startet. So weißt du genau welche Shots du brauchst.</div>
+    <div class="edit-hint" id="hint-social" style="display:none;">✎ Bearbeiten</div>
+  </div>
+
+  <div class="guide-block">
+    <div class="guide-block-num">02 — Creatives</div>
+    <div class="guide-block-title editable" id="text-t-creatives" contenteditable="false" spellcheck="false">Creatives & Ads</div>
+    <div class="guide-block-body editable" id="text-creatives" contenteditable="false" spellcheck="false">Für Ads brauchst du spezifische Formate: Hook-Shot (ersten 2 Sekunden entscheidend), Produkt-Close-Up, und einen CTA-Shot. Generiere mit Freepik Varianten für verschiedene Ad-Stile und teste welcher am besten zu deiner Brand passt.</div>
+    <div class="edit-hint" id="hint-creatives" style="display:none;">✎ Bearbeiten</div>
+  </div>
+
+  <div class="guide-block">
+    <div class="guide-block-num">03 — Shop</div>
+    <div class="guide-block-title editable" id="text-t-shop" contenteditable="false" spellcheck="false">Shop & Produktbilder</div>
+    <div class="guide-block-body editable" id="text-shop" contenteditable="false" spellcheck="false">Für den Shop brauchst du: saubere Produktfotos auf weißem/neutralem Hintergrund, Laydown-Shots und mindestens einen Model-Shot pro Piece. Plane diese Shots separat — sie haben andere Anforderungen als Content-Shots.</div>
+    <div class="edit-hint" id="hint-shop" style="display:none;">✎ Bearbeiten</div>
+  </div>
+
+  <div class="guide-block">
+    <div class="guide-block-num">04 — Kollektionen</div>
+    <div class="guide-block-title editable" id="text-t-kollektionen" contenteditable="false" spellcheck="false">Kollektions-Konzept</div>
+    <div class="guide-block-body editable" id="text-kollektionen" contenteditable="false" spellcheck="false">Jede Kollektion braucht ein übergreifendes visuelles Konzept. Definiere Farben, Mood, Setting und Styling-Richtung für die gesamte Kollektion — nicht nur für einzelne Pieces. Das Moodboard im nächsten Tab hilft dir dabei.</div>
+    <div class="edit-hint" id="hint-kollektionen" style="display:none;">✎ Bearbeiten</div>
+  </div>
+
+</div>
+
+<div class="section" id="sec-mood">
+
+  <div class="mb-tabs">
+    <button class="mbtab on" onclick="switchMbTab('vibe')">🌀 Generell Vibe <span class="cnt" id="cnt-vibe">0</span></button>
+    <button class="mbtab" onclick="switchMbTab('look')">👁 Look <span class="cnt" id="cnt-look">0</span></button>
+    <button class="mbtab" onclick="switchMbTab('details')">✦ Details <span class="cnt" id="cnt-details">0</span></button>
+    <button class="mbtab" onclick="switchMbTab('clothes')">👕 Clothes <span class="cnt" id="cnt-clothes">0</span></button>
+    <button class="mbtab" onclick="switchMbTab('shooting')">📸 Shooting <span class="cnt" id="cnt-shooting">0</span></button>
+  </div>
+
+  <div class="mb-upload-area" id="uploadArea">
+    <label class="upload-btn">
+      <input type="file" id="fileInput" accept="image/*" multiple style="display:none">
+      ↑ Hochladen
+    </label>
+    <div style="color:var(--td);font-size:12px;font-weight:600;text-align:center;flex:1;">
+      <div style="margin-bottom:6px;">📌 <strong style="color:var(--t);">Pinterest:</strong> Bild einfach per Drag & Drop hierher ziehen</div>
+      <div class="url-input-wrap">
+        <input class="url-input" id="urlInput" placeholder="Bild-URL hier einfügen (pinimg.com, Instagram, etc.)..." type="text">
+        <button class="url-add-btn" onclick="addFromUrl()">+ Add</button>
+      </div>
+    </div>
+    <div style="font-size:11px;color:var(--td);font-weight:600;">oder Bild hierher ziehen</div>
+  </div>
+  <div style="font-size:11px;color:var(--td);font-weight:600;margin:-16px 0 20px;text-align:center;">
+    💡 Tipp: Strg+V / Cmd+V zum Einfügen von kopierten Bildern
+  </div>
+
+  <div class="mb-grid" id="mbGrid"></div>
+
+</div>
+
+<div class="lb" id="lb">
+  <button class="lb-close" onclick="closeLb()">✕</button>
+  <div class="lb-img-wrap">
+    <img id="lbImg" src="">
+  </div>
+  <div class="lb-bottom">
+    <input class="lb-note" id="lbNote" placeholder="Notiz hinzufügen..." type="text">
+    <a class="lb-action-btn" id="lbOpenUrl" href="#" target="_blank" rel="noopener" style="display:none;">
+      🔗 Original öffnen
+    </a>
+  </div>
+  <div class="lb-nav-row">
+    <button class="lb-nav-btn" onclick="lbNav(-1)">‹</button>
+    <button class="lb-nav-btn" onclick="lbNav(1)">›</button>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+var curTab = 'how';
+var curMbTab = 'vibe';
+var lbCurIdx = -1;
+var mbImages = { vibe:[], look:[], details:[], clothes:[], shooting:[] };
+var saveTO = null;
+
+function switchTab(t){
+  curTab = t;
+  document.querySelectorAll('.htab').forEach(function(b,i){
+    b.classList.toggle('on', ['how','plan','mood'][i]===t);
+  });
+  document.querySelectorAll('.section').forEach(function(s){s.classList.remove('on');});
+  document.getElementById('sec-'+t).classList.add('on');
+  if(t==='mood') renderGrid();
+}
+
+function switchMbTab(t){
+  curMbTab = t;
+  document.querySelectorAll('.mbtab').forEach(function(b,i){
+    b.classList.toggle('on', ['vibe','look','details','clothes','shooting'][i]===t);
+  });
+  renderGrid();
+}
+
+var textIds = ['freepik','prompts','umsetzung','social','creatives','shop','kollektionen','t-freepik','t-prompts','t-umsetzung','t-social','t-creatives','t-shop','t-kollektionen'];
+
+function initTextEditing(){
+  if(_IS_CLIENT) return;
+  textIds.forEach(function(id){
+    var el = document.getElementById('text-'+id);
+    var hint = document.getElementById('hint-'+id);
+    if(!el) return;
+    if(hint) hint.style.display = 'block';
+    el.contentEditable = 'true';
+    el.addEventListener('focus', function(){ el.style.background = 'rgba(193,48,48,.04)'; });
+    el.addEventListener('blur', function(){
+      el.style.background = '';
+      saveTextToFirebase(id, el.innerText.trim());
+    });
+  });
+}
+
+function saveTextToFirebase(id, text){
+  if(!_DB || !_ROOM) return;
+  var _u = {}; _u[id] = text;
+  _DB.ref('rooms/'+_ROOM+'/ai_guide/texts').update(_u);
+}
+
+function loadTextsFromFirebase(){
+  if(!_DB || !_ROOM) return;
+  _DB.ref('rooms/'+_ROOM+'/ai_guide/texts').on('value', function(snap){
+    var d = snap.val() || {};
+    textIds.forEach(function(id){
+      var el = document.getElementById('text-'+id);
+      if(el && d[id] && document.activeElement !== el) el.innerText = d[id];
+    });
+  });
+}
+
+function compress(file, cb, maxW){
+  maxW = maxW || 2400;
+  var r = new FileReader();
+  r.onload = function(e){
+    var img = new Image();
+    img.onload = function(){
+      var w = img.width, h = img.height;
+      if(w > maxW){ h = Math.round(h * maxW/w); w = maxW; }
+      var c = document.createElement('canvas');
+      c.width = w; c.height = h;
+      c.getContext('2d').drawImage(img,0,0,w,h);
+      cb(c.toDataURL('image/jpeg', 0.95));
+    };
+    img.src = e.target.result;
+  };
+  r.readAsDataURL(file);
+}
+
+document.getElementById('fileInput').addEventListener('change', function(e){
+  Array.from(e.target.files).forEach(function(file){
+    compress(file, function(src){ addImage(src, ''); });
+  });
+  e.target.value = '';
+});
+
+function extractImgUrl(dt) {
+  var files = Array.from(dt.files || []);
+  for(var i=0;i<files.length;i++){
+    if(files[i].type.startsWith('image/')) return {file: files[i]};
+  }
+  var htmlData = dt.getData('text/html');
+  if(htmlData) {
+    var m = htmlData.match(/src=["']([^"']+pinimg\.com[^"']+)["']/i)
+           || htmlData.match(/src=["'](https?:\/\/[^"']+\.(jpg|jpeg|png|webp)[^"']*)["']/i);
+    if(m) return {url: m[1]};
+  }
+  var uriList = dt.getData('text/uri-list');
+  if(uriList) {
+    var urls = uriList.split('\n').map(function(u){return u.trim();}).filter(function(u){return u && !u.startsWith('#');});
+    if(urls.length) return {url: urls[0]};
+  }
+  var plain = dt.getData('text/plain');
+  if(plain && plain.trim().startsWith('http')) return {url: plain.trim()};
+  return null;
+}
+
+var ua = document.getElementById('uploadArea');
+var mbSection = document.getElementById('sec-mood');
+
+[ua, mbSection].forEach(function(zone){
+  zone.addEventListener('dragover', function(e){
+    e.preventDefault(); e.stopPropagation();
+    ua.classList.add('drag');
+  });
+  zone.addEventListener('dragleave', function(e){
+    if(!zone.contains(e.relatedTarget)) ua.classList.remove('drag');
+  });
+  zone.addEventListener('drop', function(e){
+    e.preventDefault(); e.stopPropagation();
+    ua.classList.remove('drag');
+    var result = extractImgUrl(e.dataTransfer);
+    if(!result){ toast('❌ Kein Bild erkannt — versuche es mit Upload'); return; }
+    if(result.file){
+      compress(result.file, function(src){ addImage(src, ''); });
+    } else if(result.url){
+      addImageFromUrl(result.url);
+    }
+  });
+});
+
+document.getElementById('urlInput').addEventListener('keydown', function(e){
+  if(e.key === 'Enter') addFromUrl();
+});
+
+function addFromUrl(){
+  var url = document.getElementById('urlInput').value.trim();
+  if(!url) return;
+  addImageFromUrl(url);
+  document.getElementById('urlInput').value = '';
+}
+
+function addImageFromUrl(url){
+  if(!url){ toast('Keine URL erkannt'); return; }
+  url = url.trim();
+  if(!url.startsWith('http')){ toast('Bitte eine Bild-URL eingeben (http...)'); return; }
+  if(url.includes('pinimg.com')){
+    var sizes = ['originals','1200x','736x','564x'];
+    var variants = [];
+    sizes.forEach(function(s){
+      variants.push(url.replace(/\/(\d+x|originals)\//, '/'+s+'/'));
+    });
+    variants.push(url);
+    var seen = {};
+    variants = variants.filter(function(v){ if(seen[v]) return false; seen[v]=1; return true; });
+    (function tryNext(i){
+      if(i >= variants.length){ addImage(url, '', url); return; }
+      var test = new Image();
+      test.onload = function(){ addImage(variants[i], '', url); };
+      test.onerror = function(){ tryNext(i+1); };
+      test.src = variants[i];
+    })(0);
+  } else {
+    addImage(url, '', url);
+  }
+}
+
+function addImage(src, note, originalUrl){
+  var img = { id: Date.now().toString(36) + Math.random().toString(36).slice(2,5), src: src, note: note || '', cat: curMbTab, ts: Date.now(), url: originalUrl||'' };
+  if(!mbImages[curMbTab]) mbImages[curMbTab] = [];
+  mbImages[curMbTab].push(img);
+  renderGrid();
+  saveImagesToFirebase();
+  toast('Bild hinzugefügt ✓');
+}
+
+function renderGrid(){
+  var grid = document.getElementById('mbGrid');
+  var imgs = mbImages[curMbTab] || [];
+  var cats = ['vibe','look','details','clothes','shooting'];
+  cats.forEach(function(c){
+    var el = document.getElementById('cnt-'+c);
+    if(el) el.textContent = (mbImages[c]||[]).length;
+  });
+  if(!imgs.length){
+    grid.innerHTML = '<div class="mb-empty"><div class="mb-empty-icon">🖼</div><div class="mb-empty-text">Noch keine Bilder in dieser Kategorie.<br>Lade Bilder hoch oder füge einen Pinterest-Link ein.</div></div>';
+    return;
+  }
+  grid.innerHTML = '';
+  imgs.forEach(function(img, idx){
+    var item = document.createElement('div');
+    item.className = 'mb-item';
+    item.dataset.id = img.id;
+    var imgEl = document.createElement('img');
+    imgEl.src = img.src;
+    imgEl.alt = img.note || '';
+    imgEl.loading = 'lazy';
+    item.style.cursor = 'pointer';
+    item.addEventListener('click', function(e){
+      if(e.target.classList.contains('mb-item-note')) return;
+      if(e.target.classList.contains('mb-item-del')) return;
+      openLb(idx);
+    });
+    var overlay = document.createElement('div');
+    overlay.className = 'mb-item-overlay';
+    var noteEl = document.createElement('input');
+    noteEl.className = 'mb-item-note';
+    noteEl.placeholder = 'Notiz...';
+    noteEl.value = img.note || '';
+    noteEl.type = 'text';
+    noteEl.addEventListener('click', function(e){ e.stopPropagation(); });
+    noteEl.addEventListener('change', function(){
+      img.note = noteEl.value;
+      saveImagesToFirebase();
+    });
+    var delBtn = document.createElement('button');
+    delBtn.className = 'mb-item-del';
+    delBtn.innerHTML = '✕';
+    delBtn.onclick = function(e){
+      e.stopPropagation();
+      mbImages[curMbTab] = mbImages[curMbTab].filter(function(x){ return x.id !== img.id; });
+      renderGrid();
+      saveImagesToFirebase();
+      toast('Bild entfernt');
+    };
+    overlay.appendChild(noteEl);
+    overlay.appendChild(delBtn);
+    item.appendChild(imgEl);
+    item.appendChild(overlay);
+    grid.appendChild(item);
+  });
+}
+
+document.getElementById('lbImg').addEventListener('click', function(){
+  this.classList.toggle('zoomed');
+});
+
+function openLb(idx){
+  lbCurIdx = idx;
+  var imgs = mbImages[curMbTab] || [];
+  var img = imgs[idx];
+  if(!img) return;
+  var lbImgEl = document.getElementById('lbImg');
+  lbImgEl.src = img.src;
+  lbImgEl.classList.remove('zoomed');
+  document.getElementById('lbNote').value = img.note || '';
+  var urlBtn = document.getElementById('lbOpenUrl');
+  var srcUrl = img.url || '';
+  if(!srcUrl && img.src && img.src.startsWith('http') && !img.src.startsWith('data:')) srcUrl = img.src;
+  if(srcUrl) {
+    urlBtn.href = srcUrl;
+    urlBtn.style.display = 'flex';
+    urlBtn.onclick = function(e) { e.preventDefault(); window.open(srcUrl, '_blank', 'noopener'); };
+  } else {
+    urlBtn.style.display = 'none';
+  }
+  document.getElementById('lb').classList.add('open');
+}
+
+document.getElementById('lbNote').addEventListener('change', function(){
+  var imgs = mbImages[curMbTab] || [];
+  if(imgs[lbCurIdx]) {
+    imgs[lbCurIdx].note = this.value;
+    saveImagesToFirebase();
+    renderGrid();
+  }
+});
+
+function closeLb(){
+  document.getElementById('lb').classList.remove('open');
+  document.getElementById('lbImg').classList.remove('zoomed');
+  lbCurIdx = -1;
+}
+
+function lbNav(dir){
+  var imgs = mbImages[curMbTab] || [];
+  lbCurIdx = (lbCurIdx + dir + imgs.length) % imgs.length;
+  openLb(lbCurIdx);
+}
+
+document.getElementById('lb').addEventListener('click', function(e){
+  if(e.target === this) closeLb();
+});
+document.addEventListener('keydown', function(e){
+  if(e.key === 'Escape') closeLb();
+  if(document.getElementById('lb').classList.contains('open')){
+    if(e.key === 'ArrowRight') lbNav(1);
+    if(e.key === 'ArrowLeft') lbNav(-1);
+  }
+});
+
+document.addEventListener('paste', function(e){
+  if(curTab !== 'mood') return;
+  var items = e.clipboardData.items;
+  for(var i=0; i<items.length; i++){
+    if(items[i].type.startsWith('image/')){
+      var file = items[i].getAsFile();
+      if(file) compress(file, function(src){ addImage(src, ''); });
+      return;
+    }
+    if(items[i].type === 'text/plain'){
+      items[i].getAsString(function(text){
+        text = text.trim();
+        if(text.startsWith('http')) addImageFromUrl(text);
+      });
+    }
+  }
+});
+
+function saveImagesToFirebase(){
+  if(!_DB || !_ROOM) return;
+  clearTimeout(saveTO);
+  saveTO = setTimeout(function(){
+    var data = {};
+    Object.keys(mbImages).forEach(function(cat){
+      data[cat] = (mbImages[cat]||[]).map(function(img){
+        return { id:img.id, src:img.src, note:img.note||'', url:img.url||'', ts:img.ts||Date.now() };
+      });
+    });
+    _DB.ref('rooms/'+_ROOM+'/ai_guide/moodboard').set(data);
+    var total = Object.values(mbImages).reduce(function(s,a){return s+a.length;},0);
+    try { window.parent.postMessage({type:'agPct', pct: Math.min(100, total*5)}, '*'); } catch(e){}
+  }, 400);
+}
+
+function loadMoodboardFromFirebase(){
+  if(!_DB || !_ROOM) return;
+  _DB.ref('rooms/'+_ROOM+'/ai_guide/moodboard').on('value', function(snap){
+    var d = snap.val();
+    if(!d) return;
+    var cats = ['vibe','look','details','clothes','shooting'];
+    cats.forEach(function(cat){
+      mbImages[cat] = (d[cat]||[]).map(function(x){ return {id:x.id,src:x.src,note:x.note||'',url:x.url||'',ts:x.ts||0}; });
+    });
+    renderGrid();
+    document.getElementById('liveStatus').style.display = 'flex';
+  });
+}
+
+function toast(msg){
+  var el = document.getElementById('toast');
+  el.textContent = msg; el.classList.add('show');
+  setTimeout(function(){ el.classList.remove('show'); }, 2000);
+}
+
+initTextEditing();
+loadTextsFromFirebase();
+loadMoodboardFromFirebase();
+if(_ROOM) document.getElementById('liveStatus').style.display = 'flex';
+</script>
+</body>
+</html>

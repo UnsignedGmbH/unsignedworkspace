@@ -1,0 +1,210 @@
+---
+import AppLayout from "../layouts/AppLayout.astro";
+
+const accentColors = [
+  { hex: "#C13030", id: "red" },
+  { hex: "#1D9E75", id: "green" },
+  { hex: "#185FA5", id: "blue" },
+  { hex: "#9A2424", id: "wine" },
+  { hex: "#D67A1A", id: "orange" },
+  { hex: "#5E2A8A", id: "purple" },
+];
+
+const notifications = [
+  { key: "activity", label: "Neue Kunden-Aktivität", default: true },
+  { key: "weekly", label: "Wöchentliches Briefing per Mail", default: false },
+  { key: "mentions", label: "Team-Erwähnungen", default: true },
+];
+---
+
+<AppLayout title="Einstellungen" active="settings">
+  <div class="space-y-6 max-w-[640px]">
+    <section>
+      <h3 class="text-[12px] font-bold text-ink mb-[10px]">Profil</h3>
+      <div class="bg-card border-[0.5px] border-line rounded-[9px] px-4 py-3 flex items-center gap-3">
+        <div class="flex-1">
+          <div class="text-[13px] font-semibold text-ink">E-Mail</div>
+          <div id="settingsEmail" class="text-[11px] text-ink-mute mt-[1px]">
+            …
+          </div>
+        </div>
+      </div>
+      <div class="bg-card border-[0.5px] border-line rounded-[9px] px-4 py-3 mt-[6px] flex items-center gap-3">
+        <div class="flex-1">
+          <div class="text-[13px] font-semibold text-ink">Anzeigename</div>
+          <div id="settingsName" class="text-[11px] text-ink-mute mt-[1px]">
+            …
+          </div>
+        </div>
+        <button
+          id="renameBtn"
+          type="button"
+          class="text-[11px] font-bold text-brand bg-transparent border-0 cursor-pointer"
+          >Ändern</button
+        >
+      </div>
+    </section>
+
+    <section>
+      <h3 class="text-[12px] font-bold text-ink mb-[10px]">Erscheinungsbild</h3>
+      <div class="bg-card border-[0.5px] border-line rounded-[9px] px-4 py-3">
+        <div class="text-[13px] font-semibold text-ink">Akzentfarbe</div>
+        <div class="text-[11px] text-ink-mute mt-[1px]">
+          Wirkt nur lokal in deinem Browser.
+        </div>
+        <div id="accentRow" class="flex gap-[9px] flex-wrap mt-2">
+          {
+            accentColors.map((c) => (
+              <button
+                type="button"
+                data-accent={c.hex}
+                aria-label={`Akzentfarbe ${c.id}`}
+                class="accent-sw w-[30px] h-[30px] rounded-full cursor-pointer border-[3px] border-transparent"
+                style={`background:${c.hex}`}
+              />
+            ))
+          }
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h3 class="text-[12px] font-bold text-ink mb-[10px]">Benachrichtigungen</h3>
+      {
+        notifications.map((row) => (
+          <div class="bg-card border-[0.5px] border-line rounded-[9px] px-4 py-3 mb-[6px] flex items-center gap-3">
+            <div class="flex-1 text-[13px] font-semibold text-ink">
+              {row.label}
+            </div>
+            <button
+              type="button"
+              data-toggle={row.key}
+              data-default={String(row.default)}
+              class="toggle w-[38px] h-[22px] rounded-full p-[3px] cursor-pointer flex items-center shrink-0 bg-[#ddd] justify-start"
+            >
+              <span class="w-4 h-4 rounded-full bg-white block" />
+            </button>
+          </div>
+        ))
+      }
+    </section>
+
+    <section>
+      <h3 class="text-[12px] font-bold text-ink mb-[10px]">Konto</h3>
+      <div class="bg-card border-[0.5px] border-line rounded-[9px] px-4 py-3 flex items-center gap-3">
+        <div class="flex-1">
+          <div class="text-[13px] font-semibold text-ink">Abmelden</div>
+          <div class="text-[11px] text-ink-mute mt-[1px]">
+            Du wirst auf den Login-Bildschirm zurückgeleitet.
+          </div>
+        </div>
+        <button
+          id="logoutBtn"
+          type="button"
+          class="text-[11px] font-bold text-[#A32D2D] cursor-pointer bg-transparent border-0"
+          >Abmelden</button
+        >
+      </div>
+    </section>
+  </div>
+</AppLayout>
+
+<script is:inline>
+  (function () {
+    var ACCENT_KEY = "uw.accent";
+    var NOTIF_KEY = "uw.notif";
+
+    function applyAccent(hex) {
+      document.documentElement.style.setProperty("--color-brand", hex);
+      document.querySelectorAll(".accent-sw").forEach(function (b) {
+        b.classList.toggle("border-ink", b.dataset.accent === hex);
+      });
+    }
+    function loadAccent() {
+      var hex = localStorage.getItem(ACCENT_KEY) || "#C13030";
+      applyAccent(hex);
+    }
+    function loadNotif() {
+      var raw = localStorage.getItem(NOTIF_KEY);
+      var saved = {};
+      try { saved = raw ? JSON.parse(raw) : {}; } catch (e) {}
+      document.querySelectorAll(".toggle").forEach(function (t) {
+        var key = t.dataset.toggle;
+        var on = key in saved ? saved[key] : t.dataset.default === "true";
+        t.dataset.on = String(on);
+        t.classList.toggle("bg-brand", on);
+        t.classList.toggle("bg-[#ddd]", !on);
+        t.classList.toggle("justify-end", on);
+        t.classList.toggle("justify-start", !on);
+      });
+    }
+    function saveNotif() {
+      var out = {};
+      document.querySelectorAll(".toggle").forEach(function (t) {
+        out[t.dataset.toggle] = t.dataset.on === "true";
+      });
+      localStorage.setItem(NOTIF_KEY, JSON.stringify(out));
+    }
+
+    document.querySelectorAll(".accent-sw").forEach(function (b) {
+      b.addEventListener("click", function () {
+        var hex = b.dataset.accent;
+        localStorage.setItem(ACCENT_KEY, hex);
+        applyAccent(hex);
+        window.appUI && window.appUI.toast("Akzentfarbe gespeichert");
+      });
+    });
+    document.querySelectorAll(".toggle").forEach(function (t) {
+      t.addEventListener("click", function () {
+        var on = t.dataset.on === "true";
+        t.dataset.on = String(!on);
+        t.classList.toggle("bg-brand", !on);
+        t.classList.toggle("bg-[#ddd]", on);
+        t.classList.toggle("justify-end", !on);
+        t.classList.toggle("justify-start", on);
+        saveNotif();
+      });
+    });
+    loadAccent();
+    loadNotif();
+
+    function syncProfile(me) {
+      var emailEl = document.getElementById("settingsEmail");
+      var nameEl = document.getElementById("settingsName");
+      if (emailEl && me && me.email) emailEl.textContent = me.email;
+      if (!nameEl || !me) return;
+      window.fb
+        .ref("team/" + me.uid + "/name")
+        .once("value")
+        .then(function (s) {
+          nameEl.textContent = s.val() || me.name || "—";
+        });
+    }
+    window.appUI.onAuth(syncProfile);
+
+    document.getElementById("renameBtn").addEventListener("click", function () {
+      var nameEl = document.getElementById("settingsName");
+      window.appUI
+        .prompt({
+          title: "Anzeigename ändern",
+          value: nameEl.textContent || "",
+          placeholder: "Vorname Nachname",
+          okLabel: "Speichern",
+        })
+        .then(function (val) {
+          if (!val || !val.trim() || !window.ME) return;
+          window.fb
+            .ref("team/" + window.ME.uid + "/name")
+            .set(val.trim())
+            .then(function () {
+              nameEl.textContent = val.trim();
+              window.appUI.toast("Name gespeichert");
+            });
+        });
+    });
+
+    document.getElementById("logoutBtn").addEventListener("click", function () {
+      window.appUI.logout();
+    });
+  })();
+</script>

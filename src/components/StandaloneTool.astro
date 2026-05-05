@@ -1,0 +1,54 @@
+---
+import AppLayout from "../layouts/AppLayout.astro";
+
+interface Props {
+  title: string;
+  active: string;
+  tool: "bi" | "sh" | "cr" | "design" | "ai_guide";
+}
+
+const { title, active, tool } = Astro.props;
+---
+
+<AppLayout title={title} active={active}>
+  <div class="flex items-center gap-3 mb-3 flex-wrap">
+    <span
+      class="text-[10px] font-bold tracking-[0.12em] uppercase text-ink-mute"
+    >
+      Persönliche Sandbox
+    </span>
+    <span
+      id="standaloneRoom"
+      class="text-[11px] font-bold text-ink-soft bg-card border-[0.5px] border-line rounded-full px-3 py-1"
+    >
+      Raum lädt…
+    </span>
+    <p class="text-[11px] text-ink-mute">
+      Daten sind nur für dich sichtbar. Für Kunden-Arbeit lieber einen Kunden anlegen.
+    </p>
+  </div>
+
+  <div
+    class="bg-card border-[0.5px] border-line rounded-xl overflow-hidden h-[calc(100vh-150px)]"
+  >
+    <iframe
+      id="standaloneFrame"
+      src="about:blank"
+      title={title}
+      class="w-full h-full block border-0"
+      loading="lazy"></iframe>
+  </div>
+</AppLayout>
+
+<script is:inline define:vars={{ tool }}>
+  (function () {
+    window.appUI.onAuth(function (me) {
+      var uid = (me && me.uid) || "GUEST-" + Date.now();
+      var room = "PERSONAL-" + uid;
+      document.getElementById("standaloneFrame").src =
+        "/tools/" + tool + ".html?room=" +
+        encodeURIComponent(room) + "&owner=1";
+      document.getElementById("standaloneRoom").textContent = "Raum " + room;
+    });
+  })();
+</script>

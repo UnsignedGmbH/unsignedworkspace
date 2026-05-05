@@ -1,0 +1,144 @@
+---
+import AppLayout from "../layouts/AppLayout.astro";
+
+const quickAccess = [
+  { href: "/customers", label: "Alle Kunden", icon: "👥" },
+  { href: "/customers?new=1", label: "Neuer Kunde", icon: "➕" },
+  { href: "/ai-guide", label: "Ai Guide", icon: "🤖" },
+  { href: "/brand-identity", label: "Brand Identity", icon: "🪪" },
+  { href: "/shooting", label: "Shooting Check", icon: "📸" },
+  { href: "/creator", label: "Creator Guide", icon: "📋" },
+  { href: "/design", label: "Design", icon: "🎨" },
+  { href: "/settings", label: "Einstellungen", icon: "⚙️" },
+];
+---
+
+<AppLayout title="Dashboard" active="dashboard">
+  <section class="grid grid-cols-2 md:grid-cols-4 gap-[10px] mb-5">
+    <div
+      class="bg-card border-[0.5px] border-line rounded-[10px] px-4 py-[14px]"
+    >
+      <div id="statActive" class="text-[24px] font-extrabold text-ink">—</div>
+      <div class="text-[11px] text-ink-mute mt-[2px]">Aktive Kunden</div>
+    </div>
+    <div
+      class="bg-card border-[0.5px] border-line rounded-[10px] px-4 py-[14px]"
+    >
+      <div id="statArchived" class="text-[24px] font-extrabold text-ink">—</div>
+      <div class="text-[11px] text-ink-mute mt-[2px]">Archiviert</div>
+    </div>
+    <div
+      class="bg-card border-[0.5px] border-line rounded-[10px] px-4 py-[14px]"
+    >
+      <div id="statOnline" class="text-[24px] font-extrabold text-success">—</div>
+      <div class="text-[11px] text-ink-mute mt-[2px]">Team online</div>
+    </div>
+    <div
+      class="bg-card border-[0.5px] border-line rounded-[10px] px-4 py-[14px]"
+    >
+      <div id="statTeam" class="text-[24px] font-extrabold text-ink">—</div>
+      <div class="text-[11px] text-ink-mute mt-[2px]">Team gesamt</div>
+    </div>
+  </section>
+
+  <h2
+    class="text-[10px] font-bold tracking-[0.12em] uppercase text-ink-mute mb-[10px]"
+  >
+    Schnellzugriff
+  </h2>
+  <section
+    class="grid grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-[10px] mb-5"
+  >
+    {
+      quickAccess.map((q) => (
+        <a
+          href={q.href}
+          class="bg-card border-[0.5px] border-line rounded-[10px] p-[14px] flex items-center gap-[10px] hover:border-brand-border hover:bg-brand-dim transition-colors no-underline"
+        >
+          <span class="w-8 h-8 rounded-lg bg-brand-dim flex items-center justify-center text-[15px] shrink-0">
+            {q.icon}
+          </span>
+          <span class="text-[12px] font-bold text-ink">{q.label}</span>
+        </a>
+      ))
+    }
+  </section>
+
+  <h2
+    class="text-[10px] font-bold tracking-[0.12em] uppercase text-ink-mute mb-[10px]"
+  >
+    Zuletzt aktiv
+  </h2>
+  <div
+    id="recentList"
+    class="bg-card border-[0.5px] border-line rounded-xl px-4 py-[14px]"
+  >
+    <p class="text-[12px] text-ink-mute py-2">Lade…</p>
+  </div>
+</AppLayout>
+
+<script is:inline>
+  (function () {
+    var $ = function (id) { return document.getElementById(id); };
+    var RECENT_N = 6;
+
+    function start() {
+      var ui = window.appUI;
+      var renderRecent = ui.throttle(function (state) {
+        var active = state.list.filter(function (c) { return !c.arch; });
+        var archived = state.list.length - active.length;
+        $("statActive").textContent = active.length;
+        $("statArchived").textContent = archived;
+
+        var recent = active.slice(0, RECENT_N);
+        var list = $("recentList");
+        if (!recent.length) {
+          list.innerHTML =
+            '<p class="text-[12px] text-ink-mute py-2">Noch keine Aktivität.</p>';
+          return;
+        }
+        list.innerHTML = recent
+          .map(function (c, i) {
+            var nameSafe = ui.escapeHtml(c.name || "Unbenannt");
+            var roomSafe = ui.escapeHtml(c.room || "");
+            return (
+              '<a href="/customer?id=' +
+              encodeURIComponent(c.id) +
+              '" class="flex items-center gap-3 py-[10px] no-underline group ' +
+              (i < recent.length - 1 ? "border-b-[0.5px] border-line" : "") +
+              '">' +
+              '<span class="w-8 h-8 rounded-full bg-brand-dim text-brand text-[11px] font-bold flex items-center justify-center shrink-0">' +
+              ui.escapeHtml(ui.initials(c.name)) +
+              "</span>" +
+              '<div class="flex-1 min-w-0">' +
+              '<div class="text-[13px] font-bold text-ink group-hover:text-brand truncate">' +
+              nameSafe +
+              "</div>" +
+              '<div class="text-[11px] text-ink-mute mt-[1px] truncate">Raum ' +
+              roomSafe +
+              " · " +
+              ui.escapeHtml(ui.fmtAgo(c.lastActive || c.created)) +
+              "</div>" +
+              "</div>" +
+              '<span class="text-[9px] font-bold px-[9px] py-[3px] rounded-full bg-[#E1F5EE] text-[#085041]">Aktiv</span>' +
+              "</a>"
+            );
+          })
+          .join("");
+      }, 250);
+
+      ui.subscribeCustomers(renderRecent);
+
+      window.fb.ref("team").on("value", function (s) {
+        $("statTeam").textContent = Object.keys(s.val() || {}).length;
+      });
+      window.fb.ref("presence").on("value", function (s) {
+        var v = s.val() || {};
+        $("statOnline").textContent = Object.keys(v).filter(function (k) {
+          return v[k] && v[k].online;
+        }).length;
+      });
+    }
+    window.appUI.onAuth(start);
+  })();
+</script>
