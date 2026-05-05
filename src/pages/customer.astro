@@ -185,6 +185,8 @@ import AppLayout from "../layouts/AppLayout.astro";
         desc: "Layouts & Visuals" },
       { id: "mk", file: "mk", label: "Marketing Plan", icon: "📈",
         desc: "Personal Brand · Ads · Flows" },
+      { id: "pr", file: "pr", label: "Production", icon: "📐",
+        desc: "Tech Packs · Pricing · Sample/Bulk-Tracking" },
     ];
     var TOOL_BY_FILE = {};
     TOOLS.forEach(function (t) { TOOL_BY_FILE[t.file] = t; });
@@ -195,7 +197,7 @@ import AppLayout from "../layouts/AppLayout.astro";
     }
 
     // ── progress sources ─────────────────────────────────────
-    var lastBiP = null, lastShP = null, lastCrP = null, lastAgP = null, lastDnP = null, lastMkP = null;
+    var lastBiP = null, lastShP = null, lastCrP = null, lastAgP = null, lastDnP = null, lastMkP = null, lastPrP = null;
 
     var bumpLastActive = ui.throttle(function () {
       if (!customer) return;
@@ -234,6 +236,13 @@ import AppLayout from "../layouts/AppLayout.astro";
         if (p4 !== lastMkP) {
           lastMkP = p4;
           window.fb.ref("workspace/customers/" + customerId + "/mkP").set(p4);
+        }
+        bumpLastActive();
+      } else if (d.type === "prPct") {
+        var p5 = clamp(d.pct);
+        if (p5 !== lastPrP) {
+          lastPrP = p5;
+          window.fb.ref("workspace/customers/" + customerId + "/prP").set(p5);
         }
         bumpLastActive();
       }
@@ -353,6 +362,7 @@ import AppLayout from "../layouts/AppLayout.astro";
         cr: pctOf(c, "crP"),
         dn: pctOf(c, "dP"),
         mk: pctOf(c, "mkP"),
+        pr: pctOf(c, "prP"),
       };
     }
     function renderToolGrid(c) {
@@ -558,6 +568,7 @@ import AppLayout from "../layouts/AppLayout.astro";
         lastAgP = c.agP == null ? null : clamp(c.agP);
         lastDnP = c.dP == null ? null : clamp(c.dP);
         lastMkP = c.mkP == null ? null : clamp(c.mkP);
+        lastPrP = c.prP == null ? null : clamp(c.prP);
 
         $("topName").textContent = c.name || "Unbenannt";
         $("cName").textContent = c.name || "Unbenannt";
