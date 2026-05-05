@@ -122,10 +122,14 @@ if(_R && _D) {
       try { obj['ug_archive_v2'] = JSON.parse(localStorage.getItem('ug_archive_v2')) || []; } catch(e) {}
       _D.ref('rooms/'+_R+'/sh').set(obj);
       // Progress to parent workspace
-      var prods = obj['ug_products_v2'] || [], tot=0, dn=0;
+      // RTDB returns arrays-with-gaps as objects; coerce defensively
+      function _toArr(v){ if(Array.isArray(v)) return v; if(v && typeof v==='object') return Object.values(v); return []; }
+      var prods = _toArr(obj['ug_products_v2']), tot=0, dn=0;
       prods.forEach(function(p) {
-        if(p.sections) p.sections.forEach(function(s) {
-          if(s.items) s.items.forEach(function(it) { tot++; if(it.done) dn++; });
+        if(!p) return;
+        _toArr(p.sections).forEach(function(s) {
+          if(!s) return;
+          _toArr(s.items).forEach(function(it) { if(!it) return; tot++; if(it.done) dn++; });
         });
       });
       window.parent.postMessage({type:'shPct', pct: tot ? Math.round(dn/tot*100) : 0}, '*');
@@ -308,11 +312,13 @@ function readSections() {
 
 // ── Apply sections to DOM ──
 function applySections(sections) {
+  function _toArr(v){ if(Array.isArray(v)) return v; if(v && typeof v==='object') return Object.values(v); return []; }
   CATS.forEach(function(cat){
     var list=document.getElementById('cat-'+cat);
     list.innerHTML='';
-    var items=(sections&&sections[cat])||DEFAULTS[cat].map(function(l){return{label:l,done:false};});
-    items.forEach(function(item){list.appendChild(makeItem(item.label,item.done,cat));});
+    var raw=(sections&&sections[cat]);
+    var items=raw ? _toArr(raw) : DEFAULTS[cat].map(function(l){return{label:l,done:false};});
+    items.forEach(function(item){ if(!item) return; list.appendChild(makeItem(item.label,item.done,cat));});
   });
   updateProgress();
 }

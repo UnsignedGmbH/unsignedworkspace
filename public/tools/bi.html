@@ -457,17 +457,39 @@ function save(){
 }
 
 // ── Load room (real-time listener) ──
-function loadRoom(id){ if(ROOM){ db.ref('rooms/'+ROOM+'/data').off(); db.ref('rooms/'+ROOM+'/pres').off(); if(presRef) presRef.remove(); } ROOM=id; setUrlRoom(id); db.ref('rooms/'+id+'/data').on('value',function(snap){ applyAll(snap.val()); setS('on'); }); presRef=db.ref('rooms/'+id+'/pres/'+Date.now()); presRef.set(true); presRef.onDisconnect().remove(); db.ref('rooms/'+id+'/pres').on('value',function(snap){ var n=snap.numChildren(); var b=document.getElementById('onBadge'); if(n>1){b.style.display='';document.getElementById('onNum').textContent=n;}else b.style.display='none'; }); if(!IS_CLIENT){ var url=location.origin+location.pathname+'?room='+id; document.getElementById('lnkBtn').onclick=function(){ navigator.clipboard.writeText(url).then(function(){ toast('Link kopiert! ✓'); }).catch(function(){ toast(url); }); }; } renderTabs(); updateArchBtn(); }
+function loadRoom(id){
+  if(ROOM){ db.ref('rooms/'+ROOM+'/data').off(); db.ref('rooms/'+ROOM+'/pres').off(); if(presRef) presRef.remove(); }
+  ROOM=id;
+  setUrlRoom(id);
+  console.log('[bi] loadRoom', id);
+  db.ref('rooms/'+id+'/data').on('value',function(snap){ applyAll(snap.val()); setS('on'); }, function(err){ console.error('[bi] data listener error:', err); });
+  presRef=db.ref('rooms/'+id+'/pres/'+Date.now());
+  presRef.set(true).catch(function(e){ console.error('[bi] pres write failed:', e); });
+  presRef.onDisconnect().remove();
+  db.ref('rooms/'+id+'/pres').on('value',function(snap){
+    var n=snap.numChildren();
+    var b=document.getElementById('onBadge'); if(!b) return;
+    if(n>1){ b.style.display=''; var num=document.getElementById('onNum'); if(num) num.textContent=n; }
+    else b.style.display='none';
+  });
+  if(!IS_CLIENT){
+    var url=location.origin+location.pathname+'?room='+id;
+    var lnk=document.getElementById('lnkBtn');
+    if(lnk) lnk.onclick=function(){ navigator.clipboard.writeText(url).then(function(){ toast('Link kopiert! ✓'); }).catch(function(){ toast(url); }); };
+  }
+  renderTabs();
+  updateArchBtn();
+}
 
 // ── Rooms stored per user ──
 function getRooms(){ if(!ME) return []; try{return JSON.parse(localStorage.getItem('ur_'+ME.uid)||'[]');}catch{return[];} }
 function setRooms(r){ if(!ME) return; try{localStorage.setItem('ur_'+ME.uid,JSON.stringify(r));}catch{} }
 
-// ── Render tabs ──
-function renderTabs(){ var wrap=document.getElementById('ctabs'),add=document.getElementById('ctabAdd'); wrap.innerHTML=''; getRooms().forEach(function(r){ var tab=document.createElement('div'); tab.className='ctab'+(r.arch?' arch':'')+(r.id===ROOM?' active':''); tab.innerHTML='<span class="ctn">'+( r.name||'Unbenannt')+'</span><span class="ctx">✕</span>'; tab.querySelector('.ctn').addEventListener('click',function(){ if(r.id!==ROOM) switchRoom(r.id); }); tab.querySelector('.ctx').addEventListener('click',function(e){ e.stopPropagation(); if(!confirm((r.name||'Unbenannt')+' löschen?')) return; db.ref('rooms/'+r.id).remove(); var newR=getRooms().filter(function(x){return x.id!==r.id;}); setRooms(newR); if(r.id===ROOM){ var active=newR.filter(function(x){return !x.arch;}); if(active.length) switchRoom(active[0].id); else newRoom(''); } else renderTabs(); }); wrap.appendChild(tab); }); wrap.appendChild(add); }
+// ── Render tabs (only in standalone UI) ──
+function renderTabs(){ var wrap=document.getElementById('ctabs'),add=document.getElementById('ctabAdd'); if(!wrap) return; wrap.innerHTML=''; getRooms().forEach(function(r){ var tab=document.createElement('div'); tab.className='ctab'+(r.arch?' arch':'')+(r.id===ROOM?' active':''); tab.innerHTML='<span class="ctn">'+( r.name||'Unbenannt')+'</span><span class="ctx">✕</span>'; tab.querySelector('.ctn').addEventListener('click',function(){ if(r.id!==ROOM) switchRoom(r.id); }); tab.querySelector('.ctx').addEventListener('click',function(e){ e.stopPropagation(); if(!confirm((r.name||'Unbenannt')+' löschen?')) return; db.ref('rooms/'+r.id).remove(); var newR=getRooms().filter(function(x){return x.id!==r.id;}); setRooms(newR); if(r.id===ROOM){ var active=newR.filter(function(x){return !x.arch;}); if(active.length) switchRoom(active[0].id); else newRoom(''); } else renderTabs(); }); wrap.appendChild(tab); }); if(add) wrap.appendChild(add); }
 
 // ── Update archive button ──
-function updateArchBtn(){ var rooms=getRooms(); var cur=rooms.find(function(r){return r.id===ROOM;}); var btn=document.getElementById('archBtn'); btn.style.display=(cur&&!cur.arch&&!IS_CLIENT)?'':'none'; }
+function updateArchBtn(){ var rooms=getRooms(); var cur=rooms.find(function(r){return r.id===ROOM;}); var btn=document.getElementById('archBtn'); if(!btn) return; btn.style.display=(cur&&!cur.arch&&!IS_CLIENT)?'':'none'; }
 
 // ── Switch room ──
 function switchRoom(id){ clearFields(); db.ref('rooms/'+id+'/data').once('value',function(snap){ if(snap.val()) applyAll(snap.val()); }); loadRoom(id); }
@@ -475,16 +497,16 @@ function switchRoom(id){ clearFields(); db.ref('rooms/'+id+'/data').once('value'
 // ── New room ──
 function newRoom(name){ var id=Math.random().toString(36).slice(2,8).toUpperCase(); var rooms=getRooms(); rooms.push({id:id,name:name||'Unbenannt',arch:false}); setRooms(rooms); db.ref('rooms/'+id+'/meta').set({name:name,ts:Date.now(),uid:ME?ME.uid:''}); clearFields(); if(name) document.getElementById('bInput').value=name; loadRoom(id); setTimeout(save,300); }
 
-// ── Archive ──
-document.getElementById('archBtn').addEventListener('click',function(){ if(!ROOM||!ME) return; if(!confirm('Kunden archivieren?')) return; var rooms=getRooms(); var r=rooms.find(function(x){return x.id===ROOM;}); if(r){r.arch=true;setRooms(rooms);} renderTabs(); updateArchBtn(); toast('Archiviert ✓'); });
+// ── Archive (button only present in standalone UI) ──
+(function(){var b=document.getElementById('archBtn'); if(!b) return; b.addEventListener('click',function(){ if(!ROOM||!ME) return; if(!confirm('Kunden archivieren?')) return; var rooms=getRooms(); var r=rooms.find(function(x){return x.id===ROOM;}); if(r){r.arch=true;setRooms(rooms);} renderTabs(); updateArchBtn(); toast('Archiviert ✓'); });})();
 
 // ── Brand name sync to tab ──
 document.getElementById('bInput').addEventListener('input',function(){ scheduleSave(); var rooms=getRooms(); var r=rooms.find(function(x){return x.id===ROOM;}); if(r){r.name=this.value||'Unbenannt';setRooms(rooms);renderTabs();} });
 
 // ── Modal ──
 function openModal(){ document.getElementById('mInput').value=''; document.getElementById('mov').classList.add('open'); setTimeout(function(){ document.getElementById('mInput').focus(); },80); }
-document.getElementById('newBtn').addEventListener('click',openModal);
-document.getElementById('ctabAdd').addEventListener('click',openModal);
+(function(){var n=document.getElementById('newBtn'); if(n) n.addEventListener('click',openModal);})();
+(function(){var c=document.getElementById('ctabAdd'); if(c) c.addEventListener('click',openModal);})();
 document.getElementById('mCancel').addEventListener('click',function(){ document.getElementById('mov').classList.remove('open'); });
 document.getElementById('mOk').addEventListener('click',function(){ var n=document.getElementById('mInput').value; document.getElementById('mov').classList.remove('open'); newRoom(n); });
 document.getElementById('mInput').addEventListener('keydown',function(e){ if(e.key==='Enter') document.getElementById('mOk').click(); });
