@@ -511,22 +511,40 @@ document.getElementById('deleteProductBtn').addEventListener('click',deleteCurre
     renderArchive();
     // Listen for remote changes (other user)
     if(_R && _D) {
+      var _pendingRerender = false;
+      function _rerender(){
+        var pp = getProducts();
+        if(!pp.length) return;
+        // Keep current view if still exists, else fall back to last
+        var keep = currentId && pp.find(function(x){return x.id===currentId;}) ? currentId : pp[pp.length-1].id;
+        switchTo(keep);
+        renderArchive();
+      }
+      function _onBlur(){
+        document.removeEventListener('blur', _onBlur, true);
+        if(_pendingRerender){ _pendingRerender = false; _rerender(); }
+      }
       _D.ref('rooms/'+_R+'/sh').on('value', function(snap) {
         var d = snap.val();
         if(!d || !d['ug_products_v2']) return;
         var fbP = JSON.stringify(d['ug_products_v2']);
         var lsP = localStorage.getItem('ug_products_v2') || '[]';
         if(fbP === lsP) return; // no change
-        var ae = document.activeElement;
-        if(ae && (ae.contentEditable==='true'||ae.tagName==='INPUT'||ae.tagName==='TEXTAREA')) return;
+        // Always update local cache so refresh / next render is fresh
         var _o = Storage.prototype.setItem;
-        Storage.prototype.setItem = _orig_set || _o; // bypass mirror temporarily
+        Storage.prototype.setItem = _orig_set || _o; // bypass mirror
         try { localStorage.setItem('ug_products_v2', JSON.stringify(d['ug_products_v2'])); } catch(e){}
         if(d['ug_archive_v2']) { try { localStorage.setItem('ug_archive_v2', JSON.stringify(d['ug_archive_v2'])); } catch(e){} }
         Storage.prototype.setItem = _o;
-        var pp = getProducts();
-        if(pp.length) switchTo(pp[pp.length-1].id);
-        renderArchive();
+        // If user is mid-edit, defer rerender to avoid blowing away their cursor
+        var ae = document.activeElement;
+        var typing = ae && (ae.contentEditable==='true'||ae.tagName==='INPUT'||ae.tagName==='TEXTAREA');
+        if(typing){
+          _pendingRerender = true;
+          document.addEventListener('blur', _onBlur, true);
+          return;
+        }
+        _rerender();
       });
     }
   }

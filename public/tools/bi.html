@@ -512,7 +512,7 @@ auth.onAuthStateChanged(function(user){
     ME=user;
     document.body.classList.remove('client');
     document.getElementById('loginWrap').classList.remove('show');
-    document.getElementById('uBadge').textContent=user.email.split('@')[0];
+    document.getElementById('uBadge').textContent=(user.email && user.email.split('@')[0]) || (user.isAnonymous ? 'Kunde' : 'Du');
     if(roomParam){
       // Owner opened client link - just load that room
       var rooms=getRooms();
