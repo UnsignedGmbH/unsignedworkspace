@@ -363,6 +363,71 @@ input, textarea, select { outline: none; }
   border-color: var(--a); color: var(--a); background: rgba(193,48,48,.03);
 }
 
+/* ── TEMPLATE MODAL ── */
+.tpl-overlay {
+  display: none; position: fixed; inset: 0; z-index: 9000;
+  background: rgba(20,20,20,.55); backdrop-filter: blur(8px);
+  align-items: center; justify-content: center; padding: 24px;
+}
+.tpl-overlay.open { display: flex; }
+.tpl-modal {
+  background: var(--cd); border: .5px solid var(--bd);
+  border-radius: 16px; max-width: 820px; width: 100%;
+  max-height: 86vh; display: flex; flex-direction: column;
+  box-shadow: 0 30px 80px rgba(0,0,0,.25);
+}
+.tpl-head {
+  padding: 18px 22px; border-bottom: .5px solid var(--bd);
+  display: flex; align-items: center; gap: 14px;
+}
+.tpl-head h2 { font-size: 16px; font-weight: 900; color: var(--t); flex: 1; }
+.tpl-head p { font-size: 11px; color: var(--td); margin-top: 2px; }
+.tpl-close {
+  font-size: 18px; color: var(--td); width: 32px; height: 32px;
+  border-radius: 8px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  border: .5px solid var(--bd); background: var(--cd2);
+}
+.tpl-close:hover { background: rgba(193,48,48,.08); color: var(--a); border-color: var(--a); }
+.tpl-grid {
+  padding: 18px 22px; overflow-y: auto;
+  display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+}
+@media (max-width: 700px) { .tpl-grid { grid-template-columns: 1fr; } }
+.tpl-card {
+  background: var(--cd2); border: .5px solid var(--bd);
+  border-radius: 12px; padding: 14px;
+  display: flex; flex-direction: column; gap: 10px;
+  cursor: pointer; transition: all .15s;
+}
+.tpl-card:hover { border-color: var(--a); transform: translateY(-1px); box-shadow: 0 6px 20px rgba(0,0,0,.06); }
+.tpl-card-head { display: flex; align-items: flex-start; gap: 10px; }
+.tpl-icon {
+  width: 36px; height: 36px; flex-shrink: 0;
+  background: rgba(193,48,48,.08); color: var(--a);
+  border-radius: 8px; font-size: 18px;
+  display: flex; align-items: center; justify-content: center;
+}
+.tpl-title { font-size: 13px; font-weight: 900; color: var(--t); margin-bottom: 2px; }
+.tpl-meta { font-size: 10px; color: var(--td); font-weight: 600; }
+.tpl-desc { font-size: 11px; color: var(--td); line-height: 1.5; flex: 1; }
+.tpl-preview {
+  font-size: 10px; color: var(--tdd); line-height: 1.6;
+  font-family: ui-monospace, SFMono-Regular, Monaco, Consolas, monospace;
+  background: var(--cd); border: .5px solid var(--bd2);
+  border-radius: 6px; padding: 8px 10px; margin-top: 4px;
+  max-height: 110px; overflow-y: auto;
+}
+.tpl-use {
+  align-self: flex-start; padding: 6px 12px; border-radius: 6px;
+  background: var(--a); color: #fff; border: none; font-size: 11px;
+  font-weight: 800; cursor: pointer;
+}
+.tpl-use:hover { background: var(--a-dark); }
+
+.flow-actions { display: flex; gap: 8px; margin-top: 6px; }
+.flow-actions > * { flex: 1; }
+
 /* ── TOAST ── */
 #toast {
   position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
@@ -409,6 +474,19 @@ input, textarea, select { outline: none; }
 
 <div id="toast"></div>
 
+<div class="tpl-overlay" id="tplOverlay">
+  <div class="tpl-modal">
+    <div class="tpl-head">
+      <div style="flex:1">
+        <h2>📚 Flow-Templates</h2>
+        <p>Beispielhafte Email-Flows aus dem Marketing-Alltag — klick auf einen, um ihn als Vorlage zu übernehmen. Alle Schritte sind danach editierbar.</p>
+      </div>
+      <button class="tpl-close" id="tplClose" title="Schließen">✕</button>
+    </div>
+    <div class="tpl-grid" id="tplGrid"></div>
+  </div>
+</div>
+
 <script>
 'use strict';
 
@@ -452,6 +530,119 @@ var PHASES_DEF = [
       { id: 'p4-flows', label: 'Verschiedene Flows' },
     ],
     hasFlows: true,
+  },
+];
+
+// ── Flow Templates ────────────────────────────────────────────────
+var FLOW_TEMPLATES = [
+  {
+    icon: '👋', name: 'Welcome Flow', goal: '5 Mails · 12 Tage',
+    desc: 'Stellt dich neuen Abonnenten vor, baut Vertrauen auf und führt zur ersten Bestellung mit Soft-Push + Code.',
+    flow: {
+      name: 'Welcome Flow', trigger: 'Newsletter abonniert',
+      steps: [
+        { kind:'email', label:'Willkommen bei [Brand] — schön dass du da bist', delay:'sofort' },
+        { kind:'wait', label:'Lesepause', delay:'2 Tage' },
+        { kind:'email', label:'Unsere Story + 10% Welcome-Code', delay:'sofort' },
+        { kind:'wait', label:'Reifezeit', delay:'3 Tage' },
+        { kind:'email', label:'Was unsere Kunden lieben — Bestseller', delay:'sofort' },
+        { kind:'wait', label:'', delay:'4 Tage' },
+        { kind:'email', label:'Folge uns auf IG für Drops & BTS', delay:'sofort' },
+      ]
+    }
+  },
+  {
+    icon: '🛒', name: 'Cart Abandon', goal: '3 Mails · 3 Tage',
+    desc: 'Holt verlorene Warenkorbsumsätze zurück. Erste Mail: sanfter Reminder. Letzte: Code als finaler Push.',
+    flow: {
+      name: 'Cart Abandon Flow', trigger: 'Warenkorb verlassen',
+      steps: [
+        { kind:'wait', label:'Cool-down', delay:'1 Stunde' },
+        { kind:'email', label:'Du hast was vergessen 👀', delay:'sofort' },
+        { kind:'wait', label:'', delay:'24 Stunden' },
+        { kind:'email', label:'Noch da? Hier dein 10%-Code', delay:'sofort' },
+        { kind:'wait', label:'', delay:'48 Stunden' },
+        { kind:'email', label:'Letzte Chance — Bestseller im Warenkorb', delay:'sofort' },
+      ]
+    }
+  },
+  {
+    icon: '👀', name: 'Browse Abandon', goal: '2 Mails · 3 Tage',
+    desc: 'Reaktiviert Besucher die ein Produkt angeschaut, aber nicht in den Warenkorb gelegt haben.',
+    flow: {
+      name: 'Browse Abandon Flow', trigger: 'Produkt angeschaut, kein Add-to-Cart',
+      steps: [
+        { kind:'wait', label:'', delay:'4 Stunden' },
+        { kind:'email', label:'Noch unsicher? Hier mehr Infos zum Piece', delay:'sofort' },
+        { kind:'wait', label:'', delay:'2 Tage' },
+        { kind:'email', label:'Was andere darüber sagen — Reviews', delay:'sofort' },
+      ]
+    }
+  },
+  {
+    icon: '📦', name: 'Post-Purchase', goal: '4 Mails · 30+ Tage',
+    desc: 'Begleitet den Kunden vom Kauf bis zur Bewertung — Lieferung, UGC-Aufruf, Review-Bitte, Cross-Sell.',
+    flow: {
+      name: 'Post-Purchase Flow', trigger: 'Bestellung abgeschlossen',
+      steps: [
+        { kind:'email', label:'Danke für deine Bestellung + Tracking-Info', delay:'sofort' },
+        { kind:'wait', label:'Erwartete Lieferung', delay:'5–7 Tage' },
+        { kind:'email', label:'Zeig uns deinen Look — Repost auf IG', delay:'sofort' },
+        { kind:'wait', label:'', delay:'14 Tage' },
+        { kind:'email', label:'Hinterlass eine Bewertung — wie war\'s?', delay:'sofort' },
+        { kind:'wait', label:'', delay:'30 Tage' },
+        { kind:'email', label:'Zeit für Nachschub? Passt zu deiner Bestellung', delay:'sofort' },
+      ]
+    }
+  },
+  {
+    icon: '💔', name: 'Win-Back / Re-Engagement', goal: '3 Mails · 2 Wochen',
+    desc: 'Holt schlafende Abonnenten zurück die seit 60+ Tagen nichts mehr geöffnet/gekauft haben.',
+    flow: {
+      name: 'Win-Back Flow', trigger: '60 Tage keine Aktivität',
+      steps: [
+        { kind:'email', label:'Wir vermissen dich — was ist los?', delay:'sofort' },
+        { kind:'wait', label:'', delay:'5 Tage' },
+        { kind:'email', label:'Comeback-Code: 15% nur für dich', delay:'sofort' },
+        { kind:'wait', label:'', delay:'7 Tage' },
+        { kind:'email', label:'Letzte Mail von uns — bleibst du dabei?', delay:'sofort' },
+      ]
+    }
+  },
+  {
+    icon: '🎂', name: 'Birthday Flow', goal: '2 Mails · 5 Tage',
+    desc: 'Persönlicher Geburtstags-Touchpoint mit limitiertem Geschenk-Code als Anlass.',
+    flow: {
+      name: 'Birthday Flow', trigger: 'Geburtstag des Kunden',
+      steps: [
+        { kind:'email', label:'Happy Birthday 🎂 — 20% nur für dich', delay:'sofort am Geburtstag' },
+        { kind:'wait', label:'', delay:'5 Tage' },
+        { kind:'email', label:'Letzte Chance — dein Geburtstags-Code läuft ab', delay:'sofort' },
+      ]
+    }
+  },
+  {
+    icon: '👑', name: 'VIP / Loyalty', goal: 'Pro Drop · ongoing',
+    desc: 'Belohnt Stammkunden mit Early-Access bei jedem neuen Drop, baut Bindung & Status.',
+    flow: {
+      name: 'VIP Early-Access', trigger: '3+ Bestellungen oder VIP-Tag',
+      steps: [
+        { kind:'email', label:'Du bist in der VIP-Crew — was das bedeutet', delay:'sofort beim Tag-Set' },
+        { kind:'email', label:'VIP-Drop nur für dich — 24h vor allen anderen', delay:'jeder neue Drop -24h' },
+      ]
+    }
+  },
+  {
+    icon: '⭐', name: 'Review Request', goal: '2 Mails · 3 Wochen',
+    desc: 'Sammelt UGC und Reviews systematisch — wichtig für Ad-Performance und Social Proof.',
+    flow: {
+      name: 'Review Request Flow', trigger: '14 Tage nach Lieferung',
+      steps: [
+        { kind:'email', label:'Wie ist dein [Produkt]? Bewerte uns', delay:'sofort' },
+        { kind:'wait', label:'', delay:'7 Tage' },
+        { kind:'email', label:'Reminder + 5%-Code als Danke fürs Review', delay:'sofort' },
+      ]
+    }
   },
 ];
 
@@ -905,15 +1096,68 @@ function renderFlows(p, ph){
     sub.appendChild(card);
   });
 
-  sub.appendChild(el('button', {
-    class:'add-flow-btn', html:'+ Flow hinzufügen',
+  var actions = el('div', {class:'flow-actions'});
+  actions.appendChild(el('button', {
+    class:'add-flow-btn', html:'+ Leerer Flow',
     on: { click: function(){
       ph.flows = ph.flows || [];
       ph.flows.push({ name:'Neuer Flow', trigger:'', steps:[] });
       scheduleSave(); render();
     }}
   }));
+  actions.appendChild(el('button', {
+    class:'add-flow-btn', html:'📚 Templates ansehen', style:'background:rgba(193,48,48,.04);border-color:rgba(193,48,48,.3);color:var(--a);',
+    on: { click: function(){ openTemplates(p.id); }}
+  }));
+  sub.appendChild(actions);
   return sub;
+}
+
+// ── Template Modal ─────────────────────────────────────────────────
+var _tplPhaseId = null;
+function openTemplates(phaseId){
+  _tplPhaseId = phaseId;
+  var grid = document.getElementById('tplGrid');
+  grid.innerHTML = '';
+  FLOW_TEMPLATES.forEach(function(t, idx){
+    var card = el('div', {class:'tpl-card', on: { click: function(){ useTemplate(idx); }}});
+    var head = el('div', {class:'tpl-card-head'});
+    head.appendChild(el('div', {class:'tpl-icon', html: t.icon}));
+    var info = el('div', {style:'flex:1;min-width:0'});
+    info.appendChild(el('div', {class:'tpl-title', html: escHtml(t.name)}));
+    info.appendChild(el('div', {class:'tpl-meta', html: escHtml(t.goal) + ' · Trigger: ' + escHtml(t.flow.trigger)}));
+    head.appendChild(info);
+    card.appendChild(head);
+    card.appendChild(el('div', {class:'tpl-desc', html: escHtml(t.desc)}));
+    // Preview
+    var preview = t.flow.steps.map(function(s, i){
+      var ic = s.kind === 'wait' ? '⏱' : '✉';
+      var d = s.delay ? ' [' + escHtml(s.delay) + ']' : '';
+      return (i+1) + '. ' + ic + ' ' + escHtml(s.label || (s.kind==='wait'?'Wartezeit':'')) + d;
+    }).join('<br>');
+    card.appendChild(el('div', {class:'tpl-preview', html: preview}));
+    card.appendChild(el('button', {class:'tpl-use', html:'Verwenden →', on: { click: function(e){ e.stopPropagation(); useTemplate(idx); }}}));
+    grid.appendChild(card);
+  });
+  document.getElementById('tplOverlay').classList.add('open');
+}
+
+function closeTemplates(){
+  document.getElementById('tplOverlay').classList.remove('open');
+  _tplPhaseId = null;
+}
+
+function useTemplate(idx){
+  var t = FLOW_TEMPLATES[idx];
+  if (!t || !_tplPhaseId) return;
+  var ph = STATE.phases[_tplPhaseId];
+  ph.flows = ph.flows || [];
+  // Deep-clone the flow so edits don't bleed back into FLOW_TEMPLATES
+  ph.flows.push(JSON.parse(JSON.stringify(t.flow)));
+  scheduleSave();
+  closeTemplates();
+  render();
+  toast('Template "' + t.name + '" eingefügt ✓');
 }
 
 // ── Toast ──────────────────────────────────────────────────────────
@@ -924,6 +1168,17 @@ function toast(m){
   el.classList.add('show');
   setTimeout(function(){ el.classList.remove('show'); }, 2400);
 }
+
+// ── Modal-Close-Handler ────────────────────────────────────────────
+document.getElementById('tplClose').addEventListener('click', closeTemplates);
+document.getElementById('tplOverlay').addEventListener('click', function(e){
+  if (e.target === this) closeTemplates();
+});
+document.addEventListener('keydown', function(e){
+  if (e.key === 'Escape' && document.getElementById('tplOverlay').classList.contains('open')) {
+    closeTemplates();
+  }
+});
 
 // ── Init ───────────────────────────────────────────────────────────
 STATE = makeDefaultState();
