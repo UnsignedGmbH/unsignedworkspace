@@ -54,13 +54,30 @@ import AppLayout from "../layouts/AppLayout.astro";
           >
         </div>
         <div id="cMeta" class="text-[11px] text-ink-mute mt-[2px] truncate">—</div>
+        <div
+          id="cClientProfile"
+          class="hidden text-[11px] text-ink-soft mt-[3px] truncate"
+        >
+          <span class="font-bold">Kunde:</span>
+          <span id="cClientName">—</span>
+          <span class="text-ink-mute"> · </span>
+          <span id="cClientBrand">—</span>
+        </div>
       </div>
-      <span
-        id="cClientLive"
-        class="hidden text-[10px] font-bold text-success bg-success/10 px-3 py-[6px] rounded-full whitespace-nowrap"
-      >
-        ● Kunde arbeitet gerade an <span id="cClientTool">…</span>
-      </span>
+      <div class="flex flex-col gap-1 items-end">
+        <span
+          id="cClientLive"
+          class="hidden text-[10px] font-bold text-success bg-success/10 px-3 py-[6px] rounded-full whitespace-nowrap"
+        >
+          ● aktiv in <span id="cClientTool">…</span>
+        </span>
+        <span
+          id="cClientWaiting"
+          class="hidden text-[10px] font-bold text-ink-mute bg-card border-[0.5px] border-line px-3 py-[6px] rounded-full whitespace-nowrap"
+        >
+          ⏳ Kunde noch nicht beigetreten
+        </span>
+      </div>
       <div class="flex gap-2 flex-wrap">
         <button
           type="button"
@@ -253,23 +270,61 @@ import AppLayout from "../layouts/AppLayout.astro";
       });
     }
 
-    // Live presence indicator
-    function attachClientPresence(room) {
-      function check(v) {
-        var ts = v && v.ts;
-        var fresh = ts && Date.now() - ts < ui.CONST.CLIENT_ACTIVE_MS;
-        $("cClientLive").classList.toggle("hidden", !fresh);
-        if (fresh) {
-          var t = TOOL_BY_FILE[v.tool] || { label: v.tool || "?" };
-          $("cClientTool").textContent = t.label;
-        }
+    // Live presence indicator + customer profile
+    var hasClientProfile = false;
+    function updateLiveBadges(activity) {
+      var ts = activity && activity.ts;
+      var fresh = ts && Date.now() - ts < ui.CONST.CLIENT_ACTIVE_MS;
+      $("cClientLive").classList.toggle("hidden", !fresh);
+      // "Noch nicht beigetreten" nur zeigen, wenn weder Profil noch Aktivität da
+      $("cClientWaiting").classList.toggle(
+        "hidden",
+        hasClientProfile || fresh
+      );
+      if (fresh) {
+        var t = TOOL_BY_FILE[activity.tool] || { label: activity.tool || "?" };
+        $("cClientTool").textContent = t.icon
+          ? t.icon + " " + t.label
+          : t.label;
       }
+    }
+
+    function attachClientPresence(room) {
+      var lastActivity = null;
+      window.fb.ref("rooms/" + room + "/clientProfile").on("value", function (s) {
+        var v = s.val() || {};
+        var keys = Object.keys(v);
+        if (!keys.length) {
+          hasClientProfile = false;
+          $("cClientProfile").classList.add("hidden");
+          updateLiveBadges(lastActivity);
+          return;
+        }
+        // Neuestes Profil nehmen
+        var newest = null;
+        keys.forEach(function (k) {
+          var p = v[k] || {};
+          if (!newest || (p.joinedAt || 0) > (newest.joinedAt || 0)) newest = p;
+        });
+        hasClientProfile = !!(newest && newest.name);
+        if (hasClientProfile) {
+          $("cClientName").textContent = newest.name || "—";
+          $("cClientBrand").textContent = newest.brand || "—";
+          $("cClientProfile").classList.remove("hidden");
+        }
+        updateLiveBadges(lastActivity);
+      });
+
       window.fb.ref("rooms/" + room + "/clientActivity").on("value", function (s) {
-        check(s.val() || {});
+        lastActivity = s.val() || {};
+        updateLiveBadges(lastActivity);
       });
       setInterval(function () {
         window.fb.ref("rooms/" + room + "/clientActivity").once("value")
-          .then(function (s) { check(s.val() || {}); });
+          .then(function (s) {
+            lastActivity = s.val() || {};
+            updateLiveBadges(lastActivity);
+          });
       }, 30 * 1000);
     }
 

@@ -33,6 +33,7 @@ import PortalFooter from "../components/PortalFooter.astro";
         </div>
         <span class="hidden md:block ml-2 h-6 w-px bg-white/30"></span>
         <span
+          id="portalGreeting"
           class="hidden md:block font-sans uppercase tracking-[0.22em] text-[10px] text-white/70"
           >Brand Identity &amp; Tools</span
         >
@@ -99,6 +100,52 @@ import PortalFooter from "../components/PortalFooter.astro";
 
     <PortalFooter />
   </div>
+
+  <!-- ════════ ONBOARDING DIALOG ════════ -->
+  <dialog
+    id="onboardDlg"
+    class="rounded-2xl border-[0.5px] border-line p-0 bg-card backdrop:bg-black/60 max-w-[440px] w-[90vw]"
+  >
+    <form id="onboardForm" class="p-6 space-y-4">
+      <div>
+        <h2 class="text-[18px] font-extrabold text-ink mb-1">Willkommen 👋</h2>
+        <p class="text-[12px] text-ink-mute">
+          Damit dein Team weiß wer gerade arbeitet — kurz dein Name und deine
+          Brand.
+        </p>
+      </div>
+      <label class="block">
+        <span class="text-[10px] font-bold tracking-[0.12em] uppercase text-ink-mute">
+          Dein Name
+        </span>
+        <input
+          id="onbName"
+          required
+          maxlength="60"
+          autocomplete="name"
+          class="mt-1 block w-full text-[14px] font-semibold border-[1.5px] border-line rounded-lg px-[14px] py-[11px] outline-none text-ink bg-white focus:border-brand"
+          placeholder="Lisa Müller"
+        />
+      </label>
+      <label class="block">
+        <span class="text-[10px] font-bold tracking-[0.12em] uppercase text-ink-mute">
+          Deine Brand
+        </span>
+        <input
+          id="onbBrand"
+          required
+          maxlength="60"
+          class="mt-1 block w-full text-[14px] font-semibold border-[1.5px] border-line rounded-lg px-[14px] py-[11px] outline-none text-ink bg-white focus:border-brand"
+          placeholder="z.B. Northern Studio"
+        />
+      </label>
+      <button
+        type="submit"
+        class="w-full px-4 py-3 rounded-lg bg-brand text-white text-[13px] font-extrabold border-0 cursor-pointer hover:bg-brand-dark"
+        >Loslegen →</button
+      >
+    </form>
+  </dialog>
 </BaseLayout>
 
 <script is:inline>
@@ -109,6 +156,12 @@ import PortalFooter from "../components/PortalFooter.astro";
     var tabsContainer = document.getElementById("portalTabs");
     var tabs = tabsContainer.querySelectorAll(".ptab");
     var emptyMsg = document.getElementById("portalEmpty");
+    var greeting = document.getElementById("portalGreeting");
+    var dlg = document.getElementById("onboardDlg");
+    var form = document.getElementById("onboardForm");
+    var nameInput = document.getElementById("onbName");
+    var brandInput = document.getElementById("onbBrand");
+    var STORAGE_KEY = "uw.portal.profile." + (room || "_");
 
     if (!room) {
       frame.style.display = "none";
@@ -120,51 +173,135 @@ import PortalFooter from "../components/PortalFooter.astro";
     var roomEl = liveSlot.querySelector("[data-room]");
     if (roomEl) roomEl.textContent = room;
 
-    function ping(tool) {
-      if (window.fb && window.firebase) {
-        window.fb
-          .ref("rooms/" + room + "/clientActivity")
-          .set({ tool: tool, ts: window.fb.ts() })
-          .catch(function () {});
+    var profile = null;
+    var currentTool = "ai_guide";
+    var heartbeat = null;
+
+    // ── Anonymous Auth + Profile bootstrap ─────────────────
+    function bootAuth() {
+      var auth = window.firebase.auth();
+      auth.setPersistence(window.firebase.auth.Auth.Persistence.LOCAL)
+        .catch(function () {});
+      auth.onAuthStateChanged(function (u) {
+        if (u) {
+          afterAuth(u);
+          return;
+        }
+        auth.signInAnonymously().catch(function (e) {
+          console.error("[portal] anon sign-in failed:", e);
+          alert(
+            "Anmeldung fehlgeschlagen — bitte Seite neu laden. (" +
+              (e.code || e.message) +
+              ")"
+          );
+        });
+      });
+    }
+
+    function afterAuth(user) {
+      // Lokal gemerktes Profil sofort übernehmen
+      try {
+        var raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) profile = JSON.parse(raw);
+      } catch (e) {}
+
+      if (profile && profile.name && profile.brand) {
+        startPortal(user);
       } else {
-        setTimeout(function () { ping(tool); }, 200);
+        showOnboard(user);
       }
     }
 
-    var currentTool = "bi";
-    function setTool(tool) {
-      var btn = tabsContainer.querySelector('[data-tool="' + tool + '"]');
-      if (!btn) return;
-      currentTool = tool;
-      tabs.forEach(function (b) {
-        var on = b === btn;
-        b.classList.toggle("bg-brand", on);
-        b.classList.toggle("text-white", on);
-        b.classList.toggle("border-0", on);
-        b.classList.toggle("bg-card", !on);
-        b.classList.toggle("text-ink-mute", !on);
-        b.classList.toggle("border-[0.5px]", !on);
-        b.classList.toggle("border-line", !on);
+    // ── Onboarding ─────────────────────────────────────────
+    function showOnboard(user) {
+      try { dlg.showModal(); } catch (e) {}
+      setTimeout(function () { nameInput.focus(); }, 30);
+      form.addEventListener("submit", function (e) {
+        e.preventDefault();
+        var n = nameInput.value.trim();
+        var b = brandInput.value.trim();
+        if (!n || !b) return;
+        profile = {
+          uid: user.uid,
+          name: n,
+          brand: b,
+          joinedAt: Date.now(),
+        };
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(profile)); } catch (e) {}
+        // In RTDB schreiben — eine Schreibung pro Kunde
+        window.fb
+          .ref("rooms/" + room + "/clientProfile/" + user.uid)
+          .set({
+            name: n,
+            brand: b,
+            joinedAt: window.fb.ts(),
+          })
+          .catch(function (err) {
+            console.error("[portal] clientProfile write failed:", err);
+          });
+        try { dlg.close(); } catch (e2) {}
+        startPortal(user);
       });
-      // owner=1 here lets the customer fully edit (same UI as you in /customer)
-      frame.src =
-        "/tools/" + tool + ".html?room=" + encodeURIComponent(room) + "&owner=1";
-      ping(tool);
     }
-    tabs.forEach(function (b) {
-      b.addEventListener("click", function () { setTool(b.dataset.tool); });
-    });
 
-    var heartbeat = setInterval(function () {
-      if (document.visibilityState === "visible") ping(currentTool);
-    }, 60000);
-    document.addEventListener("visibilitychange", function () {
-      if (document.visibilityState === "visible") ping(currentTool);
-    });
-    window.addEventListener("beforeunload", function () {
-      clearInterval(heartbeat);
-    });
+    // ── Tool starten + Heartbeat ───────────────────────────
+    function startPortal(user) {
+      if (greeting) greeting.textContent =
+        profile.name + " · " + profile.brand;
 
-    setTool("ai_guide");
+      function ping(tool) {
+        window.fb
+          .ref("rooms/" + room + "/clientActivity")
+          .set({
+            tool: tool,
+            ts: window.fb.ts(),
+            uid: user.uid,
+            name: profile.name,
+            brand: profile.brand,
+          })
+          .catch(function () {});
+      }
+
+      function setTool(tool) {
+        var btn = tabsContainer.querySelector('[data-tool="' + tool + '"]');
+        if (!btn) return;
+        currentTool = tool;
+        tabs.forEach(function (b) {
+          var on = b === btn;
+          b.classList.toggle("bg-brand", on);
+          b.classList.toggle("text-white", on);
+          b.classList.toggle("border-0", on);
+          b.classList.toggle("bg-card", !on);
+          b.classList.toggle("text-ink-mute", !on);
+          b.classList.toggle("border-[0.5px]", !on);
+          b.classList.toggle("border-line", !on);
+        });
+        frame.src =
+          "/tools/" + tool + ".html?room=" + encodeURIComponent(room) + "&owner=1";
+        ping(tool);
+      }
+      tabs.forEach(function (b) {
+        b.addEventListener("click", function () { setTool(b.dataset.tool); });
+      });
+
+      heartbeat = setInterval(function () {
+        if (document.visibilityState === "visible") ping(currentTool);
+      }, 60000);
+      document.addEventListener("visibilitychange", function () {
+        if (document.visibilityState === "visible") ping(currentTool);
+      });
+      window.addEventListener("beforeunload", function () {
+        clearInterval(heartbeat);
+      });
+
+      setTool(currentTool);
+    }
+
+    // Auf Firebase warten (BaseLayout init), dann starten
+    function waitForFb(cb) {
+      if (window.fb && window.firebase) cb();
+      else setTimeout(function () { waitForFb(cb); }, 50);
+    }
+    waitForFb(bootAuth);
   })();
 </script>
