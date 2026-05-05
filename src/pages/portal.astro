@@ -47,47 +47,49 @@ import PortalFooter from "../components/PortalFooter.astro";
       class="flex-1 px-6 lg:px-12 py-5 fade-up"
       style="animation-delay:200ms"
     >
-      <div class="flex gap-2 mb-3 flex-wrap" id="portalTabs">
-        <button
-          type="button"
-          data-tool="ai_guide"
-          class="ptab px-4 py-2 rounded-full text-[12px] font-bold cursor-pointer border-0 bg-brand text-white"
-          >🤖 Ai Guide</button
+      <!-- ═══════ TOOL OVERVIEW (Landing) ═══════ -->
+      <div id="overviewView">
+        <h1 class="text-[22px] font-extrabold text-ink mb-1">
+          Willkommen <span id="ovHelloName">…</span> 👋
+        </h1>
+        <p class="text-[13px] text-ink-soft mb-6">
+          Wähl ein Tool aus um loszulegen — alles was du eingibst, sieht dein
+          Team bei Unsigned live.
+        </p>
+
+        <h2
+          class="text-[10px] font-bold tracking-[0.12em] uppercase text-ink-mute mb-[10px]"
         >
-        <button
-          type="button"
-          data-tool="bi"
-          class="ptab px-4 py-2 rounded-full text-[12px] font-bold cursor-pointer border-[0.5px] bg-card text-ink-mute border-line"
-          >🪪 Brand Identity</button
+          Tools
+        </h2>
+        <section
+          id="ovGrid"
+          class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-[10px]"
         >
-        <button
-          type="button"
-          data-tool="sh"
-          class="ptab px-4 py-2 rounded-full text-[12px] font-bold cursor-pointer border-[0.5px] bg-card text-ink-mute border-line"
-          >📸 Shooting</button
-        >
-        <button
-          type="button"
-          data-tool="cr"
-          class="ptab px-4 py-2 rounded-full text-[12px] font-bold cursor-pointer border-[0.5px] bg-card text-ink-mute border-line"
-          >📋 Creator Guide</button
-        >
-        <button
-          type="button"
-          data-tool="design"
-          class="ptab px-4 py-2 rounded-full text-[12px] font-bold cursor-pointer border-[0.5px] bg-card text-ink-mute border-line"
-          >🎨 Design</button
-        >
+          <!-- gefüllt per JS -->
+        </section>
       </div>
 
-      <div
-        class="bg-card border-[0.5px] border-line rounded-xl overflow-hidden h-[calc(100vh-220px)]"
-      >
-        <iframe
-          id="portalFrame"
-          src="about:blank"
-          title="Tool"
-          class="w-full h-full block border-0"></iframe>
+      <!-- ═══════ TOOL FULLSCREEN ═══════ -->
+      <div id="toolView" class="hidden">
+        <div class="flex items-center gap-3 mb-3 flex-wrap">
+          <button
+            type="button"
+            id="toolBack"
+            class="text-[11px] font-bold text-ink-soft bg-card border-[0.5px] border-line rounded-lg px-3 py-2 cursor-pointer hover:border-brand hover:text-brand"
+            >← Übersicht</button
+          >
+          <span id="toolCrumb" class="text-[12px] font-bold text-ink">…</span>
+        </div>
+        <div
+          class="bg-card border-[0.5px] border-line rounded-xl overflow-hidden h-[calc(100vh-220px)]"
+        >
+          <iframe
+            id="portalFrame"
+            src="about:blank"
+            title="Tool"
+            class="w-full h-full block border-0"></iframe>
+        </div>
       </div>
 
       <p
@@ -101,7 +103,7 @@ import PortalFooter from "../components/PortalFooter.astro";
     <PortalFooter />
   </div>
 
-  <!-- ════════ ONBOARDING DIALOG ════════ -->
+  <!-- ═══════ ONBOARDING DIALOG ═══════ -->
   <dialog
     id="onboardDlg"
     class="rounded-2xl border-[0.5px] border-line p-0 bg-card backdrop:bg-black/60 max-w-[440px] w-[90vw]"
@@ -153,8 +155,6 @@ import PortalFooter from "../components/PortalFooter.astro";
     var room = new URLSearchParams(location.search).get("room");
     var liveSlot = document.getElementById("portalLiveSlot");
     var frame = document.getElementById("portalFrame");
-    var tabsContainer = document.getElementById("portalTabs");
-    var tabs = tabsContainer.querySelectorAll(".ptab");
     var emptyMsg = document.getElementById("portalEmpty");
     var greeting = document.getElementById("portalGreeting");
     var dlg = document.getElementById("onboardDlg");
@@ -163,9 +163,22 @@ import PortalFooter from "../components/PortalFooter.astro";
     var brandInput = document.getElementById("onbBrand");
     var STORAGE_KEY = "uw.portal.profile." + (room || "_");
 
+    var TOOLS = [
+      { id: "ai_guide", icon: "🤖", label: "Ai Guide",
+        desc: "Moodboard, Prompts & Planung für dein Shooting" },
+      { id: "bi", icon: "🪪", label: "Brand Identity",
+        desc: "Logos, Farben, Typo & Vibe deiner Marke" },
+      { id: "sh", icon: "📸", label: "Shooting Check",
+        desc: "Locations, Styling & Equipment-Liste" },
+      { id: "cr", icon: "📋", label: "Creator Guide",
+        desc: "Briefing & Skripts für deine Inhalte" },
+      { id: "design", icon: "🎨", label: "Design",
+        desc: "Layouts & Visuals planen" },
+    ];
+
     if (!room) {
-      frame.style.display = "none";
-      tabsContainer.style.display = "none";
+      document.getElementById("overviewView").style.display = "none";
+      document.getElementById("toolView").classList.add("hidden");
       emptyMsg.classList.remove("hidden");
       return;
     }
@@ -174,37 +187,30 @@ import PortalFooter from "../components/PortalFooter.astro";
     if (roomEl) roomEl.textContent = room;
 
     var profile = null;
-    var currentTool = "ai_guide";
+    var currentTool = null;
     var heartbeat = null;
+    var pingFn = function () {};
 
-    // ── Anonymous Auth + Profile bootstrap ─────────────────
+    // ── Anonymous Auth ─────────────────────────────────────
     function bootAuth() {
       var auth = window.firebase.auth();
       auth.setPersistence(window.firebase.auth.Auth.Persistence.LOCAL)
         .catch(function () {});
       auth.onAuthStateChanged(function (u) {
-        if (u) {
-          afterAuth(u);
-          return;
-        }
+        if (u) { afterAuth(u); return; }
         auth.signInAnonymously().catch(function (e) {
           console.error("[portal] anon sign-in failed:", e);
-          alert(
-            "Anmeldung fehlgeschlagen — bitte Seite neu laden. (" +
-              (e.code || e.message) +
-              ")"
-          );
+          alert("Anmeldung fehlgeschlagen — bitte Seite neu laden. (" +
+            (e.code || e.message) + ")");
         });
       });
     }
 
     function afterAuth(user) {
-      // Lokal gemerktes Profil sofort übernehmen
       try {
         var raw = localStorage.getItem(STORAGE_KEY);
         if (raw) profile = JSON.parse(raw);
       } catch (e) {}
-
       if (profile && profile.name && profile.brand) {
         startPortal(user);
       } else {
@@ -212,7 +218,6 @@ import PortalFooter from "../components/PortalFooter.astro";
       }
     }
 
-    // ── Onboarding ─────────────────────────────────────────
     function showOnboard(user) {
       try { dlg.showModal(); } catch (e) {}
       setTimeout(function () { nameInput.focus(); }, 30);
@@ -221,83 +226,95 @@ import PortalFooter from "../components/PortalFooter.astro";
         var n = nameInput.value.trim();
         var b = brandInput.value.trim();
         if (!n || !b) return;
-        profile = {
-          uid: user.uid,
-          name: n,
-          brand: b,
-          joinedAt: Date.now(),
-        };
-        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(profile)); } catch (e) {}
-        // In RTDB schreiben — eine Schreibung pro Kunde
+        profile = { uid: user.uid, name: n, brand: b, joinedAt: Date.now() };
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(profile)); } catch (e2) {}
         window.fb
           .ref("rooms/" + room + "/clientProfile/" + user.uid)
-          .set({
-            name: n,
-            brand: b,
-            joinedAt: window.fb.ts(),
-          })
+          .set({ name: n, brand: b, joinedAt: window.fb.ts() })
           .catch(function (err) {
             console.error("[portal] clientProfile write failed:", err);
           });
-        try { dlg.close(); } catch (e2) {}
+        try { dlg.close(); } catch (e3) {}
         startPortal(user);
       });
     }
 
-    // ── Tool starten + Heartbeat ───────────────────────────
+    // ── Portal start: Greeting + Grid ──────────────────────
     function startPortal(user) {
-      if (greeting) greeting.textContent =
-        profile.name + " · " + profile.brand;
+      if (greeting) greeting.textContent = profile.name + " · " + profile.brand;
+      document.getElementById("ovHelloName").textContent = profile.name;
 
-      function ping(tool) {
+      pingFn = function (tool) {
         window.fb
           .ref("rooms/" + room + "/clientActivity")
           .set({
-            tool: tool,
+            tool: tool || "_idle",
             ts: window.fb.ts(),
             uid: user.uid,
             name: profile.name,
             brand: profile.brand,
           })
           .catch(function () {});
-      }
+      };
 
-      function setTool(tool) {
-        var btn = tabsContainer.querySelector('[data-tool="' + tool + '"]');
-        if (!btn) return;
-        currentTool = tool;
-        tabs.forEach(function (b) {
-          var on = b === btn;
-          b.classList.toggle("bg-brand", on);
-          b.classList.toggle("text-white", on);
-          b.classList.toggle("border-0", on);
-          b.classList.toggle("bg-card", !on);
-          b.classList.toggle("text-ink-mute", !on);
-          b.classList.toggle("border-[0.5px]", !on);
-          b.classList.toggle("border-line", !on);
-        });
-        frame.src =
-          "/tools/" + tool + ".html?room=" + encodeURIComponent(room) + "&owner=1";
-        ping(tool);
-      }
-      tabs.forEach(function (b) {
-        b.addEventListener("click", function () { setTool(b.dataset.tool); });
-      });
+      renderGrid();
+      pingFn(null); // beigetreten, aber noch in Übersicht
 
       heartbeat = setInterval(function () {
-        if (document.visibilityState === "visible") ping(currentTool);
+        if (document.visibilityState === "visible") pingFn(currentTool);
       }, 60000);
       document.addEventListener("visibilitychange", function () {
-        if (document.visibilityState === "visible") ping(currentTool);
+        if (document.visibilityState === "visible") pingFn(currentTool);
       });
       window.addEventListener("beforeunload", function () {
         clearInterval(heartbeat);
       });
-
-      setTool(currentTool);
     }
 
-    // Auf Firebase warten (BaseLayout init), dann starten
+    function renderGrid() {
+      var grid = document.getElementById("ovGrid");
+      grid.innerHTML = TOOLS.map(function (t) {
+        return (
+          '<button type="button" data-tool="' + t.id + '"' +
+          ' class="tool-card text-left bg-card border-[0.5px] border-line rounded-xl p-4 cursor-pointer hover:border-brand-border hover:bg-brand-dim transition-colors">' +
+          '<div class="flex items-center gap-3 mb-2">' +
+          '<span class="w-10 h-10 rounded-lg bg-brand-dim flex items-center justify-center text-[20px] shrink-0">' +
+          t.icon + '</span>' +
+          '<div class="flex-1 min-w-0">' +
+          '<div class="text-[13px] font-extrabold text-ink truncate">' + t.label + '</div>' +
+          '</div>' +
+          '<span class="text-[16px] text-ink-mute">→</span>' +
+          '</div>' +
+          '<div class="text-[11px] text-ink-soft">' + t.desc + '</div>' +
+          '</button>'
+        );
+      }).join("");
+      grid.querySelectorAll(".tool-card").forEach(function (b) {
+        b.addEventListener("click", function () { openTool(b.dataset.tool); });
+      });
+    }
+
+    function openTool(toolId) {
+      var t = TOOLS.find(function (x) { return x.id === toolId; });
+      if (!t) return;
+      currentTool = toolId;
+      document.getElementById("overviewView").classList.add("hidden");
+      document.getElementById("toolView").classList.remove("hidden");
+      document.getElementById("toolCrumb").textContent = t.icon + " " + t.label;
+      frame.src =
+        "/tools/" + toolId + ".html?room=" + encodeURIComponent(room) + "&owner=1";
+      pingFn(toolId);
+    }
+
+    function backToOverview() {
+      currentTool = null;
+      document.getElementById("toolView").classList.add("hidden");
+      document.getElementById("overviewView").classList.remove("hidden");
+      frame.src = "about:blank";
+      pingFn(null);
+    }
+    document.getElementById("toolBack").addEventListener("click", backToOverview);
+
     function waitForFb(cb) {
       if (window.fb && window.firebase) cb();
       else setTimeout(function () { waitForFb(cb); }, 50);

@@ -441,17 +441,19 @@ document.querySelectorAll('.col:not([data-custom]) .colhead-text').forEach(funct
 // ── Save ──
 function scheduleSave(){ clearTimeout(saveTO); saveTO=setTimeout(save,600); }
 function save(){
-  if(!ROOM) return;
-  if(IS_CLIENT){
-    // Client can save text and images (not structural changes)
-    var data=readAll();
-    db.ref('rooms/'+ROOM+'/data').set(data).then(function(){ setS('on'); }).catch(function(){});
-    return;
-  }
-  if(!ME) return;
+  if(!ROOM){ console.warn('[bi] save skipped: no ROOM'); return; }
   setS('sy');
-  var data=readAll();
-  db.ref('rooms/'+ROOM+'/data').set(data).then(function(){ setS('on'); });
+  var data;
+  try { data = readAll(); }
+  catch(e){ console.error('[bi] readAll failed:', e); setS('on'); return; }
+  console.log('[bi] save → rooms/'+ROOM+'/data', { fields:Object.keys(data.fields||{}).length, columns:Object.keys(data.columns||{}).length });
+  db.ref('rooms/'+ROOM+'/data').set(data)
+    .then(function(){ setS('on'); })
+    .catch(function(err){
+      console.error('[bi] save failed:', err && (err.code||err.message), err);
+      setS('on');
+      toast('Speichern fehlgeschlagen: '+(err && (err.code||err.message)));
+    });
 }
 
 // ── Load room (real-time listener) ──
@@ -513,14 +515,20 @@ auth.onAuthStateChanged(function(user){
     document.body.classList.remove('client');
     document.getElementById('loginWrap').classList.remove('show');
     document.getElementById('uBadge').textContent=(user.email && user.email.split('@')[0]) || (user.isAnonymous ? 'Kunde' : 'Du');
+    console.log('[bi] auth ready', { uid:user.uid, anon:!!user.isAnonymous, room:roomParam, ownerFlag: !!window.UW_IS_OWNER });
     if(roomParam){
-      // Owner opened client link - just load that room
-      var rooms=getRooms();
-      if(!rooms.find(function(r){return r.id===roomParam;})){
-        rooms.push({id:roomParam,name:'Geladen',arch:false});
-        setRooms(rooms);
+      if(window.UW_IS_OWNER){
+        // iframe mode (from /customer or /portal) — load directly, skip rooms-list bookkeeping
+        loadRoom(roomParam);
+      } else {
+        // standalone — track rooms for the tab strip
+        var rooms=getRooms();
+        if(!rooms.find(function(r){return r.id===roomParam;})){
+          rooms.push({id:roomParam,name:'Geladen',arch:false});
+          setRooms(rooms);
+        }
+        switchRoom(roomParam);
       }
-      switchRoom(roomParam);
     } else {
       var rooms=getRooms();
       var active=rooms.filter(function(r){return !r.arch;});

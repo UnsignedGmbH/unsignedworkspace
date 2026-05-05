@@ -282,10 +282,14 @@ import AppLayout from "../layouts/AppLayout.astro";
         hasClientProfile || fresh
       );
       if (fresh) {
-        var t = TOOL_BY_FILE[activity.tool] || { label: activity.tool || "?" };
-        $("cClientTool").textContent = t.icon
-          ? t.icon + " " + t.label
-          : t.label;
+        var label;
+        if (!activity.tool || activity.tool === "_idle") {
+          label = "📋 Übersicht";
+        } else {
+          var t = TOOL_BY_FILE[activity.tool];
+          label = t ? t.icon + " " + t.label : activity.tool;
+        }
+        $("cClientTool").textContent = label;
       }
     }
 
