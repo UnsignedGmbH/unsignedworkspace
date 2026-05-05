@@ -57,7 +57,7 @@ const filters = [
     var lastState = { list: [] };
 
     function progressOf(c) {
-      var keys = ["agP", "biP", "shP", "crP", "dP"];
+      var keys = ["agP", "biP", "shP", "crP", "dP", "mkP"];
       var sum = 0;
       keys.forEach(function (k) { sum += c[k] || 0; });
       return Math.round(sum / keys.length);
@@ -209,6 +209,7 @@ const filters = [
             shP: 0,
             crP: 0,
             dP: 0,
+            mkP: 0,
             createdBy: window.ME.uid,
           };
           var path = "workspace/customers/" + id;

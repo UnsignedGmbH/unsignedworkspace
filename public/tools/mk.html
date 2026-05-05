@@ -1,0 +1,934 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Unsigned · Marketing Plan</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,700;1,900&family=Dancing+Script:wght@700&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+<script>
+var _ROOM = new URLSearchParams(location.search).get('room');
+var _IS_OWNER = new URLSearchParams(location.search).get('owner') === '1';
+var _DB = null;
+try {
+  if (!firebase.apps.length) firebase.initializeApp({apiKey:"AIzaSyDJqdh3apGM4fcsjRYI7vZ4VrT1_A6L92U",authDomain:"unsignedworkspace.firebaseapp.com",databaseURL:"https://unsignedworkspace-default-rtdb.europe-west1.firebasedatabase.app",projectId:"unsignedworkspace",storageBucket:"unsignedworkspace.firebasestorage.app",messagingSenderId:"144491079509",appId:"1:144491079509:web:c7dcc1c14b8daf404231dc"});
+  _DB = firebase.database();
+} catch(e) { try { _DB = firebase.database(); } catch(e2) {} }
+</script>
+<style>
+:root {
+  --a: #C13030;
+  --a-dark: #A51F1F;
+  --bg: #f4f3f0;
+  --cd: #ffffff;
+  --cd2: #f9f9f9;
+  --bd: rgba(0,0,0,.09);
+  --bd2: rgba(0,0,0,.05);
+  --t: #111111;
+  --td: #555555;
+  --tdd: #aaaaaa;
+  --g: #1D9E75;
+  --y: #D67A1A;
+  --b: #185FA5;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Montserrat', sans-serif;
+  background: var(--bg);
+  color: var(--t);
+  min-height: 100vh;
+  font-size: 13px;
+  line-height: 1.5;
+}
+button, input, textarea, select { font-family: inherit; color: inherit; }
+button { border: none; background: none; cursor: pointer; }
+a { color: var(--a); text-decoration: none; }
+a:hover { text-decoration: underline; }
+input, textarea, select { outline: none; }
+
+/* ── HEADER ── */
+.hdr {
+  position: sticky; top: 0; z-index: 100;
+  background: rgba(255,255,255,.95);
+  backdrop-filter: blur(20px);
+  border-bottom: .5px solid var(--bd);
+  padding: 0 24px;
+  display: flex; align-items: center; gap: 16px;
+  height: 56px;
+}
+.hdr-logo { font-size: 15px; font-weight: 900; font-style: italic; color: var(--a); line-height: 1; }
+.hdr-logo span { font-family: 'Dancing Script', cursive; font-size: 13px; color: var(--tdd); font-style: normal; display: block; line-height: 1; margin-top: 2px; }
+
+.progress-wrap {
+  flex: 1; max-width: 480px; display: flex; align-items: center; gap: 12px;
+}
+.progress-bar {
+  flex: 1; height: 8px; background: rgba(0,0,0,.06);
+  border-radius: 999px; overflow: hidden;
+}
+.progress-fill {
+  height: 100%; background: var(--a);
+  width: 0%; transition: width .35s ease;
+}
+.progress-text {
+  font-size: 11px; font-weight: 800; color: var(--td);
+  white-space: nowrap; min-width: 70px; text-align: right;
+}
+
+.hdr-actions { display: flex; gap: 6px; }
+.hbtn {
+  padding: 6px 12px; border-radius: 8px; border: .5px solid var(--bd);
+  background: var(--cd); font-size: 11px; font-weight: 700; color: var(--td);
+  transition: all .15s; cursor: pointer;
+}
+.hbtn:hover { border-color: var(--a); color: var(--a); }
+.hbtn.primary { background: var(--a); color: #fff; border-color: var(--a); }
+.hbtn.primary:hover { background: var(--a-dark); color: #fff; }
+
+.live-pill {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 11px; font-weight: 700; color: var(--g);
+  padding: 4px 10px; border-radius: 999px;
+  background: rgba(29,158,117,.12);
+}
+.live-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--g); animation: pulse 2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+/* ── MAIN ── */
+.wrap {
+  max-width: 980px; margin: 0 auto; padding: 24px;
+}
+
+/* ── PHASE CARD ── */
+.phase {
+  background: var(--cd); border: .5px solid var(--bd);
+  border-radius: 16px; margin-bottom: 14px; overflow: hidden;
+  break-inside: avoid;
+}
+.phase-head {
+  display: flex; align-items: center; gap: 14px;
+  padding: 18px 22px; border-bottom: .5px solid var(--bd2);
+  background: var(--cd2);
+}
+.phase-num {
+  width: 32px; height: 32px; border-radius: 8px;
+  background: var(--a); color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; font-weight: 900;
+  flex-shrink: 0;
+}
+.phase-title { flex: 1; }
+.phase-title .ico {
+  font-size: 18px; margin-right: 6px;
+}
+.phase-title .lbl {
+  font-size: 16px; font-weight: 900; color: var(--t);
+}
+.phase-title .sub {
+  font-size: 11px; color: var(--td); margin-top: 2px; display: block;
+}
+.status-pill {
+  padding: 5px 12px; border-radius: 999px;
+  font-size: 11px; font-weight: 800;
+  border: .5px solid var(--bd);
+  background: var(--cd); color: var(--td);
+  cursor: pointer; transition: all .15s;
+  letter-spacing: .03em;
+  white-space: nowrap;
+}
+.status-pill[data-status="todo"] { background: rgba(0,0,0,.04); color: var(--td); }
+.status-pill[data-status="wip"] { background: rgba(24,95,165,.1); color: var(--b); border-color: rgba(24,95,165,.3); }
+.status-pill[data-status="done"] { background: rgba(29,158,117,.12); color: var(--g); border-color: rgba(29,158,117,.3); }
+
+.phase-body { padding: 14px 22px 18px; }
+
+/* ── ITEM ── */
+.item {
+  border: .5px solid var(--bd2);
+  border-radius: 10px;
+  margin-bottom: 8px;
+  background: var(--cd);
+  transition: border-color .15s, background .15s;
+}
+.item.is-done { background: rgba(29,158,117,.04); border-color: rgba(29,158,117,.18); }
+.item-head {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px;
+}
+.chk {
+  width: 18px; height: 18px; border-radius: 5px;
+  border: 1.5px solid var(--bd); background: var(--cd);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; flex-shrink: 0;
+  transition: all .15s;
+}
+.chk:hover { border-color: var(--a); }
+.item.is-done .chk {
+  background: var(--g); border-color: var(--g);
+}
+.item.is-done .chk::after {
+  content: '✓'; color: #fff; font-size: 12px; font-weight: 900;
+}
+.item-label {
+  flex: 1; font-size: 13px; font-weight: 700; color: var(--t);
+  background: none; border: none; outline: none; padding: 4px 0;
+  min-width: 0;
+}
+.item.is-done .item-label { text-decoration: line-through; color: var(--td); }
+.item-toggle {
+  font-size: 11px; color: var(--td); padding: 4px 8px; border-radius: 6px;
+  cursor: pointer; flex-shrink: 0;
+}
+.item-toggle:hover { background: rgba(0,0,0,.05); color: var(--t); }
+.item-del {
+  font-size: 14px; color: var(--tdd); padding: 4px 8px; border-radius: 6px;
+  cursor: pointer; flex-shrink: 0;
+}
+.item-del:hover { background: rgba(193,48,48,.08); color: var(--a); }
+
+.item-detail {
+  display: none;
+  padding: 0 12px 12px 40px;
+}
+.item.is-open .item-detail { display: block; }
+.item-notes {
+  width: 100%; min-height: 60px; resize: vertical;
+  background: var(--cd2); border: .5px solid var(--bd);
+  border-radius: 8px; padding: 8px 10px;
+  font-size: 12px; color: var(--t); line-height: 1.5;
+}
+.item-notes:focus { border-color: var(--a); }
+.item-notes::placeholder { color: var(--tdd); }
+
+.links {
+  display: flex; flex-wrap: wrap; gap: 6px;
+  margin-top: 8px;
+}
+.link-pill {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 4px 10px; border-radius: 999px;
+  background: var(--cd2); border: .5px solid var(--bd);
+  font-size: 11px; font-weight: 700; color: var(--td);
+  text-decoration: none;
+}
+.link-pill:hover { background: var(--a); color: #fff; border-color: var(--a); text-decoration: none; }
+.link-pill .x {
+  margin-left: 4px; font-size: 12px; color: inherit;
+  cursor: pointer; opacity: .6;
+}
+.link-pill .x:hover { opacity: 1; }
+.link-form {
+  display: flex; gap: 6px; margin-top: 8px; align-items: center;
+}
+.link-form input {
+  border: .5px solid var(--bd); border-radius: 6px;
+  padding: 6px 10px; font-size: 11px; background: var(--cd2);
+  flex: 1; min-width: 0;
+}
+.link-form input:focus { border-color: var(--a); }
+.link-form button {
+  padding: 6px 12px; border-radius: 6px; background: var(--cd);
+  border: .5px solid var(--bd); font-size: 11px; font-weight: 700;
+  color: var(--td);
+}
+.link-form button:hover { border-color: var(--a); color: var(--a); }
+
+.add-item-btn {
+  width: 100%; padding: 10px;
+  background: transparent; border: 1.5px dashed var(--bd);
+  border-radius: 10px; font-size: 12px; font-weight: 700;
+  color: var(--td); cursor: pointer; transition: all .15s;
+}
+.add-item-btn:hover { border-color: var(--a); color: var(--a); background: rgba(193,48,48,.03); }
+
+/* ── AD SETS TABLE (Phase 3) ── */
+.subblock {
+  margin-top: 18px; padding-top: 18px;
+  border-top: 1px dashed var(--bd);
+}
+.subblock-title {
+  font-size: 10px; font-weight: 800; letter-spacing: .12em;
+  text-transform: uppercase; color: var(--a);
+  margin-bottom: 10px;
+}
+.adset-table {
+  width: 100%;
+  border: .5px solid var(--bd);
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--cd);
+}
+.adset-row {
+  display: grid;
+  grid-template-columns: 1.1fr 1.4fr 0.6fr 1fr 1.4fr 0.7fr 32px;
+  border-top: .5px solid var(--bd2);
+}
+.adset-row:first-child { border-top: none; }
+.adset-row.head {
+  background: var(--cd2);
+  font-size: 9px; font-weight: 900; color: var(--td);
+  letter-spacing: .08em; text-transform: uppercase;
+}
+.adset-row.head > div { padding: 8px 10px; }
+.adset-row > input,
+.adset-row > select {
+  background: transparent; border: none;
+  padding: 9px 10px; font-size: 12px;
+  border-left: .5px solid var(--bd2); min-width: 0;
+}
+.adset-row > input:first-child,
+.adset-row > select:first-child { border-left: none; }
+.adset-row > input:focus { background: rgba(193,48,48,.04); }
+.adset-row > select:focus { background: rgba(193,48,48,.04); }
+.adset-del {
+  display: flex; align-items: center; justify-content: center;
+  color: var(--tdd); font-size: 14px;
+  border-left: .5px solid var(--bd2);
+  cursor: pointer;
+}
+.adset-del:hover { background: rgba(193,48,48,.08); color: var(--a); }
+
+/* ── FLOW BUILDER (Phase 4) ── */
+.flow {
+  background: var(--cd2); border: .5px solid var(--bd);
+  border-radius: 12px; padding: 14px;
+  margin-bottom: 10px;
+}
+.flow-head {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 10px;
+}
+.flow-name {
+  flex: 1; background: var(--cd); border: .5px solid var(--bd);
+  border-radius: 6px; padding: 7px 10px;
+  font-size: 13px; font-weight: 800; color: var(--t);
+}
+.flow-trigger {
+  background: var(--cd); border: .5px solid var(--bd);
+  border-radius: 6px; padding: 7px 10px;
+  font-size: 11px; font-weight: 600; color: var(--td);
+  width: 200px;
+}
+.flow-name:focus, .flow-trigger:focus { border-color: var(--a); }
+.flow-del {
+  font-size: 14px; color: var(--tdd);
+  padding: 7px 10px; border-radius: 6px; cursor: pointer;
+}
+.flow-del:hover { background: rgba(193,48,48,.08); color: var(--a); }
+
+.steps {
+  list-style: none; padding: 0; margin: 0;
+}
+.step {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 10px;
+  background: var(--cd); border: .5px solid var(--bd);
+  border-radius: 8px; margin-bottom: 6px;
+}
+.step-num {
+  width: 22px; height: 22px; flex-shrink: 0;
+  background: var(--a); color: #fff;
+  border-radius: 50%; font-size: 10px; font-weight: 900;
+  display: flex; align-items: center; justify-content: center;
+}
+.step-kind {
+  background: var(--cd2); border: .5px solid var(--bd);
+  border-radius: 5px; padding: 4px 8px; font-size: 11px; font-weight: 700;
+  color: var(--td); cursor: pointer;
+}
+.step-label {
+  flex: 1; min-width: 0;
+  background: transparent; border: none; padding: 4px 0;
+  font-size: 12px; color: var(--t);
+}
+.step-delay {
+  background: var(--cd2); border: .5px solid var(--bd);
+  border-radius: 5px; padding: 4px 8px; font-size: 11px;
+  color: var(--td); width: 100px;
+}
+.step-del {
+  font-size: 13px; color: var(--tdd);
+  padding: 4px 6px; border-radius: 4px; cursor: pointer;
+}
+.step-del:hover { background: rgba(193,48,48,.08); color: var(--a); }
+
+.add-step-btn, .add-flow-btn {
+  width: 100%; padding: 8px;
+  background: transparent; border: 1.5px dashed var(--bd);
+  border-radius: 8px; font-size: 11px; font-weight: 700;
+  color: var(--td); cursor: pointer; transition: all .15s;
+  margin-top: 6px;
+}
+.add-step-btn:hover, .add-flow-btn:hover {
+  border-color: var(--a); color: var(--a); background: rgba(193,48,48,.03);
+}
+
+/* ── TOAST ── */
+#toast {
+  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+  background: #111; color: #fff;
+  padding: 10px 20px; border-radius: 10px;
+  font-size: 12px; font-weight: 700; z-index: 99999;
+  opacity: 0; transition: opacity .3s; pointer-events: none;
+  white-space: nowrap;
+}
+#toast.show { opacity: 1; }
+
+/* ── PRINT ── */
+@media print {
+  .hdr, .add-item-btn, .add-step-btn, .add-flow-btn,
+  .item-toggle, .item-del, .adset-del, .flow-del, .step-del,
+  .link-form, .hbtn, .live-pill { display: none !important; }
+  body { background: #fff; }
+  .wrap { max-width: 100%; padding: 12px; }
+  .phase { break-inside: avoid; box-shadow: none; }
+  .item-detail { display: block !important; }
+  .progress-wrap { display: none; }
+}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div class="hdr-logo">Marketing Plan <span>Unsigned</span></div>
+  <div class="progress-wrap">
+    <div class="progress-bar"><div class="progress-fill" id="progFill"></div></div>
+    <div class="progress-text" id="progText">0 / 0 Punkten</div>
+  </div>
+  <div class="hdr-actions">
+    <button class="hbtn" onclick="window.print()" title="Als PDF drucken">📄 Drucken</button>
+    <span class="live-pill" id="liveBadge" style="display:none;">
+      <span class="live-dot"></span>Live
+    </span>
+  </div>
+</div>
+
+<div class="wrap" id="wrap">
+  <!-- gefüllt per JS -->
+</div>
+
+<div id="toast"></div>
+
+<script>
+'use strict';
+
+// ── Konstanten / Defaults ───────────────────────────────────────────
+var PHASES_DEF = [
+  {
+    id: 'p1', icon: '🎯', label: 'Personal Brand & Brand',
+    sub: 'Wer du als Brand bist und wie das nach außen rüberkommt.',
+    items: [
+      { id: 'p1-steps', label: 'Erste Steps' },
+      { id: 'p1-skripte', label: 'Skripte' },
+      { id: 'p1-videos', label: 'Videos' },
+    ],
+  },
+  {
+    id: 'p2', icon: '📧', label: 'Ads & Email Aufbau',
+    sub: 'Strukturen, Templates und Beispiele für Ads + Mails.',
+    items: [
+      { id: 'p2-bsp', label: 'Beispiele' },
+      { id: 'p2-aufbau', label: 'Aufbau-Besprechung' },
+      { id: 'p2-templates', label: 'Templates' },
+      { id: 'p2-umsetzung', label: 'Umsetzung' },
+    ],
+  },
+  {
+    id: 'p3', icon: '📊', label: 'Ad Planung',
+    sub: 'Konkrete Ad-Sets, Creatives und Roll-out-Plan.',
+    items: [
+      { id: 'p3-sets', label: 'Ad Sets' },
+      { id: 'p3-videos', label: 'Videos' },
+      { id: 'p3-plan', label: 'Plan' },
+      { id: 'p3-umsetzung', label: 'Umsetzung' },
+    ],
+    hasAdSets: true,
+  },
+  {
+    id: 'p4', icon: '🔄', label: 'Ads-/Email Flows',
+    sub: 'Automatisierte Sequenzen die im Hintergrund laufen.',
+    items: [
+      { id: 'p4-wichtig', label: 'Was ist wichtig' },
+      { id: 'p4-flows', label: 'Verschiedene Flows' },
+    ],
+    hasFlows: true,
+  },
+];
+
+var STATUS_LABELS = {
+  todo: '⚪ offen',
+  wip: '🔵 in Arbeit',
+  done: '✅ fertig',
+};
+var STATUS_NEXT = { todo: 'wip', wip: 'done', done: 'todo' };
+
+// ── State ──────────────────────────────────────────────────────────
+var STATE = null; // wird in initState() gefüllt
+var SAVE_TO = null;
+var SUPPRESS_SAVE = false; // beim Apply-from-Remote
+
+function makeDefaultState(){
+  var s = { phases: {} };
+  PHASES_DEF.forEach(function(p){
+    var ph = { status: 'todo', items: p.items.map(function(it){
+      return { id: it.id, label: it.label, done: false, notes: '', links: [] };
+    }) };
+    if (p.hasAdSets) ph.adSets = [];
+    if (p.hasFlows) ph.flows = [];
+    s.phases[p.id] = ph;
+  });
+  return s;
+}
+
+function _toArr(v){ if(Array.isArray(v)) return v; if(v && typeof v==='object') return Object.values(v); return []; }
+
+// merge remote state robustly — preserve item order from defaults if remote is partial
+function applyRemote(remote){
+  if(!remote || typeof remote !== 'object'){ return; }
+  var fresh = makeDefaultState();
+  PHASES_DEF.forEach(function(p){
+    var rPh = remote.phases && remote.phases[p.id];
+    if (!rPh) { return; }
+    if (rPh.status) fresh.phases[p.id].status = rPh.status;
+    var rItems = _toArr(rPh.items);
+    if (rItems.length){
+      // map by id so we keep default ordering for known ids and append unknown ones
+      var byId = {};
+      rItems.forEach(function(it){ if(it && it.id) byId[it.id] = it; });
+      var kept = fresh.phases[p.id].items.map(function(def){
+        var ri = byId[def.id];
+        if (ri) {
+          delete byId[def.id];
+          return {
+            id: def.id,
+            label: ri.label || def.label,
+            done: !!ri.done,
+            notes: ri.notes || '',
+            links: _toArr(ri.links).filter(Boolean),
+          };
+        }
+        return def;
+      });
+      Object.keys(byId).forEach(function(id){
+        var ri = byId[id];
+        kept.push({
+          id: id, label: ri.label || 'Eigener Punkt',
+          done: !!ri.done, notes: ri.notes || '',
+          links: _toArr(ri.links).filter(Boolean),
+        });
+      });
+      fresh.phases[p.id].items = kept;
+    }
+    if (p.hasAdSets) fresh.phases[p.id].adSets = _toArr(rPh.adSets).filter(Boolean);
+    if (p.hasFlows) {
+      fresh.phases[p.id].flows = _toArr(rPh.flows).filter(Boolean).map(function(f){
+        return {
+          name: f.name || '',
+          trigger: f.trigger || '',
+          steps: _toArr(f.steps).filter(Boolean),
+        };
+      });
+    }
+  });
+  STATE = fresh;
+}
+
+// ── Persistence ────────────────────────────────────────────────────
+function scheduleSave(){
+  if (SUPPRESS_SAVE) return;
+  clearTimeout(SAVE_TO);
+  SAVE_TO = setTimeout(save, 450);
+}
+
+function save(){
+  if (!_DB || !_ROOM || !STATE) return;
+  // Strip undefineds (RTDB rejects)
+  var data = JSON.parse(JSON.stringify(STATE));
+  console.log('[mk] save → rooms/'+_ROOM+'/marketing');
+  _DB.ref('rooms/'+_ROOM+'/marketing').set(data)
+    .then(function(){ /* ok */ })
+    .catch(function(err){
+      console.error('[mk] save failed:', err);
+      toast('Speichern fehlgeschlagen: '+(err.code||err.message));
+    });
+  // Progress to parent
+  postProgress();
+}
+
+function postProgress(){
+  var total = 0, done = 0;
+  PHASES_DEF.forEach(function(p){
+    var ph = STATE.phases[p.id];
+    _toArr(ph.items).forEach(function(it){
+      total++;
+      if (it.done) done++;
+    });
+  });
+  var pct = total ? Math.round(done/total*100) : 0;
+  var fillEl = document.getElementById('progFill');
+  var textEl = document.getElementById('progText');
+  if (fillEl) fillEl.style.width = pct + '%';
+  if (textEl) textEl.textContent = done + ' / ' + total + ' Punkten · ' + pct + '%';
+  try { window.parent.postMessage({type:'mkPct', pct: pct}, '*'); } catch(e){}
+}
+
+function loadRemote(){
+  if (!_DB || !_ROOM) { STATE = makeDefaultState(); render(); return; }
+  _DB.ref('rooms/'+_ROOM+'/marketing').on('value', function(snap){
+    var v = snap.val();
+    if (!v) {
+      if (!STATE) { STATE = makeDefaultState(); render(); }
+      return;
+    }
+    SUPPRESS_SAVE = true;
+    applyRemote(v);
+    SUPPRESS_SAVE = false;
+    render({preserveFocus: true});
+    var live = document.getElementById('liveBadge');
+    if (live) live.style.display = 'flex';
+  }, function(err){
+    console.error('[mk] listener error:', err);
+    toast('Verbindungsfehler: '+(err.code||err.message));
+    if (!STATE) { STATE = makeDefaultState(); render(); }
+  });
+}
+
+// ── Render ─────────────────────────────────────────────────────────
+var FOCUS_PATH = null;
+var FOCUS_SEL = null;
+
+function captureFocus(){
+  var ae = document.activeElement;
+  if (!ae || !ae.dataset || !ae.dataset.path) { FOCUS_PATH = null; return; }
+  FOCUS_PATH = ae.dataset.path;
+  if (typeof ae.selectionStart === 'number') {
+    FOCUS_SEL = { start: ae.selectionStart, end: ae.selectionEnd };
+  } else FOCUS_SEL = null;
+}
+
+function restoreFocus(){
+  if (!FOCUS_PATH) return;
+  var el = document.querySelector('[data-path="'+CSS.escape(FOCUS_PATH)+'"]');
+  if (!el) return;
+  el.focus();
+  if (FOCUS_SEL && typeof el.setSelectionRange === 'function'){
+    try { el.setSelectionRange(FOCUS_SEL.start, FOCUS_SEL.end); } catch(e){}
+  }
+}
+
+function render(opts){
+  opts = opts || {};
+  if (opts.preserveFocus) captureFocus();
+  var wrap = document.getElementById('wrap');
+  wrap.innerHTML = '';
+  PHASES_DEF.forEach(function(p, i){
+    wrap.appendChild(renderPhase(p, i+1));
+  });
+  postProgress();
+  if (opts.preserveFocus) restoreFocus();
+}
+
+function escHtml(s){
+  return String(s==null?'':s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+function el(tag, attrs, children){
+  var n = document.createElement(tag);
+  if (attrs) Object.keys(attrs).forEach(function(k){
+    if (k === 'class') n.className = attrs[k];
+    else if (k === 'html') n.innerHTML = attrs[k];
+    else if (k === 'on') Object.keys(attrs[k]).forEach(function(ev){ n.addEventListener(ev, attrs[k][ev]); });
+    else if (k === 'data') Object.keys(attrs[k]).forEach(function(d){ n.dataset[d] = attrs[k][d]; });
+    else n.setAttribute(k, attrs[k]);
+  });
+  (children||[]).forEach(function(c){ if(c) n.appendChild(c); });
+  return n;
+}
+
+function renderPhase(p, num){
+  var ph = STATE.phases[p.id];
+  var card = el('section', {class:'phase'});
+
+  // HEAD
+  var head = el('div', {class:'phase-head'});
+  head.appendChild(el('div', {class:'phase-num', html: String(num)}));
+  var title = el('div', {class:'phase-title'});
+  title.appendChild(el('span', {class:'lbl', html: '<span class="ico">'+p.icon+'</span>'+escHtml(p.label)}));
+  title.appendChild(el('span', {class:'sub', html: escHtml(p.sub)}));
+  head.appendChild(title);
+  var pill = el('button', {
+    class:'status-pill', 'data-status': ph.status,
+    html: STATUS_LABELS[ph.status] || STATUS_LABELS.todo,
+    on: { click: function(){ ph.status = STATUS_NEXT[ph.status] || 'wip'; scheduleSave(); render({preserveFocus:true}); }}
+  });
+  head.appendChild(pill);
+  card.appendChild(head);
+
+  // BODY
+  var body = el('div', {class:'phase-body'});
+
+  ph.items.forEach(function(it, idx){
+    body.appendChild(renderItem(p.id, it, idx));
+  });
+
+  body.appendChild(el('button', {
+    class:'add-item-btn',
+    html: '+ Punkt hinzufügen',
+    on: { click: function(){
+      var newItem = { id: 'cx'+Date.now().toString(36), label: 'Neuer Punkt', done: false, notes: '', links: [] };
+      ph.items.push(newItem);
+      scheduleSave();
+      render();
+      // Fokus aufs neue Label
+      setTimeout(function(){
+        var label = document.querySelector('[data-path="'+CSS.escape(p.id+'.items.'+(ph.items.length-1)+'.label')+'"]');
+        if (label) { label.focus(); label.select(); }
+      }, 30);
+    }}
+  }));
+
+  // Phase-spezifische Sub-Blöcke
+  if (p.hasAdSets) body.appendChild(renderAdSets(p, ph));
+  if (p.hasFlows) body.appendChild(renderFlows(p, ph));
+
+  card.appendChild(body);
+  return card;
+}
+
+function renderItem(phaseId, it, idx){
+  var basePath = phaseId+'.items.'+idx;
+  var item = el('div', { class: 'item' + (it.done ? ' is-done' : '') + (it._open ? ' is-open' : '') });
+
+  // HEAD
+  var head = el('div', {class:'item-head'});
+  head.appendChild(el('button', {
+    class:'chk', title: it.done ? 'Abgehakt' : 'Erledigt markieren',
+    on: { click: function(){ it.done = !it.done; scheduleSave(); render({preserveFocus:true}); }}
+  }));
+  head.appendChild(el('input', {
+    class:'item-label', type:'text', value: it.label || '',
+    placeholder: 'Punkt benennen…', maxlength: '120',
+    data: { path: basePath+'.label' },
+    on: {
+      input: function(e){ it.label = e.target.value; scheduleSave(); },
+      keydown: function(e){ if(e.key==='Enter'){ e.preventDefault(); e.target.blur(); }}
+    }
+  }));
+  var detailsCount = (it.notes ? 1 : 0) + (it.links && it.links.length ? 1 : 0);
+  head.appendChild(el('button', {
+    class:'item-toggle',
+    html: it._open ? '▾ schließen' : (detailsCount ? '▸ Details ('+detailsCount+')' : '▸ Details'),
+    on: { click: function(){ it._open = !it._open; render({preserveFocus:true}); }}
+  }));
+  head.appendChild(el('button', {
+    class:'item-del', title:'Löschen',
+    html: '✕',
+    on: { click: function(){
+      if (!confirm('Punkt „'+(it.label||'?')+'" löschen?')) return;
+      STATE.phases[phaseId].items.splice(idx, 1);
+      scheduleSave();
+      render();
+    }}
+  }));
+  item.appendChild(head);
+
+  // DETAIL
+  var detail = el('div', {class:'item-detail'});
+  detail.appendChild(el('textarea', {
+    class:'item-notes', placeholder: 'Notizen, Ideen, Stichpunkte…',
+    data: { path: basePath+'.notes' },
+    html: escHtml(it.notes || ''),
+    on: { input: function(e){ it.notes = e.target.value; scheduleSave(); }}
+  }));
+
+  // LINKS
+  var linksWrap = el('div', {class:'links'});
+  (it.links || []).forEach(function(l, li){
+    var pill = el('a', {
+      class:'link-pill',
+      href: l.url || '#',
+      target: '_blank',
+      rel: 'noopener',
+      html: '🔗 ' + escHtml(l.label || l.url || 'Link'),
+    });
+    pill.appendChild(el('span', {
+      class:'x',
+      html:'✕',
+      title:'Link entfernen',
+      on: { click: function(e){ e.preventDefault(); e.stopPropagation(); it.links.splice(li,1); scheduleSave(); render({preserveFocus:true}); }}
+    }));
+    linksWrap.appendChild(pill);
+  });
+  detail.appendChild(linksWrap);
+
+  // ADD LINK FORM
+  var lForm = el('div', {class:'link-form'});
+  var lLabel = el('input', {type:'text', placeholder:'Label (z.B. Loom-Recording)', maxlength:'80'});
+  var lUrl = el('input', {type:'url', placeholder:'https://…'});
+  var lAdd = el('button', {html:'+ Link', on: { click: function(){
+    var u = lUrl.value.trim();
+    if (!u) { lUrl.focus(); return; }
+    if (!/^https?:\/\//i.test(u)) u = 'https://' + u;
+    it.links = it.links || [];
+    it.links.push({ label: lLabel.value.trim() || u, url: u });
+    lLabel.value = ''; lUrl.value = '';
+    scheduleSave();
+    render({preserveFocus:true});
+  }}});
+  lUrl.addEventListener('keydown', function(e){ if(e.key==='Enter'){ e.preventDefault(); lAdd.click(); }});
+  lForm.appendChild(lLabel); lForm.appendChild(lUrl); lForm.appendChild(lAdd);
+  detail.appendChild(lForm);
+
+  item.appendChild(detail);
+  return item;
+}
+
+// ── Ad Sets Table ──────────────────────────────────────────────────
+function renderAdSets(p, ph){
+  var sub = el('div', {class:'subblock'});
+  sub.appendChild(el('div', {class:'subblock-title', html:'📊 Ad Sets'}));
+  var tbl = el('div', {class:'adset-table'});
+  // Head
+  var hd = el('div', {class:'adset-row head'});
+  ['Set-Name','Audience','Budget €','Creative-Link','Hook','Status',''].forEach(function(c){
+    hd.appendChild(el('div', {html: c}));
+  });
+  tbl.appendChild(hd);
+
+  (ph.adSets || []).forEach(function(s, i){
+    var row = el('div', {class:'adset-row'});
+    var basePath = p.id+'.adSets.'+i;
+    function fld(key, type, ph){
+      return el('input', {
+        type: type || 'text',
+        value: s[key] || '',
+        placeholder: ph || '',
+        data: { path: basePath+'.'+key },
+        on: { input: function(e){ s[key] = e.target.value; scheduleSave(); } }
+      });
+    }
+    row.appendChild(fld('name','text','z.B. Cold-EU-21-35'));
+    row.appendChild(fld('audience','text','Interessen, Lookalike, …'));
+    row.appendChild(fld('budget','text','€ / Tag'));
+    row.appendChild(fld('creative','url','Drive / Loom URL'));
+    row.appendChild(fld('hook','text','Hook-Text / Idee'));
+    var sel = el('select', { data: { path: basePath+'.status' }, on: { change: function(e){ s.status = e.target.value; scheduleSave(); }}});
+    [['','—'],['draft','Entwurf'],['live','Live'],['paused','Pausiert'],['done','Abgeschlossen']].forEach(function(o){
+      var op = el('option', {value:o[0], html:o[1]});
+      if ((s.status||'') === o[0]) op.selected = true;
+      sel.appendChild(op);
+    });
+    row.appendChild(sel);
+    row.appendChild(el('div', {class:'adset-del', html:'✕', on: { click: function(){ ph.adSets.splice(i,1); scheduleSave(); render(); }}}));
+    tbl.appendChild(row);
+  });
+  sub.appendChild(tbl);
+  sub.appendChild(el('button', {
+    class:'add-item-btn', html:'+ Ad-Set hinzufügen',
+    on: { click: function(){
+      ph.adSets = ph.adSets || [];
+      ph.adSets.push({ name:'', audience:'', budget:'', creative:'', hook:'', status:'draft' });
+      scheduleSave(); render();
+    }}
+  }));
+  return sub;
+}
+
+// ── Flow Builder ───────────────────────────────────────────────────
+function renderFlows(p, ph){
+  var sub = el('div', {class:'subblock'});
+  sub.appendChild(el('div', {class:'subblock-title', html:'🔄 Flows'}));
+
+  (ph.flows || []).forEach(function(f, fi){
+    var card = el('div', {class:'flow'});
+    var basePath = p.id+'.flows.'+fi;
+    var head = el('div', {class:'flow-head'});
+    head.appendChild(el('input', {
+      class:'flow-name', type:'text', value: f.name||'', placeholder:'Flow-Name (z.B. Welcome Series)',
+      data: { path: basePath+'.name' },
+      on: { input: function(e){ f.name = e.target.value; scheduleSave(); }}
+    }));
+    head.appendChild(el('input', {
+      class:'flow-trigger', type:'text', value: f.trigger||'', placeholder:'Trigger: z.B. Sign-up, Cart-Abandon',
+      data: { path: basePath+'.trigger' },
+      on: { input: function(e){ f.trigger = e.target.value; scheduleSave(); }}
+    }));
+    head.appendChild(el('button', {
+      class:'flow-del', html:'✕', title:'Flow löschen',
+      on: { click: function(){
+        if (!confirm('Flow „'+(f.name||'?')+'" löschen?')) return;
+        ph.flows.splice(fi,1); scheduleSave(); render();
+      }}
+    }));
+    card.appendChild(head);
+
+    var stepsList = el('ul', {class:'steps'});
+    (f.steps || []).forEach(function(s, si){
+      var li = el('li', {class:'step'});
+      var spath = basePath+'.steps.'+si;
+      li.appendChild(el('div', {class:'step-num', html: String(si+1)}));
+      li.appendChild(el('button', {
+        class:'step-kind', html: s.kind === 'wait' ? '⏱ Wartezeit' : '✉ E-Mail',
+        title: 'Typ wechseln',
+        on: { click: function(){ s.kind = s.kind === 'wait' ? 'email' : 'wait'; scheduleSave(); render({preserveFocus:true}); }}
+      }));
+      li.appendChild(el('input', {
+        class:'step-label', type:'text', value: s.label||'',
+        placeholder: s.kind === 'wait' ? 'Was passiert / wartet' : 'Subject oder Beschreibung',
+        data: { path: spath+'.label' },
+        on: { input: function(e){ s.label = e.target.value; scheduleSave(); }}
+      }));
+      li.appendChild(el('input', {
+        class:'step-delay', type:'text', value: s.delay||'',
+        placeholder: s.kind === 'wait' ? 'z.B. 2 Tage' : 'Delay (sofort)',
+        data: { path: spath+'.delay' },
+        on: { input: function(e){ s.delay = e.target.value; scheduleSave(); }}
+      }));
+      li.appendChild(el('button', {
+        class:'step-del', html:'✕',
+        on: { click: function(){ f.steps.splice(si,1); scheduleSave(); render(); }}
+      }));
+      stepsList.appendChild(li);
+    });
+    card.appendChild(stepsList);
+
+    card.appendChild(el('button', {
+      class:'add-step-btn', html:'+ Schritt hinzufügen',
+      on: { click: function(){
+        f.steps = f.steps || [];
+        f.steps.push({ kind:'email', label:'', delay:'' });
+        scheduleSave(); render();
+      }}
+    }));
+    sub.appendChild(card);
+  });
+
+  sub.appendChild(el('button', {
+    class:'add-flow-btn', html:'+ Flow hinzufügen',
+    on: { click: function(){
+      ph.flows = ph.flows || [];
+      ph.flows.push({ name:'Neuer Flow', trigger:'', steps:[] });
+      scheduleSave(); render();
+    }}
+  }));
+  return sub;
+}
+
+// ── Toast ──────────────────────────────────────────────────────────
+function toast(m){
+  var el = document.getElementById('toast');
+  if (!el) return;
+  el.textContent = m;
+  el.classList.add('show');
+  setTimeout(function(){ el.classList.remove('show'); }, 2400);
+}
+
+// ── Init ───────────────────────────────────────────────────────────
+STATE = makeDefaultState();
+render();
+loadRemote();
+</script>
+</body>
+</html>
