@@ -216,6 +216,33 @@ const notifications = [
           >
         </div>
       </div>
+
+      <div class="bg-card border-[0.5px] border-line rounded-[9px] px-4 py-4 mt-3">
+        <div class="flex items-center justify-between mb-2">
+          <h4 class="text-[12px] font-bold text-ink">📣 Creator Guide</h4>
+          <span id="crDefaultsStatus" class="text-[10px] text-ink-mute"></span>
+        </div>
+        <p class="text-[10px] text-ink-mute mb-3">
+          Pro Kategorie: Titel + optionaler Hook. Leere Zeilen werden ignoriert.
+        </p>
+
+        <div id="crDefaultsCats" class="space-y-3"></div>
+
+        <div class="flex justify-end gap-2 mt-3">
+          <button
+            id="crDefaultsReset"
+            type="button"
+            class="text-[11px] text-ink-mute hover:text-brand bg-transparent border-0 cursor-pointer"
+            >Auf Original zurücksetzen</button
+          >
+          <button
+            id="crDefaultsSave"
+            type="button"
+            class="text-[11px] font-bold text-white bg-brand hover:bg-brand-dark px-3 py-2 rounded-lg cursor-pointer border-0"
+            >Speichern</button
+          >
+        </div>
+      </div>
     </section>
 
     <section id="adminSection" class="hidden">
@@ -620,5 +647,165 @@ const notifications = [
       });
     }
     window.appUI.onAuth(initShDefaults);
+
+    // ── CR (Creator Guide) defaults editor ─────────────────────────
+    var CR_CATS = [
+      { key: "outfit", label: "Outfit-Videos & Fitchecks" },
+      { key: "speech", label: "Sprech-Content & WhatsApp-Funnel" },
+      { key: "collab", label: "Creator-Collabs" },
+      { key: "trends", label: "Trend- & Tanzvideos" },
+      { key: "free",   label: "Free-Style" },
+    ];
+    var CR_HARDCODED = {
+      outfit: [
+        { text: "GRWM mit dem Piece", hook: "Hook: \"Heute zeig ich euch das Teil das ich seit 2 Wochen immer wieder anziehe…\"" },
+        { text: "3 Outfits mit 1 Piece — ein Teil, drei Vibes", hook: "Hook: \"Ein Teil — drei komplett verschiedene Vibes. Ich mach's euch vor.\"" },
+        { text: "Fitcheck Transition — Kamera runter, Outfit dran, Kamera hoch", hook: "Trending Format — einfach, schnell, effektiv" },
+        { text: "\"Rate my Outfit\" — Community per Poll abstimmen lassen", hook: "Comments oder Story-Poll — maximales Engagement" },
+        { text: "Streetstyle Cam — draußen laufen, Piece trägt sich selbst", hook: "Candid wirkt echter als Studio — einfach loslaufen, Kamera an" },
+        { text: "Aesthetic Lookbook-Style — kein Gesicht nötig, nur das Piece", hook: "Für wer nicht reden will — Musik + Shots reicht komplett" },
+      ],
+      speech: [
+        { text: "\"Ich bin in einer Community die ich euch zeigen muss\" — Story-Format", hook: "Persönlich, authentisch, direkt ansprechen — kein Sales-Talk" },
+        { text: "\"Wir entscheiden den nächsten Drop — du auch?\" — direkter WhatsApp-CTA", hook: "Link in Bio, kurz und direkt, keine langen Erklärungen" },
+        { text: "\"Ich hab mit abgestimmt — das ist der nächste Drop\" — Reaction Video", hook: "Echte Beteiligung zeigen, nicht nur werben" },
+        { text: "Unboxing / Reveal des neuen Pieces — \"Das haben WIR mitentschieden…\"", hook: "Nicht \"ich hab bekommen\" — sondern \"WIR haben entschieden\"" },
+      ],
+      collab: [
+        { text: "Duo-Fitcheck — zwei Creator, ein Piece, verschiedene Styles", hook: "Split-Screen oder harter Cut zwischen den zwei Looks" },
+        { text: "\"Style Challenge\" — wer styled es besser? Community abstimmen lassen", hook: "Beide posten, beide verlinken — massives Engagement durch Voting" },
+        { text: "Gemeinsamer GRWM / Content-Day zusammen drehen", hook: "Ein Tag, mehrere Videos, mehrere Accounts — alle profitieren" },
+      ],
+      trends: [
+        { text: "Tanz-Trend im Outfit — einfach mitmachen, Piece sichtbar halten", hook: "Kein Kommentar nötig — Musik + Bewegung + Piece reicht" },
+        { text: "Euphoria-Style Outfit Edit", hook: "Euphoria S3 läuft gerade — Cinematic Edit, Mood-Shots im Piece" },
+        { text: "Coachella-Vibe Outfit", hook: "Hook: \"Coachella-Outfit aber make it Unsigned\" — Festival-Season läuft gerade" },
+        { text: "Transition mit \"realization\" von Futureville oder Bruno Mars — I Just Might", hook: "Outfit-Reveal mit emotionalem Sound — starke Combo, gerade trending" },
+      ],
+      free: [
+        { text: "Day-in-my-Life mit dem Piece — einfach mitfilmen", hook: "Kein Script, kein Plan — einfach filmen was passiert" },
+        { text: "Persönliche Story — warum stehst du hinter der Brand?", hook: "Authentisch und ehrlich — das sind die Videos die viral gehen" },
+        { text: "Spontane Outfit-Shots — kein Editing nötig, einfach abdrücken", hook: "Weniger ist mehr — raw content performt oft besser als polished" },
+      ],
+    };
+
+    function initCrDefaults(me) {
+      if (!window.fb || !me) return;
+      var section = document.getElementById("defaultsSection");
+      var wrap = document.getElementById("crDefaultsCats");
+      var saveBtn = document.getElementById("crDefaultsSave");
+      var resetBtn = document.getElementById("crDefaultsReset");
+      var status = document.getElementById("crDefaultsStatus");
+      if (!section || !wrap || !saveBtn || !resetBtn) return;
+
+      var isAdmin = false;
+
+      function makeRow(d) {
+        var row = document.createElement("div");
+        row.className = "cr-row flex items-center gap-2";
+        row.innerHTML =
+          '<input type="text" class="cr-text flex-1 text-[12px] border-[1.5px] border-line rounded-lg px-2 py-[6px] bg-white text-ink focus:border-brand outline-none" placeholder="Titel">' +
+          '<input type="text" class="cr-hook flex-1 text-[11px] italic border-[1.5px] border-line rounded-lg px-2 py-[6px] bg-white text-ink-mute focus:border-brand outline-none" placeholder="Hook (optional)">' +
+          '<button type="button" class="cr-del text-[14px] text-ink-mute hover:text-brand bg-transparent border-0 px-1 cursor-pointer" title="Löschen">×</button>';
+        row.querySelector(".cr-text").value = (d && d.text) || "";
+        row.querySelector(".cr-hook").value = (d && d.hook) || "";
+        row.querySelector(".cr-del").addEventListener("click", function () {
+          row.remove();
+        });
+        return row;
+      }
+
+      function buildEditors(values) {
+        wrap.innerHTML = "";
+        CR_CATS.forEach(function (c) {
+          var box = document.createElement("div");
+          box.className = "border-[0.5px] border-line rounded-[8px] px-3 py-2 bg-page";
+          box.dataset.cat = c.key;
+          box.innerHTML =
+            '<div class="flex items-center justify-between mb-2">' +
+            '<span class="text-[11px] font-bold text-ink">' + c.label + '</span>' +
+            '<button type="button" class="cr-add text-[11px] text-brand hover:text-brand-dark bg-transparent border-0 cursor-pointer">+ hinzufügen</button>' +
+            '</div>' +
+            '<div class="cr-rows space-y-1"></div>';
+          var rows = box.querySelector(".cr-rows");
+          var items = (values && Array.isArray(values[c.key]))
+            ? values[c.key]
+            : (CR_HARDCODED[c.key] || []);
+          items.forEach(function (d) { rows.appendChild(makeRow(d)); });
+          box.querySelector(".cr-add").addEventListener("click", function () {
+            rows.appendChild(makeRow({ text: "", hook: "" }));
+            rows.lastChild.querySelector(".cr-text").focus();
+          });
+          wrap.appendChild(box);
+        });
+        wrap.querySelectorAll("input,button").forEach(function (el) {
+          el.disabled = !isAdmin;
+        });
+        saveBtn.disabled = !isAdmin;
+        resetBtn.disabled = !isAdmin;
+      }
+
+      window.fb.ref("admins/" + me.uid).on("value", function (s) {
+        isAdmin = !!s.val();
+        if (isAdmin) section.classList.remove("hidden");
+        wrap.querySelectorAll("input,button").forEach(function (el) {
+          el.disabled = !isAdmin;
+        });
+        saveBtn.disabled = !isAdmin;
+        resetBtn.disabled = !isAdmin;
+        if (!isAdmin) status.textContent = "nur lesen — du bist kein Admin";
+      });
+
+      window.fb.ref("workspace/defaults/cr").on("value", function (s) {
+        var ae = document.activeElement;
+        if (ae && ae.closest && ae.closest("#crDefaultsCats")) return;
+        buildEditors(s.val());
+      }, function (err) {
+        status.textContent = "Lese-Fehler: " + (err.code || err.message);
+        buildEditors(null);
+      });
+
+      saveBtn.addEventListener("click", function () {
+        if (!isAdmin) return;
+        var data = {};
+        wrap.querySelectorAll("[data-cat]").forEach(function (box) {
+          var cat = box.dataset.cat;
+          var rows = box.querySelectorAll(".cr-row");
+          var arr = [];
+          rows.forEach(function (r) {
+            var text = r.querySelector(".cr-text").value.trim();
+            var hook = r.querySelector(".cr-hook").value.trim();
+            if (text || hook) arr.push({ text: text, hook: hook });
+          });
+          data[cat] = arr;
+        });
+        status.textContent = "Speichert…";
+        window.fb.ref("workspace/defaults/cr").set(data).then(function () {
+          status.textContent = "✓ gespeichert";
+          window.appUI.toast("Creator-Defaults gespeichert");
+          setTimeout(function () { status.textContent = ""; }, 2000);
+        }).catch(function (err) {
+          status.textContent = "Fehler: " + (err.code || err.message);
+        });
+      });
+
+      resetBtn.addEventListener("click", function () {
+        if (!isAdmin) return;
+        window.appUI.confirm({
+          title: "Auf Original zurücksetzen?",
+          description: "Die Workspace-Custom-Defaults für Creator Guide werden gelöscht. Bestehende Kunden behalten ihre Daten — neue Kunden starten wieder mit den eingebauten Defaults.",
+          okLabel: "Zurücksetzen",
+        }).then(function (ok) {
+          if (!ok) return;
+          window.fb.ref("workspace/defaults/cr").remove().then(function () {
+            window.appUI.toast("Auf Original zurückgesetzt");
+            buildEditors(null);
+          }).catch(function (err) {
+            status.textContent = "Fehler: " + (err.code || err.message);
+          });
+        });
+      });
+    }
+    window.appUI.onAuth(initCrDefaults);
   })();
 </script>

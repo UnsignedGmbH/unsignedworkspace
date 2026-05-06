@@ -464,6 +464,46 @@ document.querySelectorAll('.delete-btn').forEach(function(btn) {
 
   if (!_R || !_D) { restoreState(); return; }
 
+  // Try to override hardcoded baseline items with workspace-wide custom defaults.
+  // Existing customers (with saved cr_items) get their data applied on top, so
+  // workspace defaults only really show on fresh rooms.
+  function applyWorkspaceDefaultsThen(next) {
+    _D.ref('workspace/defaults/cr').once('value').then(function(snap) {
+      var ws = snap.val();
+      if (!ws || typeof ws !== 'object') return;
+      ['outfit','speech','collab','trends','free'].forEach(function(catKey) {
+        var items = ws[catKey];
+        if (!Array.isArray(items) || !items.length) return;
+        var list = document.getElementById('cat-' + catKey);
+        if (!list) return;
+        list.innerHTML = '';
+        items.forEach(function(d) {
+          if (!d || (!d.text && !d.hook)) return;
+          var div = document.createElement('div');
+          div.className = 'check-item';
+          div.dataset.cat = catKey;
+          div.innerHTML = '<div class="check-box"><svg class="check-icon" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div>'
+            + '<div class="check-content"><p class="check-title" contenteditable="true" spellcheck="false">' + (d.text||'') + '</p>'
+            + '<p class="check-hook" contenteditable="true" spellcheck="false">' + (d.hook||'') + '</p></div>'
+            + '<button class="delete-btn" title="Löschen">&times;</button>';
+          div.querySelector('.check-box').addEventListener('pointerdown', function(e) {
+            e.preventDefault(); toggleItem(div);
+          });
+          div.querySelector('.delete-btn').addEventListener('pointerdown', function(e) {
+            e.preventDefault(); e.stopPropagation(); deleteItem(div.querySelector('.delete-btn'));
+          });
+          div.querySelector('.check-title').addEventListener('blur', function() { saveCustomItems(); });
+          div.querySelector('.check-hook').addEventListener('blur', function() { saveCustomItems(); });
+          list.appendChild(div);
+        });
+      });
+    }).catch(function(){}).then(next);
+  }
+
+  applyWorkspaceDefaultsThen(function(){ _initRoomData(); });
+}());
+
+function _initRoomData() {
   // Load checks from Firebase first, then restore
   _D.ref('rooms/' + _R + '/cr_checks').once('value', function(snap) {
     var d = snap.val();
@@ -510,7 +550,7 @@ document.querySelectorAll('.delete-btn').forEach(function(btn) {
       });
     });
   });
-})();
+}
 
 function applyCustomItems(custom) {
   if (!custom) return;
