@@ -86,6 +86,71 @@ body { font-family: 'Montserrat', sans-serif; background: var(--bg); color: var(
 .foot-reset { background: transparent; border: 0; font-family: inherit; font-size: 11px; font-weight: 700; color: var(--text-dim); cursor: pointer; padding: 6px 10px; border-radius: 6px; }
 .foot-reset:hover { color: var(--red); background: var(--red-dim); }
 
+.cheat-btn {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 10px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--red); background: var(--red-dim);
+  border: 1px solid var(--border-red); border-radius: 999px;
+  padding: 5px 10px;
+  cursor: pointer; user-select: none; -webkit-tap-highlight-color: transparent;
+  font-family: inherit;
+  transition: background 0.15s, color 0.15s;
+  flex-shrink: 0;
+}
+.cheat-btn:hover { background: var(--red); color: #fff; }
+.cheat-btn svg { width: 11px; height: 11px; }
+
+.lightbox {
+  position: fixed; inset: 0; z-index: 200;
+  background: rgba(15, 15, 15, 0.92);
+  display: flex; flex-direction: column;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.18s ease;
+}
+.lightbox.open { opacity: 1; pointer-events: auto; }
+body.lb-open { overflow: hidden; }
+.lightbox-bar {
+  flex-shrink: 0; padding: 14px 18px;
+  display: flex; align-items: center; gap: 12px;
+  color: #fff;
+}
+.lightbox-title {
+  font-size: 11px; font-weight: 800; letter-spacing: 0.18em; text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.85);
+}
+.lightbox-hint {
+  font-size: 10px; color: rgba(255, 255, 255, 0.45);
+  letter-spacing: 0.06em;
+  margin-left: auto;
+}
+.lightbox-close {
+  background: rgba(255, 255, 255, 0.12); border: 0;
+  width: 34px; height: 34px; border-radius: 50%;
+  color: #fff; font-size: 18px; font-weight: 700; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-family: inherit;
+  transition: background 0.15s;
+}
+.lightbox-close:hover { background: rgba(255, 255, 255, 0.22); }
+.lightbox-scroll {
+  flex: 1;
+  overflow: auto;
+  padding: 0 14px 24px;
+  -webkit-overflow-scrolling: touch;
+  display: flex; justify-content: center;
+}
+.lightbox-img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+  cursor: zoom-in;
+  transition: transform 0.2s ease;
+  transform-origin: top center;
+}
+.lightbox-img.zoomed { cursor: zoom-out; transform: scale(1.6); transform-origin: top left; }
+
 @media (max-width: 540px) {
   .header { padding: 14px 16px; }
   .main { padding: 16px 16px 0; }
@@ -93,6 +158,10 @@ body { font-family: 'Montserrat', sans-serif; background: var(--bg); color: var(
   .phase-head { padding: 14px 16px; }
   .phase-body { padding: 4px 16px 14px; }
   .item-notes { margin-left: 0; }
+  .cheat-btn { padding: 4px 8px; font-size: 9px; }
+  .cheat-btn span { display: none; }
+  .lightbox-bar { padding: 10px 14px; }
+  .lightbox-hint { display: none; }
 }
 </style>
 </head>
@@ -112,7 +181,7 @@ body { font-family: 'Montserrat', sans-serif; background: var(--bg); color: var(
 
 <main class="main">
   <div class="intro">
-    <p>Vier Phasen — von der ersten Besprechung bis zum laufenden Drop. Häkchen setzen, Notizen pro Punkt hinterlegen, alles live mit deinem Team geteilt.</p>
+    <p>Sechs Phasen — von der ersten Besprechung über die Setup-Basics bis zum Aufbau und laufenden Drop. Häkchen setzen, Notizen pro Punkt hinterlegen, alles live mit deinem Team geteilt. Bei Phasen mit 📎 öffnet sich das passende Cheatsheet als Bild-Referenz.</p>
   </div>
   <div id="phases"></div>
 </main>
@@ -158,6 +227,56 @@ body { font-family: 'Montserrat', sans-serif; background: var(--bg); color: var(
       items: [
         { key: 'i1', text: 'Worauf achten', placeholder: 'Lichtsetup, Hintergrund, Winkel, Konsistenz…' },
         { key: 'i2', text: 'Wie erstellen', placeholder: 'Workflow: Shooting, Bearbeitung, Export, Upload.' },
+      ],
+    },
+    {
+      key: 'p5', num: '05', title: 'Shop Basics', sub: 'Setup-Checkliste · Versand bis Rechtliches',
+      cheatsheet: '/tools/assets/shop/basics.jpg',
+      cheatsheetTitle: 'Brandwork — Shop Basics',
+      items: [
+        { key: 'i1', text: 'Versand (DHL GKP)',
+          placeholder: 'DHL Geschäftskundenportal anlegen · mit Shopify connecten · erstellt automatisch Labels · spart enorm Zeit.' },
+        { key: 'i2', text: 'Versandzonen einrichten',
+          placeholder: 'DE als Main · EU separat · Non-EU getrennt — saubere Zonen sind die Basis für faire Preise.' },
+        { key: 'i3', text: 'Versandpreise festlegen',
+          placeholder: 'DE normal · EU + Non-EU angepasst · Achtung Zoll bei den Preisen einrechnen!' },
+        { key: 'i4', text: 'Buchhaltung (Lexoffice)',
+          placeholder: 'Lexoffice-App im Shopify-App-Store · überträgt alle Umsätze automatisch · spart enorm Zeit.' },
+        { key: 'i5', text: 'Payments einrichten',
+          placeholder: 'Klarna GKP erstellen · PayPal Business erstellen · Bank verbinden — alle drei aktivieren.' },
+        { key: 'i6', text: 'Checkout konfigurieren',
+          placeholder: 'Gäste-Checkout erlauben · Versandadresse als Pflichtfeld · Adressprüfung an.' },
+        { key: 'i7', text: 'Domain + Email',
+          placeholder: 'Eigene Domain holen (z.B. GoDaddy) · mit Shopify verbinden · Brand-Email einrichten.' },
+        { key: 'i8', text: 'Rechtliches absichern',
+          placeholder: 'IT Recht 24 (auf safe!) · AGB · Impressum · Widerruf · Datenschutz · Versand — alle Texte rechtssicher.' },
+        { key: 'i9', text: 'Theme wählen',
+          placeholder: 'Free Themes durchgehen — z.B. Heritage. Erst checken, dann customizen.' },
+      ],
+    },
+    {
+      key: 'p6', num: '06', title: 'Shop Aufbau', sub: 'Visueller Aufbau · Header bis Lookbook',
+      cheatsheet: '/tools/assets/shop/aufbau.jpg',
+      cheatsheetTitle: 'Brandwork — Shopify Shop Aufbau',
+      items: [
+        { key: 'i1', text: 'Header + klares Main Menu',
+          placeholder: 'Übersichtlich · keine Doppelungen · klassisch: Home / Products / Lookbook. Nichts doppelt erwähnen.' },
+        { key: 'i2', text: 'Special Banner',
+          placeholder: 'Direkt WOW-Faktor · professioneller als Standard-Hero · z.B. 50% OFF Limited Sale, große Brand-Aufnahme.' },
+        { key: 'i3', text: 'Produkte / Leaks (ab 10+)',
+          placeholder: 'Bei 10+ Produkten Leaks-/Neu-Sektion auf der Startseite · NEU/ALL-Tabs · cleane Produkt-Tiles.' },
+        { key: 'i4', text: 'WhatsApp-Channel-Block',
+          placeholder: 'Block direkt auf der Startseite · "JOIN OUR EXCLUSIVE INNER CIRCLE" · BTS / LEAKS / SPECIALS & MORE · JOIN-NOW-CTA.' },
+        { key: 'i5', text: 'Fam-Bilder',
+          placeholder: 'Fam-Sektion mit echten Kunden-Bildern · Trust + Community-Vibe · 3–4 Fotos nebeneinander.' },
+        { key: 'i6', text: 'Footer + Newsletter',
+          placeholder: 'Footer-Menü sauber strukturiert (Social Stuff · Support · Legal) · Newsletter-Anmeldung mit Incentive.' },
+        { key: 'i7', text: 'Cookie + Newsletter Pop-up',
+          placeholder: 'Cookie-Banner über Shopify (Einstellungen → Kundendatenschutz) · Newsletter-Pop-up via Klaviyo-App.' },
+        { key: 'i8', text: 'Product Page',
+          placeholder: 'Kleiner Produkt-Text · Slots für Details / Sizing / PS · cleane Bilder (Flats + Posing kombiniert).' },
+        { key: 'i9', text: 'Lookbook-Sektion',
+          placeholder: 'Lookbook-Stripe mit Saison-Story · verlinkt auf den aktuellen Drop · Editorial-Bilder + kurzer Untertitel.' },
       ],
     },
   ];
@@ -232,10 +351,25 @@ body { font-family: 'Montserrat', sans-serif; background: var(--bg); color: var(
       meta.textContent = p.sub + ' · 0/' + p.items.length;
       var pct = el('span', 'phase-pct', head);
       pct.textContent = '0%';
+
+      if (p.cheatsheet) {
+        var cb = el('button', 'cheat-btn', head);
+        cb.type = 'button';
+        var cbIcon = el('span', null, cb); cbIcon.textContent = '📎';
+        var cbLbl = el('span', null, cb); cbLbl.textContent = 'Cheatsheet';
+        cb.addEventListener('click', function (e) {
+          e.stopPropagation();
+          if (window.__shopLightbox) {
+            window.__shopLightbox.open(p.cheatsheet, p.cheatsheetTitle || p.title);
+          }
+        });
+      }
+
       buildChevSvg(head);
 
       head.addEventListener('click', function (e) {
         if (e.target.closest('.item')) return;
+        if (e.target.closest('.cheat-btn')) return;
         var open = !(sec.dataset.open === 'true');
         sec.dataset.open = open ? 'true' : 'false';
       });
@@ -396,6 +530,55 @@ body { font-family: 'Montserrat', sans-serif; background: var(--bg); color: var(
   } else {
     connTag.textContent = '· lokal (kein Raum)';
   }
+})();
+</script>
+
+<div class="lightbox" id="lightbox" hidden>
+  <div class="lightbox-bar">
+    <span class="lightbox-title" id="lightboxTitle">Cheatsheet</span>
+    <span class="lightbox-hint">Klick aufs Bild zum Zoomen · ESC zum Schließen</span>
+    <button type="button" class="lightbox-close" id="lightboxClose" aria-label="Schließen">×</button>
+  </div>
+  <div class="lightbox-scroll" id="lightboxScroll">
+    <img class="lightbox-img" id="lightboxImg" alt="" />
+  </div>
+</div>
+
+<script>
+(function () {
+  var lb = document.getElementById('lightbox');
+  var lbImg = document.getElementById('lightboxImg');
+  var lbTitle = document.getElementById('lightboxTitle');
+  var lbScroll = document.getElementById('lightboxScroll');
+  var lbClose = document.getElementById('lightboxClose');
+
+  function open(src, title) {
+    lbImg.src = src;
+    lbImg.classList.remove('zoomed');
+    lbTitle.textContent = title || 'Cheatsheet';
+    lb.hidden = false;
+    requestAnimationFrame(function () { lb.classList.add('open'); });
+    document.body.classList.add('lb-open');
+    lbScroll.scrollTop = 0;
+  }
+  function close() {
+    lb.classList.remove('open');
+    document.body.classList.remove('lb-open');
+    setTimeout(function () { lb.hidden = true; lbImg.src = ''; }, 200);
+  }
+
+  lbClose.addEventListener('click', close);
+  lb.addEventListener('click', function (e) {
+    if (e.target === lb || e.target === lbScroll) close();
+  });
+  lbImg.addEventListener('click', function () {
+    lbImg.classList.toggle('zoomed');
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && !lb.hidden) close();
+  });
+
+  window.__shopLightbox = { open: open, close: close };
 })();
 </script>
 </body>
