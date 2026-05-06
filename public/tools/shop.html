@@ -137,19 +137,27 @@ body.lb-open { overflow: hidden; }
   overflow: auto;
   padding: 0 14px 24px;
   -webkit-overflow-scrolling: touch;
-  display: flex; justify-content: center;
 }
 .lightbox-img {
   display: block;
-  max-width: 100%;
+  margin: 0 auto;
+  width: 100%;
+  max-width: 1000px;
   height: auto;
   border-radius: 8px;
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
   cursor: zoom-in;
-  transition: transform 0.2s ease;
-  transform-origin: top center;
+  transition: width 0.18s ease, max-width 0.18s ease;
 }
-.lightbox-img.zoomed { cursor: zoom-out; transform: scale(1.6); transform-origin: top left; }
+.lightbox-img.zoomed {
+  width: 250%;
+  max-width: none;
+  margin-left: 0;
+  cursor: zoom-out;
+}
+@media (min-width: 720px) {
+  .lightbox-img.zoomed { width: 150%; max-width: 1500px; }
+}
 
 @media (max-width: 540px) {
   .header { padding: 14px 16px; }
@@ -160,8 +168,10 @@ body.lb-open { overflow: hidden; }
   .item-notes { margin-left: 0; }
   .cheat-btn { padding: 4px 8px; font-size: 9px; }
   .cheat-btn span { display: none; }
-  .lightbox-bar { padding: 10px 14px; }
-  .lightbox-hint { display: none; }
+  .lightbox-bar { padding: 10px 12px; gap: 8px; }
+  .lightbox-title { font-size: 10px; letter-spacing: 0.12em; }
+  .lightbox-hint { font-size: 9px; }
+  .lightbox-scroll { padding: 0 6px 16px; }
 }
 </style>
 </head>
@@ -536,7 +546,7 @@ body.lb-open { overflow: hidden; }
 <div class="lightbox" id="lightbox" hidden>
   <div class="lightbox-bar">
     <span class="lightbox-title" id="lightboxTitle">Cheatsheet</span>
-    <span class="lightbox-hint">Klick aufs Bild zum Zoomen · ESC zum Schließen</span>
+    <span class="lightbox-hint">Tap aufs Bild zum Zoomen</span>
     <button type="button" class="lightbox-close" id="lightboxClose" aria-label="Schließen">×</button>
   </div>
   <div class="lightbox-scroll" id="lightboxScroll">
