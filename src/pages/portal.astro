@@ -6,36 +6,25 @@ import PortalFooter from "../components/PortalFooter.astro";
 
 <BaseLayout title="Kunden-Portal · Unsigned Workspace">
   <div
-    class="min-h-screen flex flex-col bg-paper text-ink-warm grain-overlay relative overflow-x-hidden"
+    class="min-h-screen flex flex-col bg-paper text-ink-warm relative overflow-x-hidden"
   >
+    <!-- Slim header bar -->
     <header
-      class="relative w-full bg-brand text-white fade-up shrink-0"
-      style="animation-delay:60ms"
+      class="relative w-full bg-card border-b-[0.5px] border-line shrink-0"
     >
       <div
-        aria-hidden="true"
-        class="absolute inset-y-0 right-[-80px] w-[260px] rotate-12 bg-brand-dark opacity-25 pointer-events-none"
+        class="relative px-4 md:px-6 lg:px-8 py-3 flex items-center gap-4 flex-wrap"
       >
-      </div>
-      <div
-        class="relative px-6 lg:px-12 py-5 flex items-center gap-6 flex-wrap"
-      >
-        <div class="flex items-baseline gap-3">
-          <span
-            class="font-display italic font-extrabold text-[28px] leading-none tracking-[-0.01em]"
-            >Unsigned</span
-          >
-          <span
-            class="brand-script text-[18px] text-white/90 leading-none"
-            style="color:#fff"
-            >Workspace</span
-          >
-        </div>
-        <span class="hidden md:block ml-2 h-6 w-px bg-white/30"></span>
+        <img
+          src="/brand/v-dark.png"
+          alt="Unsigned"
+          class="h-7 w-auto select-none pointer-events-none"
+          loading="eager"
+        />
         <span
           id="portalGreeting"
-          class="hidden md:block font-sans uppercase tracking-[0.22em] text-[10px] text-white/70"
-          >Brand Identity &amp; Tools</span
+          class="text-[11px] font-bold tracking-[0.12em] uppercase text-ink-mute hidden sm:block"
+          >Workspace</span
         >
         <div class="ml-auto" id="portalLiveSlot">
           <PortalLiveBadge />
@@ -44,27 +33,69 @@ import PortalFooter from "../components/PortalFooter.astro";
     </header>
 
     <main
-      class="flex-1 px-6 lg:px-12 py-5 fade-up"
-      style="animation-delay:200ms"
+      class="flex-1 px-4 md:px-6 lg:px-8 py-5 fade-up"
+      style="animation-delay:120ms"
     >
       <!-- ═══════ TOOL OVERVIEW (Landing) ═══════ -->
       <div id="overviewView">
-        <h1 class="text-[22px] font-extrabold text-ink mb-1">
-          Willkommen <span id="ovHelloName">…</span> 👋
-        </h1>
-        <p class="text-[13px] text-ink-soft mb-6">
-          Wähl ein Tool aus um loszulegen — alles was du eingibst, sieht dein
-          Team bei Unsigned live.
-        </p>
+        <!-- HERO -->
+        <section
+          class="relative overflow-hidden rounded-2xl mb-5 md:mb-6 shadow-[0_10px_40px_rgba(0,0,0,0.08)]"
+        >
+          <div
+            class="absolute inset-0 bg-[#0a0a0a] bg-no-repeat bg-cover bg-center"
+            style="background-image: url('/brand/hintergrund.jpg');"
+            aria-hidden="true"
+          >
+          </div>
+          <div
+            class="absolute inset-0 bg-gradient-to-br from-black/85 via-black/70 to-black/55"
+            aria-hidden="true"
+          >
+          </div>
+          <div class="relative px-5 md:px-8 py-6 md:py-8 text-white">
+            <div class="flex items-start justify-between gap-4 flex-wrap">
+              <div class="flex-1 min-w-0">
+                <p
+                  id="heroTimeGreet"
+                  class="text-[11px] md:text-[12px] font-bold tracking-[0.18em] uppercase text-white/55"
+                >
+                  Willkommen
+                </p>
+                <h1
+                  class="font-display italic font-extrabold text-[32px] md:text-[52px] leading-[0.95] tracking-[-0.01em] mt-1 mb-2"
+                >
+                  <span id="ovHelloName">…</span>.
+                </h1>
+                <p
+                  id="ovBrandSub"
+                  class="text-[12px] md:text-[13px] text-white/65"
+                >
+                </p>
+                <p class="text-[13px] md:text-[14px] text-white/70 max-w-[520px] mt-3">
+                  Hier arbeiten wir gemeinsam an deiner Brand. Alles was du
+                  eingibst, sieht dein Team bei Unsigned live.
+                </p>
+              </div>
+              <img
+                src="/brand/wordmark-light.png"
+                alt="Unsigned"
+                class="hidden sm:block h-[52px] md:h-[78px] w-auto opacity-90 shrink-0 select-none pointer-events-none"
+                loading="lazy"
+              />
+            </div>
+          </div>
+        </section>
 
         <h2
-          class="text-[10px] font-bold tracking-[0.12em] uppercase text-ink-mute mb-[10px]"
+          class="text-[10px] font-bold tracking-[0.12em] uppercase text-ink-mute mb-[10px] flex items-center gap-2"
         >
+          <span class="w-1 h-3 bg-brand rounded-sm"></span>
           Tools
         </h2>
         <section
           id="ovGrid"
-          class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-[10px]"
+          class="grid grid-cols-2 sm:grid-cols-3 gap-2 md:gap-3"
         >
           <!-- gefüllt per JS -->
         </section>
@@ -278,6 +309,18 @@ import PortalFooter from "../components/PortalFooter.astro";
     function startPortal(user) {
       if (greeting) greeting.textContent = profile.name + " · " + profile.brand;
       document.getElementById("ovHelloName").textContent = profile.name;
+      var brandSub = document.getElementById("ovBrandSub");
+      if (brandSub) brandSub.textContent = profile.brand;
+      var timeGreet = document.getElementById("heroTimeGreet");
+      if (timeGreet) {
+        var h = new Date().getHours();
+        var g = "Willkommen";
+        if (h < 5) g = "Gute Nacht";
+        else if (h < 11) g = "Guten Morgen";
+        else if (h < 17) g = "Guten Tag";
+        else if (h < 22) g = "Guten Abend";
+        timeGreet.textContent = g;
+      }
 
       pingFn = function (tool) {
         window.fb
@@ -311,16 +354,13 @@ import PortalFooter from "../components/PortalFooter.astro";
       grid.innerHTML = TOOLS.map(function (t) {
         return (
           '<button type="button" data-tool="' + t.id + '"' +
-          ' class="tool-card text-left bg-card border-[0.5px] border-line rounded-xl p-4 cursor-pointer hover:border-brand-border hover:bg-brand-dim transition-colors">' +
-          '<div class="flex items-center gap-3 mb-2">' +
-          '<span class="w-10 h-10 rounded-lg bg-brand-dim flex items-center justify-center text-[20px] shrink-0">' +
+          ' class="tool-card group bg-card border-[0.5px] border-line rounded-xl p-3 md:p-[14px] flex items-start gap-3 hover:border-brand-border hover:bg-brand-dim hover:shadow-[0_4px_16px_rgba(193,48,48,0.08)] transition-all text-left cursor-pointer min-w-0">' +
+          '<span class="w-9 h-9 md:w-10 md:h-10 rounded-lg bg-brand-dim flex items-center justify-center text-[18px] md:text-[20px] shrink-0 group-hover:bg-brand group-hover:text-white transition-colors">' +
           t.icon + '</span>' +
           '<div class="flex-1 min-w-0">' +
-          '<div class="text-[13px] font-extrabold text-ink truncate">' + t.label + '</div>' +
+          '<div class="text-[12px] md:text-[13px] font-extrabold text-ink truncate">' + t.label + '</div>' +
+          '<div class="text-[10px] md:text-[11px] text-ink-mute mt-[1px] truncate">' + t.desc + '</div>' +
           '</div>' +
-          '<span class="text-[16px] text-ink-mute">→</span>' +
-          '</div>' +
-          '<div class="text-[11px] text-ink-soft">' + t.desc + '</div>' +
           '</button>'
         );
       }).join("");
