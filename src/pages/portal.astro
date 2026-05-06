@@ -226,6 +226,8 @@ import PortalFooter from "../components/PortalFooter.astro";
         desc: "Layouts & Visuals planen" },
       { id: "mk", icon: "📈", label: "Marketing Plan",
         desc: "Personal Brand · Ads · Email-Flows" },
+      { id: "shop", icon: "🛒", label: "Brandwork Shop",
+        desc: "Shop-Optimierung & Drop-Planung" },
     ];
 
     if (!room) {
@@ -397,6 +399,7 @@ import PortalFooter from "../components/PortalFooter.astro";
       window.fb.ref("rooms/" + room + "/cr_pct").on("value", function(s){ setPct("cr", s.val()); });
       window.fb.ref("rooms/" + room + "/mk_pct").on("value", function(s){ setPct("mk", s.val()); });
       window.fb.ref("rooms/" + room + "/ag_pct").on("value", function(s){ setPct("ai_guide", s.val()); });
+      window.fb.ref("rooms/" + room + "/shop_pct").on("value", function(s){ setPct("shop", s.val()); });
       // BI: derive from rooms/<room>/data/fields (count fields with text or images)
       window.fb.ref("rooms/" + room + "/data/fields").on("value", function(s){
         var v = s.val() || {};
