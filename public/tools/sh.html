@@ -558,9 +558,13 @@ document.getElementById('deleteProductBtn').addEventListener('click',deleteCurre
     _D.ref('rooms/'+_R+'/sh').once('value', function(snap) {
       var d = snap.val();
       if(d && d['ug_products_v2'] && d['ug_products_v2'].length) {
-        var _o = Storage.prototype.setItem;
+        // Room has saved data — load it
         try { _orig_set('ug_products_v2', JSON.stringify(d['ug_products_v2'])); } catch(e){}
         if(d['ug_archive_v2']) { try { _orig_set('ug_archive_v2', JSON.stringify(d['ug_archive_v2'])); } catch(e){} }
+      } else {
+        // Room is fresh — clear any leftover from previous customer in localStorage
+        try { _orig_set('ug_products_v2', '[]'); } catch(e){}
+        try { _orig_set('ug_archive_v2', '[]'); } catch(e){}
       }
       _run();
     });

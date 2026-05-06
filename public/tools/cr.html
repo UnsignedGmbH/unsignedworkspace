@@ -465,11 +465,22 @@ document.querySelectorAll('.delete-btn').forEach(function(btn) {
   // Load checks from Firebase first, then restore
   _D.ref('rooms/' + _R + '/cr_checks').once('value', function(snap) {
     var d = snap.val();
-    if (d) try { localStorage.setItem(KEY, JSON.stringify(d)); } catch(e) {}
-    
+    if (d) {
+      try { localStorage.setItem(KEY, JSON.stringify(d)); } catch(e) {}
+    } else {
+      // Room has no saved check states — clear leftover from previous customer
+      try { localStorage.removeItem(KEY); } catch(e) {}
+    }
+
     // Load custom items and render them, THEN restore check states
     _D.ref('rooms/' + _R + '/cr_items').once('value', function(snap2) {
-      applyCustomItems(snap2.val());
+      var customData = snap2.val();
+      // Fresh room: clear note textareas explicitly (iframe reload usually does
+      // this, but be explicit so nothing leaks from a previous customer).
+      if (!customData) {
+        document.querySelectorAll('.notes-area').forEach(function(ta){ ta.value = ''; });
+      }
+      applyCustomItems(customData);
       restoreState();
       
       // ── Live listeners ──
