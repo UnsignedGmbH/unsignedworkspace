@@ -53,15 +53,26 @@ function isActive(href: string) {
 ---
 
 <aside
-  class="w-[215px] shrink-0 h-screen bg-sidebar flex flex-col overflow-hidden"
+  id="appSidebar"
+  class="appsb shrink-0 h-screen bg-sidebar flex flex-col overflow-hidden relative z-40"
+  style="width:215px; min-width:215px;"
 >
   <div
     class="px-[14px] pt-4 pb-[13px] border-b-[0.5px] border-white/10 flex items-center gap-[10px]"
   >
-    <div>
+    <div class="flex-1 min-w-0">
       <span class="block brand-wordmark text-[13px]">Unsigned</span>
       <span class="block brand-script text-[12px] text-white/35">Workspace</span>
     </div>
+    <button
+      id="sbToggleDesktop"
+      type="button"
+      class="hidden md:flex items-center justify-center w-7 h-7 rounded-md text-white/40 hover:text-white hover:bg-white/10 cursor-pointer bg-transparent border-0"
+      title="Sidebar einklappen"
+      aria-label="Sidebar einklappen"
+    >
+      <span class="text-[14px] leading-none">‹</span>
+    </button>
   </div>
 
   <nav class="flex-1 overflow-y-auto pt-2">
@@ -132,7 +143,31 @@ function isActive(href: string) {
       title="Abmelden">↪</button
     >
   </div>
+
+  <!-- Drag-resize handle (Desktop only) -->
+  <div
+    id="sbResizer"
+    class="hidden md:block absolute top-0 right-0 w-[5px] h-full cursor-col-resize hover:bg-brand/40 transition-colors z-50"
+    title="Doppelklick = Standardbreite"
+  >
+  </div>
 </aside>
+
+<style>
+  /* Mobile: sidebar overlays the content, slides in from left */
+  @media (max-width: 767px) {
+    .appsb {
+      position: fixed;
+      top: 0; left: 0;
+      width: min(280px, 80vw) !important;
+      min-width: 0 !important;
+      transform: translateX(-100%);
+      transition: transform 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 0 30px rgba(0, 0, 0, 0.4);
+    }
+    .appsb.mobile-open { transform: translateX(0); }
+  }
+</style>
 
 <script is:inline>
   (function () {

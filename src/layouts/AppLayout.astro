@@ -15,17 +15,185 @@ const { title, active } = Astro.props;
 <BaseLayout title={`${title} · Unsigned Workspace`}>
   <AuthGuard />
   <AppHelpers />
-  <div class="flex h-screen w-screen overflow-hidden">
+  <div id="appShell" class="flex h-screen w-screen overflow-hidden relative">
+    <!-- Mobile-Overlay (klickbar zum Schließen) -->
+    <div
+      id="sbBackdrop"
+      class="hidden fixed inset-0 bg-black/40 z-30 md:!hidden"
+    >
+    </div>
+
     <Sidebar active={active} />
+
     <main class="flex-1 flex flex-col overflow-hidden min-w-0">
       <header
-        class="bg-card border-b-[0.5px] border-line px-[22px] py-3 flex items-center gap-[10px] shrink-0"
+        class="bg-card border-b-[0.5px] border-line px-4 md:px-[22px] py-3 flex items-center gap-[10px] shrink-0"
       >
-        <h1 class="text-[15px] font-extrabold text-ink flex-1">{title}</h1>
+        <button
+          id="sbToggleMobile"
+          type="button"
+          class="md:hidden flex items-center justify-center w-9 h-9 rounded-lg border-[0.5px] border-line text-ink-soft hover:text-brand hover:border-brand bg-transparent cursor-pointer"
+          aria-label="Menü öffnen"
+          title="Menü öffnen"
+        >
+          <span class="text-[18px] leading-none">☰</span>
+        </button>
+        <h1 class="text-[15px] font-extrabold text-ink flex-1 truncate">{title}</h1>
       </header>
-      <div class="flex-1 overflow-y-auto px-6 py-[22px]">
+      <div class="flex-1 overflow-y-auto px-4 md:px-6 py-4 md:py-[22px]">
         <slot />
       </div>
     </main>
   </div>
 </BaseLayout>
+
+<script is:inline>
+  (function () {
+    var STORAGE_W = "uw.sidebar.width";
+    var STORAGE_OPEN_DESKTOP = "uw.sidebar.openDesktop"; // "1" | "0"
+    var MIN_W = 180, MAX_W = 320, DEFAULT_W = 215;
+
+    var shell = document.getElementById("appShell");
+    var sb = document.getElementById("appSidebar");
+    var backdrop = document.getElementById("sbBackdrop");
+    var toggleMobile = document.getElementById("sbToggleMobile");
+    var toggleDesktop = document.getElementById("sbToggleDesktop");
+    var resizer = document.getElementById("sbResizer");
+
+    function isMobile() { return window.matchMedia("(max-width: 767px)").matches; }
+
+    // ── Apply saved width on desktop ────────────────────────
+    var savedW = parseInt(localStorage.getItem(STORAGE_W), 10);
+    if (isNaN(savedW) || savedW < MIN_W || savedW > MAX_W) savedW = DEFAULT_W;
+    function applyDesktopWidth(w) {
+      sb.style.width = w + "px";
+      sb.style.minWidth = w + "px";
+    }
+    function syncHamburger(){
+      // Show hamburger when desktop sidebar is collapsed (overrides Tailwind md:hidden).
+      // Mobile keeps the Tailwind default (visible).
+      if (!toggleMobile) return;
+      if (!isMobile() && sb.classList.contains("md:hidden")) {
+        toggleMobile.style.display = "flex";
+      } else {
+        toggleMobile.style.display = "";
+      }
+    }
+
+    // ── Open/close state on desktop ─────────────────────────
+    function setDesktopOpen(open) {
+      if (open) {
+        sb.classList.remove("md:hidden");
+        applyDesktopWidth(savedW);
+      } else {
+        sb.classList.add("md:hidden");
+      }
+      localStorage.setItem(STORAGE_OPEN_DESKTOP, open ? "1" : "0");
+      syncHamburger();
+    }
+
+    // ── Mobile open/close ───────────────────────────────────
+    function setMobileOpen(open) {
+      if (open) {
+        sb.classList.add("mobile-open");
+        backdrop.classList.remove("hidden");
+        document.body.style.overflow = "hidden";
+      } else {
+        sb.classList.remove("mobile-open");
+        backdrop.classList.add("hidden");
+        document.body.style.overflow = "";
+      }
+    }
+
+    // ── Init ────────────────────────────────────────────────
+    if (!isMobile()) {
+      var openPref = localStorage.getItem(STORAGE_OPEN_DESKTOP);
+      var startOpen = openPref === null ? true : openPref === "1";
+      setDesktopOpen(startOpen);
+    } else {
+      // Mobile starts closed; desktop CSS handles default
+      applyDesktopWidth(savedW);
+    }
+    syncHamburger();
+
+    // ── Toggle handlers ─────────────────────────────────────
+    if (toggleMobile) {
+      toggleMobile.addEventListener("click", function () {
+        if (isMobile()) setMobileOpen(!sb.classList.contains("mobile-open"));
+        else setDesktopOpen(sb.classList.contains("md:hidden"));
+      });
+    }
+    if (toggleDesktop) {
+      toggleDesktop.addEventListener("click", function () {
+        if (isMobile()) setMobileOpen(false);
+        else setDesktopOpen(false);
+      });
+    }
+    if (backdrop) backdrop.addEventListener("click", function () { setMobileOpen(false); });
+
+    // Close mobile drawer when an internal link is clicked
+    sb.addEventListener("click", function (e) {
+      var a = e.target.closest("a[href]");
+      if (a && isMobile()) setMobileOpen(false);
+    });
+
+    // Esc closes
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape") {
+        if (isMobile()) setMobileOpen(false);
+      }
+    });
+
+    // ── Drag-resize on desktop ──────────────────────────────
+    if (resizer) {
+      var dragging = false, startX = 0, startW = 0;
+      resizer.addEventListener("mousedown", function (e) {
+        if (isMobile()) return;
+        dragging = true;
+        startX = e.clientX;
+        startW = sb.offsetWidth;
+        document.body.style.cursor = "col-resize";
+        document.body.style.userSelect = "none";
+        e.preventDefault();
+      });
+      document.addEventListener("mousemove", function (e) {
+        if (!dragging) return;
+        var w = startW + (e.clientX - startX);
+        if (w < MIN_W) w = MIN_W;
+        if (w > MAX_W) w = MAX_W;
+        savedW = w;
+        applyDesktopWidth(w);
+      });
+      document.addEventListener("mouseup", function () {
+        if (!dragging) return;
+        dragging = false;
+        document.body.style.cursor = "";
+        document.body.style.userSelect = "";
+        localStorage.setItem(STORAGE_W, String(savedW));
+      });
+      // Double-click resets to default
+      resizer.addEventListener("dblclick", function () {
+        if (isMobile()) return;
+        savedW = DEFAULT_W;
+        applyDesktopWidth(DEFAULT_W);
+        localStorage.setItem(STORAGE_W, String(DEFAULT_W));
+      });
+    }
+
+    // ── Re-evaluate on viewport change ──────────────────────
+    var lastIsMobile = isMobile();
+    window.addEventListener("resize", function () {
+      var nowMobile = isMobile();
+      if (nowMobile !== lastIsMobile) {
+        // Switching modes — reset state
+        setMobileOpen(false);
+        if (!nowMobile) {
+          var openPref = localStorage.getItem(STORAGE_OPEN_DESKTOP);
+          setDesktopOpen(openPref === null ? true : openPref === "1");
+        }
+        lastIsMobile = nowMobile;
+      }
+      syncHamburger();
+    });
+  })();
+</script>

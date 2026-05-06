@@ -15,30 +15,30 @@ const quickAccess = [
 ---
 
 <AppLayout title="Dashboard" active="dashboard">
-  <section class="grid grid-cols-2 md:grid-cols-4 gap-[10px] mb-5">
+  <section class="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-[10px] mb-4 md:mb-5">
     <div
-      class="bg-card border-[0.5px] border-line rounded-[10px] px-4 py-[14px]"
+      class="bg-card border-[0.5px] border-line rounded-[10px] px-3 md:px-4 py-3 md:py-[14px]"
     >
-      <div id="statActive" class="text-[24px] font-extrabold text-ink">—</div>
-      <div class="text-[11px] text-ink-mute mt-[2px]">Aktive Kunden</div>
+      <div id="statActive" class="text-[20px] md:text-[24px] font-extrabold text-ink leading-tight">—</div>
+      <div class="text-[10px] md:text-[11px] text-ink-mute mt-[2px]">Aktive Kunden</div>
     </div>
     <div
-      class="bg-card border-[0.5px] border-line rounded-[10px] px-4 py-[14px]"
+      class="bg-card border-[0.5px] border-line rounded-[10px] px-3 md:px-4 py-3 md:py-[14px]"
     >
-      <div id="statArchived" class="text-[24px] font-extrabold text-ink">—</div>
-      <div class="text-[11px] text-ink-mute mt-[2px]">Archiviert</div>
+      <div id="statArchived" class="text-[20px] md:text-[24px] font-extrabold text-ink leading-tight">—</div>
+      <div class="text-[10px] md:text-[11px] text-ink-mute mt-[2px]">Archiviert</div>
     </div>
     <div
-      class="bg-card border-[0.5px] border-line rounded-[10px] px-4 py-[14px]"
+      class="bg-card border-[0.5px] border-line rounded-[10px] px-3 md:px-4 py-3 md:py-[14px]"
     >
-      <div id="statOnline" class="text-[24px] font-extrabold text-success">—</div>
-      <div class="text-[11px] text-ink-mute mt-[2px]">Team online</div>
+      <div id="statOnline" class="text-[20px] md:text-[24px] font-extrabold text-success leading-tight">—</div>
+      <div class="text-[10px] md:text-[11px] text-ink-mute mt-[2px]">Team online</div>
     </div>
     <div
-      class="bg-card border-[0.5px] border-line rounded-[10px] px-4 py-[14px]"
+      class="bg-card border-[0.5px] border-line rounded-[10px] px-3 md:px-4 py-3 md:py-[14px]"
     >
-      <div id="statTeam" class="text-[24px] font-extrabold text-ink">—</div>
-      <div class="text-[11px] text-ink-mute mt-[2px]">Team gesamt</div>
+      <div id="statTeam" class="text-[20px] md:text-[24px] font-extrabold text-ink leading-tight">—</div>
+      <div class="text-[10px] md:text-[11px] text-ink-mute mt-[2px]">Team gesamt</div>
     </div>
   </section>
 
@@ -48,18 +48,18 @@ const quickAccess = [
     Schnellzugriff
   </h2>
   <section
-    class="grid grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-[10px] mb-5"
+    class="grid grid-cols-2 sm:grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-2 md:gap-[10px] mb-4 md:mb-5"
   >
     {
       quickAccess.map((q) => (
         <a
           href={q.href}
-          class="bg-card border-[0.5px] border-line rounded-[10px] p-[14px] flex items-center gap-[10px] hover:border-brand-border hover:bg-brand-dim transition-colors no-underline"
+          class="bg-card border-[0.5px] border-line rounded-[10px] p-3 md:p-[14px] flex items-center gap-2 md:gap-[10px] hover:border-brand-border hover:bg-brand-dim transition-colors no-underline min-w-0"
         >
           <span class="w-8 h-8 rounded-lg bg-brand-dim flex items-center justify-center text-[15px] shrink-0">
             {q.icon}
           </span>
-          <span class="text-[12px] font-bold text-ink">{q.label}</span>
+          <span class="text-[11px] md:text-[12px] font-bold text-ink truncate">{q.label}</span>
         </a>
       ))
     }
