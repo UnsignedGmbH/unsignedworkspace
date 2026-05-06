@@ -18,9 +18,41 @@ const notifications = [
 ---
 
 <AppLayout title="Einstellungen" active="settings">
-  <div class="space-y-6 max-w-[640px]">
-    <section>
-      <h3 class="text-[12px] font-bold text-ink mb-[10px]">Profil</h3>
+  <style>
+    .uw-set-h {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: transparent;
+      border: 0;
+      padding: 0;
+      margin: 0 0 10px 0;
+      cursor: pointer;
+      text-align: left;
+      color: inherit;
+      font: inherit;
+    }
+    .uw-set-chev {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      transition: transform 0.15s ease;
+      color: var(--color-ink-mute, #999);
+      flex-shrink: 0;
+    }
+    .uw-set[data-open="false"] .uw-set-chev { transform: rotate(-90deg); }
+    .uw-set[data-open="false"] .uw-set-body { display: none; }
+    .uw-set-body { animation: uwFade 0.18s ease both; }
+    @keyframes uwFade { from { opacity: 0; transform: translateY(-2px); } to { opacity: 1; transform: none; } }
+  </style>
+  <div class="space-y-3 max-w-[640px]">
+    <section class="uw-set" data-open="true">
+      <button type="button" class="uw-set-h">
+        <svg class="uw-set-chev" viewBox="0 0 10 10" fill="none"><path d="M2 4l3 3 3-3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <h3 class="text-[12px] font-bold text-ink m-0">Profil</h3>
+      </button>
+      <div class="uw-set-body">
       <div class="bg-card border-[0.5px] border-line rounded-[9px] px-4 py-3 flex items-center gap-3">
         <div class="flex-1">
           <div class="text-[13px] font-semibold text-ink">E-Mail</div>
@@ -43,10 +75,15 @@ const notifications = [
           >Ändern</button
         >
       </div>
+      </div>
     </section>
 
-    <section>
-      <h3 class="text-[12px] font-bold text-ink mb-[10px]">Erscheinungsbild</h3>
+    <section class="uw-set" data-open="false">
+      <button type="button" class="uw-set-h">
+        <svg class="uw-set-chev" viewBox="0 0 10 10" fill="none"><path d="M2 4l3 3 3-3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <h3 class="text-[12px] font-bold text-ink m-0">Erscheinungsbild</h3>
+      </button>
+      <div class="uw-set-body">
       <div class="bg-card border-[0.5px] border-line rounded-[9px] px-4 py-3">
         <div class="text-[13px] font-semibold text-ink">Akzentfarbe</div>
         <div class="text-[11px] text-ink-mute mt-[1px]">
@@ -66,10 +103,15 @@ const notifications = [
           }
         </div>
       </div>
+      </div>
     </section>
 
-    <section>
-      <h3 class="text-[12px] font-bold text-ink mb-[10px]">Benachrichtigungen</h3>
+    <section class="uw-set" data-open="false">
+      <button type="button" class="uw-set-h">
+        <svg class="uw-set-chev" viewBox="0 0 10 10" fill="none"><path d="M2 4l3 3 3-3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <h3 class="text-[12px] font-bold text-ink m-0">Benachrichtigungen</h3>
+      </button>
+      <div class="uw-set-body">
       {
         notifications.map((row) => (
           <div class="bg-card border-[0.5px] border-line rounded-[9px] px-4 py-3 mb-[6px] flex items-center gap-3">
@@ -87,13 +129,16 @@ const notifications = [
           </div>
         ))
       }
+      </div>
     </section>
 
-    <section id="brandSection" class="hidden">
-      <h3 class="text-[12px] font-bold text-ink mb-[10px] flex items-center gap-2">
-        <span class="w-1 h-3 bg-brand rounded-sm"></span>
-        Workspace-Brand
-      </h3>
+    <section id="brandSection" class="uw-set hidden" data-open="false">
+      <button type="button" class="uw-set-h">
+        <svg class="uw-set-chev" viewBox="0 0 10 10" fill="none"><path d="M2 4l3 3 3-3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span class="w-1 h-3 bg-brand rounded-sm shrink-0"></span>
+        <h3 class="text-[12px] font-bold text-ink m-0">Workspace-Brand</h3>
+      </button>
+      <div class="uw-set-body">
       <p class="text-[11px] text-ink-mute mb-[10px]">
         Die Identity die deine Kunden im Portal sehen. Wirkt im Header und auf
         der Begrüßung. Nur Admins können bearbeiten.
@@ -178,13 +223,16 @@ const notifications = [
           >Speichern</button
         >
       </div>
+      </div>
     </section>
 
-    <section id="defaultsSection" class="hidden">
-      <h3 class="text-[12px] font-bold text-ink mb-[10px] flex items-center gap-2">
-        <span class="w-1 h-3 bg-brand rounded-sm"></span>
-        Standard-Listen pro Tool
-      </h3>
+    <section id="defaultsSection" class="uw-set hidden" data-open="false">
+      <button type="button" class="uw-set-h">
+        <svg class="uw-set-chev" viewBox="0 0 10 10" fill="none"><path d="M2 4l3 3 3-3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span class="w-1 h-3 bg-brand rounded-sm shrink-0"></span>
+        <h3 class="text-[12px] font-bold text-ink m-0">Standard-Listen pro Tool</h3>
+      </button>
+      <div class="uw-set-body">
       <p class="text-[11px] text-ink-mute mb-[10px]">
         Diese Items siehst du als Default bei jedem neuen Kunden / neuen Produkt.
         Bestehende Kunden behalten ihre Daten — nur frische Räume nehmen die neuen Defaults.
@@ -245,8 +293,12 @@ const notifications = [
       </div>
     </section>
 
-    <section id="adminSection" class="hidden">
-      <h3 class="text-[12px] font-bold text-ink mb-[10px]">Admin-Rechte</h3>
+    <section id="adminSection" class="uw-set hidden" data-open="false">
+      <button type="button" class="uw-set-h">
+        <svg class="uw-set-chev" viewBox="0 0 10 10" fill="none"><path d="M2 4l3 3 3-3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <h3 class="text-[12px] font-bold text-ink m-0">Admin-Rechte</h3>
+      </button>
+      <div class="uw-set-body">
       <div class="bg-card border-[0.5px] border-line rounded-[9px] px-4 py-3 flex items-center gap-3">
         <div class="flex-1">
           <div id="adminStatus" class="text-[13px] font-semibold text-ink">…</div>
@@ -259,10 +311,15 @@ const notifications = [
           >Mich als Admin eintragen</button
         >
       </div>
+      </div>
     </section>
 
-    <section>
-      <h3 class="text-[12px] font-bold text-ink mb-[10px]">Konto</h3>
+    <section class="uw-set" data-open="true">
+      <button type="button" class="uw-set-h">
+        <svg class="uw-set-chev" viewBox="0 0 10 10" fill="none"><path d="M2 4l3 3 3-3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <h3 class="text-[12px] font-bold text-ink m-0">Konto</h3>
+      </button>
+      <div class="uw-set-body">
       <div class="bg-card border-[0.5px] border-line rounded-[9px] px-4 py-3 flex items-center gap-3">
         <div class="flex-1">
           <div class="text-[13px] font-semibold text-ink">Abmelden</div>
@@ -277,6 +334,7 @@ const notifications = [
           >Abmelden</button
         >
       </div>
+      </div>
     </section>
   </div>
 </AppLayout>
@@ -285,6 +343,30 @@ const notifications = [
   (function () {
     var ACCENT_KEY = "uw.accent";
     var NOTIF_KEY = "uw.notif";
+    var SET_OPEN_KEY = "uw.settings_open";
+
+    // ── Collapsible sections ───────────────────────────────
+    var openMap = {};
+    try { openMap = JSON.parse(localStorage.getItem(SET_OPEN_KEY) || "{}") || {}; } catch (e) {}
+    function sectionId(s, i) {
+      return s.id || ("set" + i);
+    }
+    function persist() {
+      try { localStorage.setItem(SET_OPEN_KEY, JSON.stringify(openMap)); } catch (e) {}
+    }
+    document.querySelectorAll("section.uw-set").forEach(function (s, i) {
+      var id = sectionId(s, i);
+      var btn = s.querySelector(".uw-set-h");
+      if (id in openMap) s.dataset.open = openMap[id] ? "true" : "false";
+      btn.setAttribute("aria-expanded", s.dataset.open);
+      btn.addEventListener("click", function () {
+        var open = s.dataset.open !== "true";
+        s.dataset.open = open ? "true" : "false";
+        btn.setAttribute("aria-expanded", String(open));
+        openMap[id] = open;
+        persist();
+      });
+    });
 
     function applyAccent(hex) {
       document.documentElement.style.setProperty("--color-brand", hex);
