@@ -29,9 +29,16 @@ const filters = [
     }
 
     <button
+      id="exportBtn"
+      type="button"
+      class="ml-auto px-[14px] py-[5px] rounded-full bg-card border-[0.5px] border-line text-[11px] font-bold cursor-pointer hover:border-brand hover:text-brand text-ink-soft"
+      title="Alle Kunden + Räume als JSON-Backup herunterladen"
+      >⬇ Backup-Export</button
+    >
+    <button
       id="newCustomerBtn"
       type="button"
-      class="ml-auto px-[14px] py-[5px] rounded-full bg-brand text-white text-[11px] font-bold cursor-pointer hover:bg-brand-dark"
+      class="px-[14px] py-[5px] rounded-full bg-brand text-white text-[11px] font-bold cursor-pointer hover:bg-brand-dark"
       >➕ Neuer Kunde</button
     >
   </div>
@@ -265,5 +272,73 @@ const filters = [
         openNewCustomer();
       }
     });
+
+    // ── Globaler Backup-Export ────────────────────────────────
+    var exportBtn = document.getElementById("exportBtn");
+    var exportLabel = exportBtn ? exportBtn.textContent : "";
+    function setExportState(text, busy) {
+      if (!exportBtn) return;
+      exportBtn.textContent = text;
+      exportBtn.disabled = !!busy;
+      exportBtn.style.opacity = busy ? "0.6" : "";
+      exportBtn.style.cursor = busy ? "wait" : "pointer";
+    }
+    if (exportBtn) {
+      exportBtn.addEventListener("click", function () {
+        var ui = window.appUI;
+        if (!lastState || !lastState.list) {
+          ui.toast("Noch keine Daten geladen — kurz warten");
+          return;
+        }
+        ui.confirm({
+          title: "Backup erstellen?",
+          description:
+            "Lädt " + lastState.list.length + " Kunden + alle ihre Tool-Räume als " +
+            "JSON-Datei herunter. Bei vielen Bildern kann das einige Sekunden dauern.",
+          okLabel: "Download starten",
+        }).then(function (ok) {
+          if (!ok) return;
+          var customers = lastState.list.slice();
+          setExportState("⏳ Lade " + customers.length + " Räume…", true);
+
+          // Fetch all rooms in parallel
+          Promise.all(customers.map(function (c) {
+            if (!c.room) return Promise.resolve(null);
+            return window.fb.ref("rooms/" + c.room).once("value")
+              .then(function (s) { return s.val(); })
+              .catch(function () { return null; });
+          })).then(function (roomDatas) {
+            var bundle = {
+              exportedAt: new Date().toISOString(),
+              workspace: "unsigned-workspace",
+              customerCount: customers.length,
+              customers: customers.map(function (c, i) {
+                return {
+                  customer: c,
+                  room: { id: c.room || null, data: roomDatas[i] || null },
+                };
+              }),
+            };
+            var json = JSON.stringify(bundle, null, 2);
+            var blob = new Blob([json], { type: "application/json" });
+            var url = URL.createObjectURL(blob);
+            var a = document.createElement("a");
+            a.href = url;
+            var d = new Date().toISOString().slice(0, 10);
+            var sizeMb = (blob.size / 1024 / 1024).toFixed(1);
+            a.download = "unsigned-backup-" + d + ".json";
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            URL.revokeObjectURL(url);
+            setExportState(exportLabel, false);
+            ui.toast("Backup heruntergeladen — " + sizeMb + " MB ✓");
+          }).catch(function (err) {
+            setExportState(exportLabel, false);
+            ui.toast("Backup fehlgeschlagen: " + (err.code || err.message));
+          });
+        });
+      });
+    }
   })();
 </script>
