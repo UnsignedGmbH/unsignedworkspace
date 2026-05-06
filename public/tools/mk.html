@@ -785,6 +785,25 @@ function postProgress(){
   if (_DB && _ROOM) { try { _DB.ref('rooms/'+_ROOM+'/mk_pct').set(pct); } catch(e){} }
 }
 
+var _pendingRemote = null;
+var _blurHookAttached = false;
+function _applyAndRender(v) {
+  SUPPRESS_SAVE = true;
+  applyRemote(v);
+  SUPPRESS_SAVE = false;
+  render({preserveFocus: true});
+  var live = document.getElementById('liveBadge');
+  if (live) live.style.display = 'flex';
+}
+function _onBlurApplyPending() {
+  document.removeEventListener('blur', _onBlurApplyPending, true);
+  _blurHookAttached = false;
+  if (_pendingRemote) {
+    var v = _pendingRemote;
+    _pendingRemote = null;
+    _applyAndRender(v);
+  }
+}
 function loadRemote(){
   if (!_DB || !_ROOM) { STATE = makeDefaultState(); render(); return; }
   _DB.ref('rooms/'+_ROOM+'/marketing').on('value', function(snap){
@@ -793,12 +812,19 @@ function loadRemote(){
       if (!STATE) { STATE = makeDefaultState(); render(); }
       return;
     }
-    SUPPRESS_SAVE = true;
-    applyRemote(v);
-    SUPPRESS_SAVE = false;
-    render({preserveFocus: true});
-    var live = document.getElementById('liveBadge');
-    if (live) live.style.display = 'flex';
+    // If the user is typing in an input/textarea, applying the remote state
+    // would clobber their in-flight edit. Queue it and apply on blur instead.
+    var ae = document.activeElement;
+    var typing = ae && (ae.tagName === 'TEXTAREA' || ae.tagName === 'INPUT');
+    if (typing) {
+      _pendingRemote = v; // always replace with the latest; we only ever need the last
+      if (!_blurHookAttached) {
+        _blurHookAttached = true;
+        document.addEventListener('blur', _onBlurApplyPending, true);
+      }
+      return;
+    }
+    _applyAndRender(v);
   }, function(err){
     console.error('[mk] listener error:', err);
     toast('Verbindungsfehler: '+(err.code||err.message));

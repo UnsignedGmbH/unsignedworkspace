@@ -486,13 +486,10 @@ document.querySelectorAll('.delete-btn').forEach(function(btn) {
       restoreState();
       
       // ── Live listeners ──
-      // Listen for check state changes
+      // Check states only toggle .done classes — safe to apply even while user is typing.
       _D.ref('rooms/' + _R + '/cr_checks').on('value', function(s) {
         var d2 = s.val(); if (!d2) return;
-        var ae = document.activeElement;
-        if (ae && ae.contentEditable === 'true') return;
         try { localStorage.setItem(KEY, JSON.stringify(d2)); } catch(e) {}
-        // Apply only check states (no DOM rebuild)
         document.querySelectorAll('.check-item').forEach(function(item, i) {
           if (d2['i' + i] !== undefined) {
             if (d2['i' + i]) item.classList.add('done');
@@ -501,12 +498,12 @@ document.querySelectorAll('.delete-btn').forEach(function(btn) {
         });
         updateProgress();
       });
-      
-      // Listen for custom items (added/deleted by other user)
+
+      // Custom items: applyCustomItems already skips elements that have focus,
+      // so a user editing one item won't have their text overwritten while
+      // other items still update. No need for the early bail.
       _D.ref('rooms/' + _R + '/cr_items').on('value', function(s2) {
         var custom = s2.val(); if (!custom) return;
-        var ae = document.activeElement;
-        if (ae && (ae.contentEditable === 'true' || ae.tagName === 'TEXTAREA')) return;
         applyCustomItems(custom);
         restoreState();
         updateProgress();
