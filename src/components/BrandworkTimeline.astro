@@ -3,281 +3,340 @@
 // Wird in customer.astro & portal.astro eingehängt; Daten kommen über
 // window.BWTimeline.render(getPct, onPick) — getPct(toolKey) → 0-100,
 // onPick(toolKey) öffnet das passende Tool.
+
+const PHASES = [
+  { num: 1, label: "Branding", tool: "bi", sub: "Positionierung · Fundament" },
+  { num: 2, label: "Design", tool: "design", sub: "Moodboard · Mockups · Kollektion" },
+  { num: 3, label: "Produktion", tool: null, sub: "Techpack · Preise · Sampling", soon: true },
+  { num: 4, label: "Shooting", tool: "sh", sub: "Moodboard · Ablauf · Styling" },
+  { num: 5, label: "Shop", tool: "shop", sub: "Optimierung · Drop · Flats" },
+  { num: 6, label: "Marketing", tool: "mk", sub: "Personal Brand · Ads · Flows" },
+  { num: 7, label: "AI Guide", tool: "ai_guide", sub: "Wie · Planung · Moodboard" },
+];
+
+// Circumference of r=18 = 2 * π * 18 ≈ 113.10
+const RING_C = 113.097;
 ---
 
-<section class="bw-tl mb-5">
+<section class="bw-tl">
+  <div class="bw-tl-bg" aria-hidden="true"></div>
+
   <div class="bw-tl-head">
-    <span class="bw-tl-eyebrow">
-      <span class="bw-tl-bar"></span>
-      Brandwork Roadmap
-    </span>
-    <span id="bwTlAvg" class="bw-tl-avg">Ø 0%</span>
+    <div class="bw-tl-wm">
+      <span class="bw-tl-wm-bw">BrandWork</span>
+      <span class="bw-tl-wm-rm">Roadmap</span>
+    </div>
+    <div class="bw-tl-meta">
+      <span class="bw-tl-meta-label">Gesamt</span>
+      <span id="bwTlAvg" class="bw-tl-avg">0%</span>
+    </div>
   </div>
-  <div id="bwTlTrack" class="bw-tl-track" role="list"></div>
-  <p class="bw-tl-foot">
-    Sieben Phasen — vom ersten Briefing bis zum laufenden Drop. Klick auf eine Phase springt direkt ins passende Tool.
-  </p>
+
+  <div class="bw-tl-track" role="list">
+    <div class="bw-tl-rail" aria-hidden="true"></div>
+    {PHASES.map((p) => (
+      <button
+        type="button"
+        class={`bw-tl-node${p.soon ? " is-soon" : ""}`}
+        data-tool={p.tool || ""}
+        data-soon={p.soon ? "1" : ""}
+        disabled={p.soon}
+        title={`${p.label} — ${p.sub}${p.soon ? " (kommt bald)" : ""}`}
+        role="listitem"
+      >
+        <span class="bw-tl-ring-wrap">
+          <svg class="bw-tl-ring" viewBox="0 0 44 44" aria-hidden="true">
+            <circle cx="22" cy="22" r="18" class="ring-bg" fill="none" stroke-width="2.5" />
+            <circle
+              cx="22" cy="22" r="18"
+              class="ring-fg"
+              fill="none"
+              stroke-width="2.5"
+              stroke-linecap="round"
+              stroke-dasharray={`${RING_C} ${RING_C}`}
+              stroke-dashoffset={RING_C}
+              transform="rotate(-90 22 22)"
+            />
+          </svg>
+          <span class="bw-tl-num">{p.num}</span>
+        </span>
+        <span class="bw-tl-label">{p.label}</span>
+        <span class="bw-tl-pct">{p.soon ? "Bald" : "0%"}</span>
+        <span class="bw-tl-sub">{p.sub}</span>
+      </button>
+    ))}
+  </div>
+
+  <div class="bw-tl-foot">
+    <img src="/brand/tag.png" alt="" class="bw-tl-tag" loading="lazy" />
+    <p>Sieben Phasen — vom ersten Briefing bis zum laufenden Drop. Klick auf eine Phase springt direkt ins passende Tool.</p>
+  </div>
 </section>
 
 <style>
   .bw-tl {
-    background: linear-gradient(180deg, rgba(193, 48, 48, 0.05), transparent 70%);
+    position: relative;
+    background: var(--color-card);
     border: 0.5px solid var(--color-line);
-    border-radius: 14px;
-    padding: 14px 16px 14px;
+    border-radius: 16px;
+    padding: 18px 22px 16px;
+    margin-bottom: 18px;
+    overflow: hidden;
   }
+  .bw-tl-bg {
+    position: absolute;
+    inset: 0;
+    background-image: url("/brand/hintergrund.jpg");
+    background-size: cover;
+    background-position: center;
+    opacity: 0.06;
+    pointer-events: none;
+    z-index: 0;
+    mix-blend-mode: multiply;
+  }
+  .bw-tl > *:not(.bw-tl-bg) { position: relative; z-index: 1; }
+
   .bw-tl-head {
     display: flex;
-    align-items: center;
+    align-items: flex-end;
     justify-content: space-between;
-    gap: 8px;
-    margin-bottom: 14px;
+    gap: 12px;
+    margin-bottom: 18px;
+    border-bottom: 0.5px solid var(--color-line);
+    padding-bottom: 12px;
   }
-  .bw-tl-eyebrow {
+  .bw-tl-wm {
     display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 10px;
-    font-weight: 800;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
+    align-items: baseline;
+    gap: 4px;
+    line-height: 1;
+  }
+  .bw-tl-wm-bw {
+    font-style: italic;
+    font-weight: 900;
+    font-size: 22px;
+    letter-spacing: -0.02em;
     color: var(--color-ink);
   }
-  .bw-tl-bar {
-    width: 4px;
-    height: 12px;
-    background: var(--color-brand);
-    border-radius: 2px;
-    display: inline-block;
+  .bw-tl-wm-rm {
+    font-family: var(--font-script);
+    font-weight: 700;
+    font-size: 22px;
+    color: var(--color-brand-dark);
+    transform: translateY(2px);
+  }
+  .bw-tl-meta {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+  }
+  .bw-tl-meta-label {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--color-ink-mute);
   }
   .bw-tl-avg {
-    font-size: 11px;
-    font-weight: 800;
+    font-size: 16px;
+    font-weight: 900;
     color: var(--color-brand);
-    letter-spacing: 0.02em;
+    line-height: 1;
+    font-feature-settings: "tnum";
   }
+
   .bw-tl-track {
     position: relative;
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
     gap: 4px;
-    overflow-x: auto;
-    padding: 4px 0 6px;
-    scrollbar-width: none;
+    padding: 6px 0 8px;
   }
-  .bw-tl-track::-webkit-scrollbar { display: none; }
-  .bw-tl-track::before {
-    content: "";
+  .bw-tl-rail {
     position: absolute;
-    left: 7%;
-    right: 7%;
-    top: 25px;
+    left: calc(100% / 14);
+    right: calc(100% / 14);
+    top: 28px;
     height: 2px;
-    background: var(--color-line);
+    background: linear-gradient(90deg, var(--color-line), rgba(0,0,0,0.04) 50%, var(--color-line));
+    border-radius: 2px;
     z-index: 0;
   }
+
   .bw-tl-node {
-    flex: 1 1 0;
-    min-width: 84px;
+    position: relative;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 5px;
+    gap: 6px;
     background: transparent;
     border: 0;
     cursor: pointer;
-    padding: 0 2px 2px;
+    padding: 4px 4px 6px;
     font-family: inherit;
-    -webkit-tap-highlight-color: transparent;
     color: inherit;
+    -webkit-tap-highlight-color: transparent;
     z-index: 1;
     transition: transform 0.15s ease;
+    min-width: 0;
   }
-  .bw-tl-node:hover:not(:disabled) { transform: translateY(-1px); }
-  .bw-tl-node:disabled { cursor: default; opacity: 0.55; }
+  .bw-tl-node:hover:not(:disabled) { transform: translateY(-2px); }
+  .bw-tl-node:disabled { cursor: default; }
+  .bw-tl-node.is-soon { opacity: 0.5; }
+
   .bw-tl-ring-wrap {
     position: relative;
-    width: 42px;
-    height: 42px;
-    background: var(--color-card);
-    border-radius: 50%;
+    width: 56px;
+    height: 56px;
     display: flex;
     align-items: center;
     justify-content: center;
+    background: var(--color-card);
+    border-radius: 50%;
+    flex-shrink: 0;
   }
   .bw-tl-ring {
     position: absolute;
     inset: 0;
-    transform: rotate(-90deg);
     width: 100%;
     height: 100%;
+    overflow: visible;
   }
   .bw-tl-ring .ring-bg { stroke: var(--color-line); }
   .bw-tl-ring .ring-fg {
     stroke: var(--color-brand);
-    transition: stroke-dashoffset 0.6s ease;
+    transition: stroke-dashoffset 0.7s var(--ease-out-quart, cubic-bezier(0.25, 1, 0.5, 1));
   }
   .bw-tl-node.is-complete .bw-tl-ring-wrap { background: var(--color-brand); }
   .bw-tl-node.is-complete .ring-bg { stroke: var(--color-brand); }
   .bw-tl-node.is-complete .bw-tl-num { color: #fff; }
+
   .bw-tl-num {
-    font-size: 14px;
+    position: relative;
+    font-size: 18px;
     font-weight: 900;
     font-style: italic;
     color: var(--color-ink);
     line-height: 1;
+    letter-spacing: -0.04em;
   }
   .bw-tl-node.is-soon .bw-tl-num { color: var(--color-ink-mute); }
+
   .bw-tl-label {
-    font-size: 10px;
-    font-weight: 700;
+    font-size: 11px;
+    font-weight: 800;
     color: var(--color-ink);
     text-align: center;
     line-height: 1.2;
     letter-spacing: 0.01em;
-    max-width: 9em;
+    text-transform: uppercase;
+    margin-top: 2px;
   }
   .bw-tl-pct {
-    font-size: 10px;
+    font-size: 11px;
     font-weight: 800;
     color: var(--color-brand);
-    letter-spacing: 0.02em;
+    line-height: 1;
+    font-feature-settings: "tnum";
   }
   .bw-tl-node.is-soon .bw-tl-pct { color: var(--color-ink-mute); font-weight: 700; }
+
+  .bw-tl-sub {
+    display: none;
+    font-size: 9px;
+    font-weight: 600;
+    color: var(--color-ink-mute);
+    text-align: center;
+    line-height: 1.3;
+    letter-spacing: 0.02em;
+    margin-top: 2px;
+    max-width: 12em;
+  }
+
   .bw-tl-foot {
-    margin-top: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 12px;
+    padding-top: 10px;
+    border-top: 0.5px dashed var(--color-line);
+  }
+  .bw-tl-tag {
+    height: 18px;
+    width: auto;
+    opacity: 0.6;
+    flex-shrink: 0;
+  }
+  .bw-tl-foot p {
     font-size: 10px;
     color: var(--color-ink-mute);
     line-height: 1.5;
+    font-weight: 500;
+    letter-spacing: 0.01em;
   }
 
-  @media (max-width: 640px) {
-    .bw-tl-head { margin-bottom: 10px; }
-    .bw-tl-track::before { left: 10%; right: 10%; }
-    .bw-tl-node { min-width: 72px; }
+  @media (min-width: 1024px) {
+    .bw-tl-sub { display: block; }
+  }
+
+  @media (max-width: 720px) {
+    .bw-tl { padding: 14px 14px 14px; }
+    .bw-tl-head { margin-bottom: 12px; padding-bottom: 10px; }
+    .bw-tl-wm-bw, .bw-tl-wm-rm { font-size: 18px; }
+    .bw-tl-avg { font-size: 14px; }
+    .bw-tl-track {
+      grid-template-columns: repeat(7, minmax(64px, 1fr));
+      overflow-x: auto;
+      gap: 0;
+      scrollbar-width: none;
+    }
+    .bw-tl-track::-webkit-scrollbar { display: none; }
+    .bw-tl-rail { left: calc(100% / 14); right: calc(100% / 14); }
+    .bw-tl-ring-wrap { width: 48px; height: 48px; }
+    .bw-tl-num { font-size: 15px; }
     .bw-tl-label { font-size: 9px; }
+    .bw-tl-pct { font-size: 10px; }
     .bw-tl-foot { display: none; }
   }
 </style>
 
 <script is:inline>
   (function () {
-    var PHASES = [
-      { num: 1, label: "Branding", tool: "bi",
-        sub: "Positionierung · Fundament" },
-      { num: 2, label: "Design", tool: "design",
-        sub: "Moodboard · Mockups · Kollektion" },
-      { num: 3, label: "Produktion", tool: null,
-        sub: "Techpack · Preise · Sampling", soon: true },
-      { num: 4, label: "Shooting", tool: "sh",
-        sub: "Moodboard · Ablauf · Styling" },
-      { num: 5, label: "Shop", tool: "shop",
-        sub: "Optimierung · Drop · Flats" },
-      { num: 6, label: "Marketing", tool: "mk",
-        sub: "Personal Brand · Ads · Flows" },
-      { num: 7, label: "AI Guide", tool: "ai_guide",
-        sub: "Wie · Planung · Moodboard" },
-    ];
-
-    var RING_CIRC = 2 * Math.PI * 17; // ≈ 106.81
-
-    var built = false;
-    var nodes = [];
+    var RING_C = 113.097;
     var lastOnPick = null;
 
-    function svg(name, attrs) {
-      var ns = "http://www.w3.org/2000/svg";
-      var el = document.createElementNS(ns, name);
-      Object.keys(attrs || {}).forEach(function (k) {
-        el.setAttribute(k, attrs[k]);
-      });
-      return el;
-    }
-
-    function buildSkeleton(track) {
-      track.textContent = "";
-      nodes = [];
-      PHASES.forEach(function (p) {
-        var btn = document.createElement("button");
-        btn.type = "button";
-        btn.className = "bw-tl-node" + (p.soon ? " is-soon" : "");
-        btn.setAttribute("role", "listitem");
-        btn.title = p.label + " — " + p.sub + (p.soon ? " (kommt bald)" : "");
-
-        var ring = document.createElement("div");
-        ring.className = "bw-tl-ring-wrap";
-
-        var s = svg("svg", { viewBox: "0 0 42 42", class: "bw-tl-ring" });
-        var bg = svg("circle", {
-          cx: "21", cy: "21", r: "17",
-          class: "ring-bg", fill: "none", "stroke-width": "2.5",
+    function setup() {
+      document.querySelectorAll(".bw-tl-node").forEach(function (btn) {
+        if (btn.dataset.soon === "1") return;
+        if (btn.dataset.bound === "1") return;
+        btn.dataset.bound = "1";
+        btn.addEventListener("click", function () {
+          if (lastOnPick) lastOnPick(btn.dataset.tool);
         });
-        var fg = svg("circle", {
-          cx: "21", cy: "21", r: "17",
-          class: "ring-fg", fill: "none", "stroke-width": "2.5",
-          "stroke-linecap": "round",
-          "stroke-dasharray": String(RING_CIRC) + " " + String(RING_CIRC),
-          "stroke-dashoffset": String(RING_CIRC),
-        });
-        s.appendChild(bg);
-        s.appendChild(fg);
-        ring.appendChild(s);
-
-        var num = document.createElement("span");
-        num.className = "bw-tl-num";
-        num.textContent = String(p.num);
-        ring.appendChild(num);
-        btn.appendChild(ring);
-
-        var label = document.createElement("span");
-        label.className = "bw-tl-label";
-        label.textContent = p.label;
-        btn.appendChild(label);
-
-        var pctEl = document.createElement("span");
-        pctEl.className = "bw-tl-pct";
-        pctEl.textContent = p.soon ? "Bald" : "0%";
-        btn.appendChild(pctEl);
-
-        if (p.soon) {
-          btn.disabled = true;
-        } else {
-          btn.addEventListener("click", function () {
-            if (lastOnPick) lastOnPick(p.tool);
-          });
-        }
-
-        track.appendChild(btn);
-        nodes.push({ phase: p, btn: btn, fg: fg, pctEl: pctEl });
       });
-      built = true;
     }
 
     function render(getPct, onPick) {
-      var track = document.getElementById("bwTlTrack");
-      var avgEl = document.getElementById("bwTlAvg");
-      if (!track || !avgEl) return;
       lastOnPick = onPick || lastOnPick;
-      if (!built) buildSkeleton(track);
+      setup();
       var sum = 0, counted = 0;
-      nodes.forEach(function (n) {
-        if (n.phase.soon) return;
-        var pct = parseInt(getPct(n.phase.tool), 10) || 0;
+      document.querySelectorAll(".bw-tl-node").forEach(function (btn) {
+        if (btn.dataset.soon === "1") return;
+        var tool = btn.dataset.tool;
+        var pct = parseInt(getPct(tool), 10) || 0;
         if (pct < 0) pct = 0;
         if (pct > 100) pct = 100;
-        sum += pct;
-        counted++;
-        n.fg.setAttribute(
-          "stroke-dashoffset",
-          String(RING_CIRC * (1 - pct / 100))
-        );
-        n.pctEl.textContent = pct + "%";
-        n.btn.classList.toggle("is-complete", pct >= 100);
-        n.btn.classList.toggle("is-active", pct > 0 && pct < 100);
+        sum += pct; counted++;
+        var fg = btn.querySelector(".ring-fg");
+        if (fg) fg.setAttribute("stroke-dashoffset", String(RING_C * (1 - pct / 100)));
+        var pctEl = btn.querySelector(".bw-tl-pct");
+        if (pctEl) pctEl.textContent = pct + "%";
+        btn.classList.toggle("is-complete", pct >= 100);
+        btn.classList.toggle("is-active", pct > 0 && pct < 100);
       });
-      avgEl.textContent =
-        "Ø " + Math.round(counted ? sum / counted : 0) + "%";
+      var avg = document.getElementById("bwTlAvg");
+      if (avg) avg.textContent = Math.round(counted ? sum / counted : 0) + "%";
     }
 
     window.BWTimeline = { render: render };
