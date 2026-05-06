@@ -4,13 +4,16 @@
 // window.BWTimeline.render(getPct, onPick) — getPct(toolKey) → 0-100,
 // onPick(toolKey) öffnet das passende Tool.
 
+// `tool` = canonical tool key for click + single-tool progress.
+// `tools` = array → progress is the average of all listed tools (>1 → multi-tool phase).
+// When clicking a multi-tool phase, the first tool in `tools` is opened.
 const PHASES = [
   { num: 1, label: "Branding", tool: "bi", sub: "Positionierung · Fundament" },
   { num: 2, label: "Design", tool: "design", sub: "Moodboard · Mockups · Kollektion" },
   { num: 3, label: "Produktion", tool: null, sub: "Techpack · Preise · Sampling", soon: true },
   { num: 4, label: "Shooting", tool: "sh", sub: "Moodboard · Ablauf · Styling" },
   { num: 5, label: "Shop", tool: "shop", sub: "Optimierung · Drop · Flats" },
-  { num: 6, label: "Marketing", tool: "mk", sub: "Personal Brand · Ads · Flows" },
+  { num: 6, label: "Marketing", tool: "mk", tools: ["mk", "social"], sub: "Plan · Social · Captions · Ads" },
   { num: 7, label: "AI Guide", tool: "ai_guide", sub: "Wie · Planung · Moodboard" },
 ];
 
@@ -39,6 +42,7 @@ const RING_C = 113.097;
         type="button"
         class={`bw-tl-node${p.soon ? " is-soon" : ""}`}
         data-tool={p.tool || ""}
+        data-tools={p.tools ? p.tools.join(",") : ""}
         data-soon={p.soon ? "1" : ""}
         disabled={p.soon}
         title={`${p.label} — ${p.sub}${p.soon ? " (kommt bald)" : ""}`}
@@ -323,8 +327,15 @@ const RING_C = 113.097;
       var sum = 0, counted = 0;
       document.querySelectorAll(".bw-tl-node").forEach(function (btn) {
         if (btn.dataset.soon === "1") return;
-        var tool = btn.dataset.tool;
-        var pct = parseInt(getPct(tool), 10) || 0;
+        var pct;
+        if (btn.dataset.tools) {
+          var keys = btn.dataset.tools.split(",");
+          var s = 0;
+          keys.forEach(function (k) { s += parseInt(getPct(k), 10) || 0; });
+          pct = Math.round(s / keys.length);
+        } else {
+          pct = parseInt(getPct(btn.dataset.tool), 10) || 0;
+        }
         if (pct < 0) pct = 0;
         if (pct > 100) pct = 100;
         sum += pct; counted++;

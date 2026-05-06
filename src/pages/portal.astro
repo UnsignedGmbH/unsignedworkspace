@@ -231,6 +231,8 @@ import BrandworkTimeline from "../components/BrandworkTimeline.astro";
         desc: "Personal Brand · Ads · Email-Flows" },
       { id: "shop", icon: "🛒", label: "Shop",
         desc: "Shop-Optimierung & Drop-Planung" },
+      { id: "social", icon: "💬", label: "Social Media",
+        desc: "Content · Highlights · Captions · WhatsApp" },
     ];
 
     if (!room) {
@@ -410,6 +412,7 @@ import BrandworkTimeline from "../components/BrandworkTimeline.astro";
       window.fb.ref("rooms/" + room + "/mk_pct").on("value", function(s){ setPct("mk", s.val()); });
       window.fb.ref("rooms/" + room + "/ag_pct").on("value", function(s){ setPct("ai_guide", s.val()); });
       window.fb.ref("rooms/" + room + "/shop_pct").on("value", function(s){ setPct("shop", s.val()); });
+      window.fb.ref("rooms/" + room + "/social_pct").on("value", function(s){ setPct("social", s.val()); });
       // BI: derive from rooms/<room>/data/fields (count fields with text or images)
       window.fb.ref("rooms/" + room + "/data/fields").on("value", function(s){
         var v = s.val() || {};

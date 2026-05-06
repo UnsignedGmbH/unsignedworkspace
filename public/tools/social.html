@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+<script>
+var _R = new URLSearchParams(location.search).get('room'), _D = null;
+try {
+  if (!firebase.apps.length) firebase.initializeApp({apiKey:"AIzaSyDJqdh3apGM4fcsjRYI7vZ4VrT1_A6L92U",authDomain:"unsignedworkspace.firebaseapp.com",databaseURL:"https://unsignedworkspace-default-rtdb.europe-west1.firebasedatabase.app",projectId:"unsignedworkspace",storageBucket:"unsignedworkspace.firebasestorage.app",messagingSenderId:"144491079509",appId:"1:144491079509:web:c7dcc1c14b8daf404231dc"});
+  _D = firebase.database();
+} catch (e) { try { _D = firebase.database(); } catch (e2) {} }
+</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Unsigned — Social Media</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&family=Caveat:wght@600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --red: #C13030;
+  --red-dark: #9A2424;
+  --red-dim: rgba(193, 48, 48, 0.08);
+  --bg: #f4f3f0;
+  --bg2: #fff;
+  --bg3: #eee;
+  --border: rgba(0, 0, 0, 0.09);
+  --border-red: rgba(193, 48, 48, 0.35);
+  --text: #111;
+  --text-dim: #555;
+  --text-dimmer: #aaa;
+  --green: #1D9E75;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Montserrat', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; padding-bottom: 120px; }
+.header {
+  background: #fff;
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 1px 8px rgba(0, 0, 0, 0.06);
+}
+.header-top { max-width: 980px; margin: 0 auto; padding: 14px 24px 10px; display: flex; align-items: center; gap: 14px; }
+.brand-wm { display: flex; align-items: baseline; gap: 6px; flex: 1; }
+.brand-wm .bw { font-family: 'Montserrat', sans-serif; font-weight: 900; font-size: 22px; letter-spacing: -0.02em; color: var(--text); font-style: italic; line-height: 1; }
+.brand-wm .rm { font-family: 'Caveat', cursive; font-weight: 700; font-size: 22px; color: var(--red); transform: translateY(2px); line-height: 1; }
+.header-eyebrow { font-size: 9px; font-weight: 700; letter-spacing: 0.22em; text-transform: uppercase; color: var(--text-dim); margin-top: 2px; line-height: 1; }
+.progress-wrap { display: flex; align-items: center; gap: 10px; margin-left: auto; }
+.progress-bar-bg { width: 110px; height: 4px; background: var(--bg3); border-radius: 2px; overflow: hidden; }
+.progress-bar-fill { height: 100%; background: var(--red); border-radius: 2px; transition: width 0.4s ease; width: 0%; }
+.progress-count { font-size: 12px; font-weight: 800; color: var(--red); min-width: 42px; text-align: right; }
+
+.tabs {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 0 24px 10px;
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.tabs::-webkit-scrollbar { display: none; }
+.tab {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 13px;
+  border-radius: 9px;
+  border: 1.5px solid var(--border);
+  background: var(--bg2);
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-dim);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s;
+  -webkit-tap-highlight-color: transparent;
+  position: relative;
+}
+.tab:hover { color: var(--red); border-color: var(--border-red); }
+.tab.active { background: var(--red); border-color: var(--red); color: #fff; }
+.tab .tab-pct {
+  font-size: 9px;
+  font-weight: 800;
+  opacity: 0.7;
+  background: rgba(0, 0, 0, 0.07);
+  padding: 1px 5px;
+  border-radius: 6px;
+}
+.tab.active .tab-pct { background: rgba(255, 255, 255, 0.18); opacity: 0.9; }
+.tab-icon { font-size: 12px; }
+
+.main { max-width: 980px; margin: 0 auto; padding: 22px 24px 0; }
+
+.intro {
+  background: var(--red-dim);
+  border: 1px solid var(--border-red);
+  border-radius: 12px;
+  padding: 14px 18px;
+  margin-bottom: 22px;
+}
+.intro p { font-size: 12px; line-height: 1.55; color: var(--red-dark); font-weight: 600; }
+.intro strong { font-weight: 800; }
+
+.section { display: none; }
+.section.active { display: block; }
+
+.section-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.section-head .ic {
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
+  background: var(--red-dim);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+.section-head h1 {
+  font-size: 18px;
+  font-weight: 900;
+  letter-spacing: -0.01em;
+  color: var(--text);
+}
+.section-head .meta {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-dim);
+  margin-top: 2px;
+}
+
+.block {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px 18px;
+  margin-bottom: 14px;
+}
+.block-title {
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text);
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.block-title::before {
+  content: "";
+  width: 3px;
+  height: 12px;
+  background: var(--red);
+  border-radius: 2px;
+}
+
+.field { margin-bottom: 12px; }
+.field:last-child { margin-bottom: 0; }
+.field-label {
+  display: block;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-bottom: 5px;
+}
+.field-input,
+.field-textarea {
+  width: 100%;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.5;
+  color: var(--text);
+  background: var(--bg);
+  border: 1.5px solid var(--border);
+  border-radius: 9px;
+  padding: 10px 12px;
+  outline: none;
+  transition: border-color 0.15s, background 0.15s;
+}
+.field-input:focus,
+.field-textarea:focus {
+  border-color: var(--border-red);
+  background: #fff;
+}
+.field-textarea {
+  resize: vertical;
+  min-height: 70px;
+}
+.field-textarea.tall {
+  min-height: 110px;
+}
+.field-hint {
+  font-size: 10px;
+  color: var(--text-dimmer);
+  margin-top: 4px;
+  font-style: italic;
+  line-height: 1.4;
+}
+
+.field-radio-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.field-radio {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg2);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-dim);
+  transition: all 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.field-radio:hover { border-color: var(--border-red); color: var(--red); }
+.field-radio input { display: none; }
+.field-radio.is-on {
+  background: var(--red);
+  border-color: var(--red);
+  color: #fff;
+}
+
+.row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+@media (max-width: 640px) {
+  .row-2 { grid-template-columns: 1fr; }
+  .header-top { padding: 12px 16px 8px; }
+  .tabs { padding: 0 16px 10px; }
+  .main { padding: 16px 16px 0; }
+  .brand-wm .bw, .brand-wm .rm { font-size: 18px; }
+  .progress-bar-bg { width: 70px; }
+}
+
+.foot {
+  max-width: 980px;
+  margin: 24px auto 0;
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.foot-status { font-size: 11px; color: var(--text-dimmer); font-weight: 600; }
+.foot-status .saved { color: var(--green); opacity: 0; transition: opacity 0.3s; }
+.foot-status .saved.show { opacity: 1; }
+.foot-rules {
+  font-size: 10px;
+  color: var(--text-dim);
+  font-weight: 600;
+  font-style: italic;
+}
+@media (max-width: 640px) {
+  .foot { padding: 0 16px; }
+  .foot-rules { display: none; }
+}
+</style>
+</head>
+<body>
+<header class="header">
+  <div class="header-top">
+    <div>
+      <div class="brand-wm">
+        <span class="bw">BrandWork</span>
+        <span class="rm">Social Media</span>
+      </div>
+      <div class="header-eyebrow">Content · Channels · Captions</div>
+    </div>
+    <div class="progress-wrap">
+      <div class="progress-bar-bg"><div id="progFill" class="progress-bar-fill"></div></div>
+      <span id="progCount" class="progress-count">0%</span>
+    </div>
+  </div>
+  <nav id="tabs" class="tabs"></nav>
+</header>
+
+<main class="main">
+  <div class="intro">
+    <p>Alles was für Social läuft an einem Ort: <strong>Strategie · Profile · Highlights · Captions · WhatsApp</strong>. Live-synchron mit deinem Team — leer Felder werden nicht gezählt.</p>
+  </div>
+
+  <div id="sections"></div>
+</main>
+
+<div class="foot">
+  <span class="foot-status">
+    <span id="savedTag" class="saved">✓ Gespeichert</span>
+    <span id="connTag"></span>
+  </span>
+  <span class="foot-rules">Alle Posts müssen harmonieren — Brand Identity + Shooting-Planung folgen.</span>
+</div>
+
+<script>
+(function () {
+  // ── SCHEMA ────────────────────────────────────────────────
+  var SCHEMA = [
+    {
+      id: 'content', icon: '📝', label: 'Content',
+      sub: 'Strategie · Nische · Hooks',
+      blocks: [
+        {
+          title: 'Contentplan',
+          items: [
+            { k: 'richtung', label: 'Richtung', type: 'text', ph: 'In welche Richtung soll der Content gehen?' },
+            { k: 'nische', label: 'Nische', type: 'text', ph: 'z.B. Streetwear · Y2K · Skate · High-End' },
+            { k: 'ueberthemen', label: 'Überthemen', type: 'list', ph: 'Eine Zeile pro Überthema', hint: '3–5 Themen, die immer wiederkehren' },
+            { k: 'story', label: 'Story', type: 'textarea', ph: 'Welche Story zieht sich durch den ganzen Content?' },
+          ],
+        },
+        {
+          title: 'Account-Typ',
+          items: [
+            { k: 'accountTyp', label: 'Wie willst du es machen?', type: 'radio',
+              options: ['Personal Brand', 'Brand Account', 'Only Ads', 'Alles', 'Manches'] },
+          ],
+        },
+        {
+          title: 'Was wichtig ist',
+          items: [
+            { k: 'variation', label: 'Variation', type: 'list', ph: 'Z.B. von dir, vom Produkt, BTS, Kunden-Story…',
+              hint: 'Mische Formate — keine Monotonie' },
+            { k: 'werblichkeit', label: 'Werblichkeit', type: 'textarea', ph: 'Verhältnis unwerblich vs. werblich. PB eher unwerblich, BA-Werbevideos sind okay.' },
+            { k: 'hooks', label: 'Hook-Sammlung', type: 'list', ph: 'Eine Zeile pro Hook',
+              hint: 'Sammle alles was hängen bleibt' },
+          ],
+        },
+        {
+          title: 'Creator einbauen',
+          items: [
+            { k: 'creator_ugc', label: 'UGC-Creator', type: 'list', ph: '@username · Kontakt · Format' },
+            { k: 'creator_mikro', label: 'Mikro-Influencer (Nische muss passen)', type: 'list', ph: '@username · Reichweite · Nische' },
+            { k: 'creator_inf', label: 'Influencer (Stats checken!)', type: 'list', ph: '@username · Reichweite · Stats-Link' },
+          ],
+        },
+      ],
+    },
+    {
+      id: 'instagram', icon: '📷', label: 'Instagram',
+      sub: 'Slogan · Bio · Highlights',
+      blocks: [
+        {
+          title: 'Profil',
+          items: [
+            { k: 'slogan', label: 'Slogan / Bio Hauptzeile', type: 'text', ph: 'z.B. BE F*CKN DIFFERENT!' },
+            { k: 'subline', label: 'Untertitel / Saison', type: 'text', ph: 'z.B. S/S 26 SOON…' },
+            { k: 'links', label: 'Links (Website + Channel)', type: 'list', ph: 'unsigned-dept.com\nWA-Channel-Link\n…',
+              hint: 'Eine Zeile pro Link' },
+          ],
+        },
+        {
+          title: 'Highlights-Reihenfolge',
+          items: [
+            { k: 'highlights', label: 'Highlights (in Anzeige-Reihenfolge)', type: 'list',
+              ph: 'Sizeguide\nShipping\nWhatsApp\nPayments',
+              hint: 'Diese Highlights detaillierst du im Tab "Highlights"' },
+          ],
+        },
+      ],
+    },
+    {
+      id: 'highlights', icon: '✨', label: 'Highlights',
+      sub: 'Sizeguide · Shipping · WhatsApp · Payments',
+      blocks: [
+        {
+          title: 'Sizeguide',
+          items: [
+            { k: 'sg_table', label: 'Maß-Tabelle', type: 'textarea', ph: 'Size | XS | S | M | L | XL | XXL\nWaist | 39 | 41 | 43 | 45 | 47 | 49\nLength | 107 | 108 | 109 | 110 | 111 | 112\nLeg | 27.5 | 28 | 28.5 | 29 | 29.5 | 30',
+              hint: 'Klartext oder Pipe-Trenner — egal, Hauptsache lesbar' },
+            { k: 'sg_drop_date', label: 'Drop-Datum', type: 'text', ph: 'z.B. 26TH DEZ 2025' },
+            { k: 'sg_url', label: 'Verlinkungs-URL (Sizeguide-Seite)', type: 'text', ph: 'https://…' },
+          ],
+        },
+        {
+          title: 'Shipping',
+          items: [
+            { k: 'ship_intro', label: 'Intro-Zeile', type: 'text', ph: 'Every parcel is delivered by DHL' },
+            { k: 'ship_de', label: '🇩🇪 Deutschland', type: 'text', ph: 'Still free / xx,xx€' },
+            { k: 'ship_eu', label: '🇪🇺 Europa', type: 'text', ph: 'xx,xx€' },
+            { k: 'ship_ch', label: '🇨🇭 Schweiz', type: 'text', ph: 'xx,xx€' },
+            { k: 'ship_uk', label: '🇬🇧 UK', type: 'text', ph: 'xx,xx€' },
+            { k: 'ship_us', label: '🇺🇸 USA', type: 'text', ph: 'xx,xx€' },
+            { k: 'ship_outro', label: 'Outro-Zeile', type: 'text', ph: 'Every order is processed within 24 hours' },
+          ],
+        },
+        {
+          title: 'WhatsApp',
+          items: [
+            { k: 'wa_headline', label: 'Headline', type: 'text', ph: 'INNER CIRCLE' },
+            { k: 'wa_intro', label: 'Intro', type: 'text', ph: 'JOIN OUR EXCLUSIVE CHANNEL' },
+            { k: 'wa_perks', label: 'Perks (eine pro Zeile)', type: 'list',
+              ph: 'BEHIND THE SCENE\nSPECIALS\nGIFTS\nLEAKS\nCOMMUNITY MEET UPS\nAND MANY MORE' },
+            { k: 'wa_cta', label: 'CTA', type: 'text', ph: 'JOIN NOW · DON\'T MISS THIS' },
+          ],
+        },
+        {
+          title: 'Payments',
+          items: [
+            { k: 'pay_methods', label: 'Zahlungsarten (eine pro Zeile)', type: 'list',
+              ph: 'PayPal\nMastercard\nApple Pay\nVISA\nKlarna\nGoogle Pay\nSofort\nShop Pay\n…' },
+            { k: 'pay_support', label: 'Support-Zeile', type: 'text', ph: 'If you have any problems during checkout, let us know!' },
+          ],
+        },
+      ],
+    },
+    {
+      id: 'channel', icon: '💬', label: 'WA Channel',
+      sub: 'Slogan · FOMO · Website',
+      blocks: [
+        {
+          title: 'Aufbau',
+          items: [
+            { k: 'ch_name', label: 'Channel-Name', type: 'text', ph: 'z.B. UNSIGNED FAMILY' },
+            { k: 'ch_slogan', label: 'Slogan', type: 'text', ph: 'Eine Zeile, die alles sagt' },
+            { k: 'ch_fomo', label: 'FOMO-Punkte (eine pro Zeile)', type: 'list',
+              ph: 'EARLY ACCESS\nLEAKS & INFOS\nDISCOUNTS & SPECIALS' },
+            { k: 'ch_website', label: 'Website-Link', type: 'text', ph: 'https://…' },
+          ],
+        },
+      ],
+    },
+    {
+      id: 'captions', icon: '📄', label: 'Captions',
+      sub: '3 Drops × 4 Brand-Variationen',
+      blocks: [
+        {
+          title: 'Regeln',
+          items: [
+            { k: 'cap_rules', label: 'Captions-Regeln (eigene Notiz)', type: 'textarea',
+              ph: 'Kein unnötiger Text · übersichtlich · CTAs einbauen · alle Posts harmonieren · auf Brand Identity & Shooting-Planung halten' },
+          ],
+        },
+        {
+          title: 'Drop 1 — Teaser-Phase',
+          items: [
+            { k: 'd1_b1', label: 'Brand 1', type: 'textarea', ph: 'ACCESSORY LINE 01\nDON\'T SLEEP ON IT.\nCOMMENT YOUR FAV ONE!\n\nEXCLUSIVE INFOS IN OUR WHATSAPP CHANNEL' },
+            { k: 'd1_b2', label: 'Brand 2', type: 'textarea', ph: 'LAST RELEASE OF THE YEAR\nNEXT MONTH XXTH DEZ\n(GIVEAWAY)' },
+            { k: 'd1_b3', label: 'Brand 3', type: 'textarea', ph: 'SUMMER COLLECTION SOON!\nDON\'T MISS OUT!\nJOIN WHATSAPP FOR INSIGHTS & LEAKS' },
+            { k: 'd1_b4', label: 'Brand 4', type: 'textarea', ph: '20+ ITEMS SOON!\nBEST BF DEALS, RESTOCKS AND MORE THIS YEAR!\nSHOCK DROPS IN OUR WHATSAPP CHANNEL' },
+          ],
+        },
+        {
+          title: 'Drop 2 — Anbau-Phase',
+          items: [
+            { k: 'd2_b1', label: 'Brand 1', type: 'textarea', ph: 'ACCESSORY LINE 01\nXXTH FEB 17 CET!\nDON\'T LACK ON IT!' },
+            { k: 'd2_b2', label: 'Brand 2', type: 'textarea', ph: 'A FEW DAYS LEFT!\nJOIN OUR GIVEAWAY\n6TH DEZ - 18 CET!\n\nSTOCK IS READY!' },
+            { k: 'd2_b3', label: 'Brand 3', type: 'textarea', ph: 'MAKE SUMMER GREAT AGAIN\nWOULD YOU DO FIT PICS WITH THESE INSANE PIECES?\n@YOURFAVPERSON\nXXTH JULY 26' },
+            { k: 'd2_b4', label: 'Brand 4', type: 'textarea', ph: '27TH NOV - 17 CET!\nEVERY DAY SHOCK DROPS IN OUR WHATSAPP CHANNEL\nDON\'T MISS THIS!' },
+          ],
+        },
+        {
+          title: 'Drop 3 — Drop-Phase',
+          items: [
+            { k: 'd3_b1', label: 'Brand 1', type: 'textarea', ph: 'ACCESSORY LINE 01 / 06TH FEB - 17 CET!\nRUN IT UP!\nEARLY ACCESS IN OUR WHATSAPP CHANNEL' },
+            { k: 'd3_b2', label: 'Brand 2', type: 'textarea', ph: 'BEST RELEASE OF THE YEAR TODAY 18 CET!\nLAST CHANCE TO JOIN OUR BIGGEST GIVEAWAY EVER\nONLINE LATER THIS DAY, RUN IT UP!' },
+            { k: 'd3_b3', label: 'Brand 3', type: 'textarea', ph: 'SUMMER SEASON ONLINE\nBEST FIT PICS GETS DISCOUNT CODES FOR HER/HIS NEXT ORDER\nCTA' },
+            { k: 'd3_b4', label: 'Brand 4', type: 'textarea', ph: 'TODAY 17 CET!\nDON\'T MISS OUR SHOCK DROPS THE NEXT DAYS\nBIGGEST EVENT THIS YEAR!' },
+          ],
+        },
+      ],
+    },
+    {
+      id: 'posts', icon: '📱', label: 'WA Posts',
+      sub: 'Drop-Messages · Hooks · CTAs',
+      blocks: [
+        {
+          title: 'Drop 1 — Teaser-Messages',
+          items: [
+            { k: 'wp1_m1', label: 'Message 1', type: 'textarea', ph: 'z.B. "Yo Family — next drop is around the corner. Stay locked."' },
+            { k: 'wp1_m2', label: 'Message 2', type: 'textarea', ph: '' },
+            { k: 'wp1_m3', label: 'Message 3', type: 'textarea', ph: '' },
+          ],
+        },
+        {
+          title: 'Drop 2 — Anbau-Messages',
+          items: [
+            { k: 'wp2_m1', label: 'Message 1', type: 'textarea', ph: '' },
+            { k: 'wp2_m2', label: 'Message 2', type: 'textarea', ph: '' },
+            { k: 'wp2_m3', label: 'Message 3', type: 'textarea', ph: '' },
+          ],
+        },
+        {
+          title: 'Drop 3 — Drop-Day-Messages',
+          items: [
+            { k: 'wp3_m1', label: 'Message 1', type: 'textarea', ph: 'Live now — link in bio!' },
+            { k: 'wp3_m2', label: 'Message 2', type: 'textarea', ph: '' },
+            { k: 'wp3_m3', label: 'Message 3', type: 'textarea', ph: '' },
+          ],
+        },
+      ],
+    },
+  ];
+
+  // ── Helpers ───────────────────────────────────────────────
+  function el(tag, cls, parent) {
+    var e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (parent) parent.appendChild(e);
+    return e;
+  }
+
+  // Compute total field count once
+  var TOTAL_FIELDS = 0;
+  SCHEMA.forEach(function (s) {
+    s.blocks.forEach(function (b) {
+      b.items.forEach(function () { TOTAL_FIELDS++; });
+    });
+  });
+
+  // STATE: section -> field -> value
+  var STATE = {};
+  var FIELD_REFS = {}; // section -> field -> { item, input, render(), getValue() }
+  SCHEMA.forEach(function (s) {
+    STATE[s.id] = {};
+    FIELD_REFS[s.id] = {};
+    s.blocks.forEach(function (b) {
+      b.items.forEach(function (it) { STATE[s.id][it.k] = ''; });
+    });
+  });
+
+  var tabsEl = document.getElementById('tabs');
+  var sectionsEl = document.getElementById('sections');
+  var progFill = document.getElementById('progFill');
+  var progCount = document.getElementById('progCount');
+  var savedTag = document.getElementById('savedTag');
+  var connTag = document.getElementById('connTag');
+  var TAB_PCT = {}; // sectionId -> %
+
+  // ── Render tabs ────────────────────────────────────────────
+  var tabBtns = {};
+  SCHEMA.forEach(function (s, idx) {
+    var btn = el('button', 'tab' + (idx === 0 ? ' active' : ''), tabsEl);
+    btn.type = 'button';
+    btn.dataset.tab = s.id;
+    var ic = el('span', 'tab-icon', btn); ic.textContent = s.icon;
+    var lbl = el('span', null, btn); lbl.textContent = s.label;
+    var pct = el('span', 'tab-pct', btn); pct.textContent = '0%';
+    btn.addEventListener('click', function () { showTab(s.id); });
+    tabBtns[s.id] = { btn: btn, pct: pct };
+  });
+
+  // ── Render sections + fields ───────────────────────────────
+  function renderField(s, b, it, parent) {
+    var f = el('div', 'field', parent);
+    var lab = el('label', 'field-label', f);
+    lab.textContent = it.label;
+    var inputEl;
+
+    if (it.type === 'text') {
+      inputEl = el('input', 'field-input', f);
+      inputEl.type = 'text';
+      inputEl.placeholder = it.ph || '';
+    } else if (it.type === 'list' || it.type === 'textarea') {
+      inputEl = el('textarea', 'field-textarea' + (it.type === 'list' ? ' tall' : ''), f);
+      inputEl.placeholder = it.ph || '';
+    } else if (it.type === 'radio') {
+      var grp = el('div', 'field-radio-group', f);
+      it.options.forEach(function (opt) {
+        var lbl2 = el('label', 'field-radio', grp);
+        var inp = el('input', null, lbl2);
+        inp.type = 'radio'; inp.name = s.id + '_' + it.k; inp.value = opt;
+        var sp = el('span', null, lbl2); sp.textContent = opt;
+        lbl2.addEventListener('click', function (e) {
+          if (e.target !== inp) e.preventDefault();
+          STATE[s.id][it.k] = opt;
+          grp.querySelectorAll('.field-radio').forEach(function (l) {
+            l.classList.toggle('is-on', l.querySelector('input').value === opt);
+          });
+          persist(s.id, it.k);
+          updateProgress();
+        });
+      });
+      FIELD_REFS[s.id][it.k] = {
+        item: it, group: grp,
+        applyValue: function (v) {
+          STATE[s.id][it.k] = v || '';
+          grp.querySelectorAll('.field-radio').forEach(function (l) {
+            l.classList.toggle('is-on', l.querySelector('input').value === v);
+          });
+        },
+        isFocused: function () { return false; },
+      };
+      if (it.hint) {
+        var hint = el('div', 'field-hint', f);
+        hint.textContent = it.hint;
+      }
+      return;
+    }
+
+    if (inputEl) {
+      var deb;
+      inputEl.addEventListener('input', function () {
+        STATE[s.id][it.k] = inputEl.value;
+        clearTimeout(deb);
+        deb = setTimeout(function () {
+          persist(s.id, it.k);
+          updateProgress();
+        }, 350);
+      });
+      FIELD_REFS[s.id][it.k] = {
+        item: it, input: inputEl,
+        applyValue: function (v) {
+          STATE[s.id][it.k] = v || '';
+          inputEl.value = v || '';
+        },
+        isFocused: function () { return document.activeElement === inputEl; },
+      };
+    }
+
+    if (it.hint) {
+      var hint2 = el('div', 'field-hint', f);
+      hint2.textContent = it.hint;
+    }
+  }
+
+  SCHEMA.forEach(function (s, idx) {
+    var sec = el('section', 'section' + (idx === 0 ? ' active' : ''), sectionsEl);
+    sec.dataset.section = s.id;
+
+    var head = el('div', 'section-head', sec);
+    var ic = el('div', 'ic', head); ic.textContent = s.icon;
+    var titleWrap = el('div', null, head);
+    var h = el('h1', null, titleWrap); h.textContent = s.label;
+    var meta = el('div', 'meta', titleWrap); meta.textContent = s.sub;
+
+    s.blocks.forEach(function (b) {
+      var blockEl = el('div', 'block', sec);
+      var bt = el('div', 'block-title', blockEl); bt.textContent = b.title;
+      b.items.forEach(function (it) { renderField(s, b, it, blockEl); });
+    });
+  });
+
+  // ── Tab switching ──────────────────────────────────────────
+  function showTab(id) {
+    Object.keys(tabBtns).forEach(function (k) {
+      tabBtns[k].btn.classList.toggle('active', k === id);
+    });
+    sectionsEl.querySelectorAll('.section').forEach(function (s) {
+      s.classList.toggle('active', s.dataset.section === id);
+    });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  // ── Progress ───────────────────────────────────────────────
+  function isFilled(v) { return typeof v === 'string' && v.trim().length > 0; }
+  function updateProgress() {
+    var totalFilled = 0;
+    SCHEMA.forEach(function (s) {
+      var sFilled = 0, sTotal = 0;
+      s.blocks.forEach(function (b) {
+        b.items.forEach(function (it) {
+          sTotal++;
+          if (isFilled(STATE[s.id][it.k])) sFilled++;
+        });
+      });
+      var sPct = Math.round((sFilled / sTotal) * 100);
+      TAB_PCT[s.id] = sPct;
+      if (tabBtns[s.id]) tabBtns[s.id].pct.textContent = sPct + '%';
+      totalFilled += sFilled;
+    });
+    var pct = Math.round((totalFilled / TOTAL_FIELDS) * 100);
+    progFill.style.width = pct + '%';
+    progCount.textContent = pct + '%';
+    if (_R && _D) {
+      try { _D.ref('rooms/' + _R + '/social_pct').set(pct); } catch (e) {}
+    }
+    try { window.parent && window.parent.postMessage({ type: 'socialPct', pct: pct }, '*'); } catch (e) {}
+  }
+
+  // ── Persistence ────────────────────────────────────────────
+  function showSaved() {
+    savedTag.classList.add('show');
+    clearTimeout(savedTag._t);
+    savedTag._t = setTimeout(function () { savedTag.classList.remove('show'); }, 1400);
+  }
+
+  function persist(section, key) {
+    if (!_R || !_D) { showSaved(); return; }
+    var val = STATE[section][key] || '';
+    _D.ref('rooms/' + _R + '/social/' + section + '/' + key)
+      .set(val)
+      .then(function () { showSaved(); })
+      .catch(function (e) { connTag.textContent = '⚠ ' + (e.code || e.message); });
+  }
+
+  function applyRemote(data) {
+    if (!data || typeof data !== 'object') return;
+    SCHEMA.forEach(function (s) {
+      var sData = data[s.id] || {};
+      s.blocks.forEach(function (b) {
+        b.items.forEach(function (it) {
+          var ref = FIELD_REFS[s.id] && FIELD_REFS[s.id][it.k];
+          if (!ref) return;
+          if (ref.isFocused && ref.isFocused()) {
+            // user typing — keep state in sync without overwriting
+            STATE[s.id][it.k] = ref.input ? ref.input.value : STATE[s.id][it.k];
+            return;
+          }
+          ref.applyValue(sData[it.k] || '');
+        });
+      });
+    });
+    updateProgress();
+  }
+
+  // ── Init ───────────────────────────────────────────────────
+  updateProgress();
+
+  if (_R && _D) {
+    connTag.textContent = '· verbunden';
+    _D.ref('rooms/' + _R + '/social').once('value').then(function (snap) {
+      var v = snap.val();
+      if (v) applyRemote(v);
+      _D.ref('rooms/' + _R + '/social').on('value', function (s) {
+        var v2 = s.val();
+        if (v2) applyRemote(v2);
+      });
+    }).catch(function (e) { connTag.textContent = '⚠ ' + (e.code || e.message); });
+  } else {
+    connTag.textContent = '· lokal (kein Raum)';
+  }
+})();
+</script>
+</body>
+</html>

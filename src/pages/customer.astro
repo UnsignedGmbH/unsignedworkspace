@@ -190,6 +190,8 @@ import BrandworkTimeline from "../components/BrandworkTimeline.astro";
         desc: "Personal Brand · Ads · Flows" },
       { id: "shop", file: "shop", label: "Shop", icon: "🛒",
         desc: "Shop-Optimierung & Drop-Planung" },
+      { id: "social", file: "social", label: "Social Media", icon: "💬",
+        desc: "Content · Highlights · Captions · WhatsApp" },
     ];
     var TOOL_BY_FILE = {};
     TOOLS.forEach(function (t) { TOOL_BY_FILE[t.file] = t; });
@@ -200,7 +202,7 @@ import BrandworkTimeline from "../components/BrandworkTimeline.astro";
     }
 
     // ── progress sources ─────────────────────────────────────
-    var lastBiP = null, lastShP = null, lastCrP = null, lastAgP = null, lastDnP = null, lastMkP = null, lastShopP = null;
+    var lastBiP = null, lastShP = null, lastCrP = null, lastAgP = null, lastDnP = null, lastMkP = null, lastShopP = null, lastSocialP = null;
 
     var bumpLastActive = ui.throttle(function () {
       if (!customer) return;
@@ -301,13 +303,15 @@ import BrandworkTimeline from "../components/BrandworkTimeline.astro";
     var lastCrPRef    = { read: function(){ return lastCrP; }, write: function(v){ lastCrP = v; } };
     var lastAgPRef    = { read: function(){ return lastAgP; }, write: function(v){ lastAgP = v; } };
     var lastMkPRef    = { read: function(){ return lastMkP; }, write: function(v){ lastMkP = v; } };
-    var lastShopPRef  = { read: function(){ return lastShopP; }, write: function(v){ lastShopP = v; } };
+    var lastShopPRef    = { read: function(){ return lastShopP; }, write: function(v){ lastShopP = v; } };
+    var lastSocialPRef  = { read: function(){ return lastSocialP; }, write: function(v){ lastSocialP = v; } };
     function attachToolPctListeners(room) {
       attachPctListener(room, "sh_pct", lastShPRef, "shP");
       attachPctListener(room, "cr_pct", lastCrPRef, "crP");
       attachPctListener(room, "ag_pct", lastAgPRef, "agP");
       attachPctListener(room, "mk_pct", lastMkPRef, "mkP");
       attachPctListener(room, "shop_pct", lastShopPRef, "shopP");
+      attachPctListener(room, "social_pct", lastSocialPRef, "socialP");
     }
 
     // Live presence indicator + customer profile
@@ -385,6 +389,7 @@ import BrandworkTimeline from "../components/BrandworkTimeline.astro";
         dn: pctOf(c, "dP"),
         mk: pctOf(c, "mkP"),
         shop: pctOf(c, "shopP"),
+        social: pctOf(c, "socialP"),
       };
     }
     function renderToolGrid(c) {
