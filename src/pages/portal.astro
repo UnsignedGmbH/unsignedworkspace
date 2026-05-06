@@ -292,9 +292,41 @@ import BrandworkTimeline from "../components/BrandworkTimeline.astro";
       } catch (e) {}
       if (profile && profile.name && profile.brand) {
         startPortal(user);
-      } else {
-        showOnboard(user);
+        return;
       }
+      // Cross-device recognition: another device on this room may already have
+      // completed onboarding. Adopt the newest existing profile instead of
+      // re-prompting.
+      window.fb.ref("rooms/" + room + "/clientProfile").once("value")
+        .then(function (s) {
+          var v = s.val() || {};
+          var keys = Object.keys(v);
+          if (!keys.length) { showOnboard(user); return; }
+          var newest = null;
+          keys.forEach(function (k) {
+            var p = v[k] || {};
+            if (p.name && p.brand &&
+                (!newest || (p.joinedAt || 0) > (newest.joinedAt || 0))) {
+              newest = p;
+            }
+          });
+          if (!newest) { showOnboard(user); return; }
+          profile = {
+            uid: user.uid,
+            name: newest.name,
+            brand: newest.brand,
+            joinedAt: Date.now(),
+          };
+          try { localStorage.setItem(STORAGE_KEY, JSON.stringify(profile)); } catch (e2) {}
+          window.fb
+            .ref("rooms/" + room + "/clientProfile/" + user.uid)
+            .set({ name: newest.name, brand: newest.brand, joinedAt: window.fb.ts() })
+            .catch(function (err) {
+              console.error("[portal] clientProfile mirror failed:", err);
+            });
+          startPortal(user);
+        })
+        .catch(function () { showOnboard(user); }); // fail-open
     }
 
     function showOnboard(user) {

@@ -428,6 +428,101 @@ input, textarea, select { outline: none; }
 .flow-actions { display: flex; gap: 8px; margin-top: 6px; }
 .flow-actions > * { flex: 1; }
 
+/* ── CHEATSHEET BUTTON + INFO NOTE ── */
+.cheat-btn {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 10px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase;
+  color: var(--a); background: rgba(193,48,48,.08);
+  border: 1px solid rgba(193,48,48,.25); border-radius: 999px;
+  padding: 5px 10px;
+  cursor: pointer; user-select: none; -webkit-tap-highlight-color: transparent;
+  font-family: inherit;
+  transition: background .15s, color .15s;
+  flex-shrink: 0;
+}
+.cheat-btn:hover { background: var(--a); color: #fff; }
+.cheat-btn svg { width: 11px; height: 11px; }
+
+.phase-note {
+  background: rgba(193,48,48,.04);
+  border: .5px solid rgba(193,48,48,.18);
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-bottom: 12px;
+  font-size: 12px; line-height: 1.55; color: var(--td);
+}
+.phase-note strong { color: var(--t); font-weight: 800; }
+.phase-note ul { margin: 6px 0 0; padding-left: 18px; }
+.phase-note li { margin-bottom: 2px; }
+
+/* ── LIGHTBOX ── */
+.lightbox {
+  position: fixed; inset: 0; z-index: 9500;
+  background: rgba(15, 15, 15, .92);
+  display: flex; flex-direction: column;
+  opacity: 0; pointer-events: none;
+  transition: opacity .18s ease;
+}
+.lightbox.open { opacity: 1; pointer-events: auto; }
+body.lb-open { overflow: hidden; }
+.lightbox-bar {
+  flex-shrink: 0; padding: 14px 18px;
+  display: flex; align-items: center; gap: 12px;
+  color: #fff;
+}
+.lightbox-title {
+  font-size: 11px; font-weight: 800; letter-spacing: .18em; text-transform: uppercase;
+  color: rgba(255, 255, 255, .85);
+}
+.lightbox-hint {
+  font-size: 10px; color: rgba(255, 255, 255, .45);
+  letter-spacing: .06em;
+  margin-left: auto;
+}
+.lightbox-close {
+  background: rgba(255, 255, 255, .12); border: 0;
+  width: 34px; height: 34px; border-radius: 50%;
+  color: #fff; font-size: 18px; font-weight: 700; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-family: inherit;
+  transition: background .15s;
+}
+.lightbox-close:hover { background: rgba(255, 255, 255, .22); }
+.lightbox-scroll {
+  flex: 1;
+  overflow: auto;
+  padding: 0 14px 24px;
+  -webkit-overflow-scrolling: touch;
+}
+.lightbox-img {
+  display: block;
+  margin: 0 auto;
+  width: 100%;
+  max-width: 1000px;
+  height: auto;
+  border-radius: 8px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, .5);
+  cursor: zoom-in;
+  transition: width .18s ease, max-width .18s ease;
+}
+.lightbox-img.zoomed {
+  width: 250%;
+  max-width: none;
+  margin-left: 0;
+  cursor: zoom-out;
+}
+@media (min-width: 720px) {
+  .lightbox-img.zoomed { width: 150%; max-width: 1500px; }
+}
+@media (max-width: 540px) {
+  .cheat-btn { padding: 4px 8px; font-size: 9px; }
+  .cheat-btn span { display: none; }
+  .lightbox-bar { padding: 10px 12px; gap: 8px; }
+  .lightbox-title { font-size: 10px; letter-spacing: .12em; }
+  .lightbox-hint { font-size: 9px; }
+  .lightbox-scroll { padding: 0 6px 16px; }
+}
+
 /* ── TOAST ── */
 #toast {
   position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
@@ -504,6 +599,17 @@ var PHASES_DEF = [
   {
     id: 'p2', icon: '📧', label: 'Ads & Email Aufbau',
     sub: 'Strukturen, Templates und Beispiele für Ads + Mails.',
+    cheatsheet: '/tools/assets/mk/email_marketing.jpg',
+    cheatsheetTitle: 'Email Marketing — Cheatsheet',
+    note: {
+      title: 'Email Marketing — Quick-Reference',
+      lines: [
+        '<strong>Was ist ein Flow?</strong> Wiederkehrender Email-Ablauf (Erinnerungen, Sequenzen).',
+        '<strong>Welche Flows brauchst du?</strong> Welcome Flow · Warenkorb-Abbruch Flow · Post-Purchase Flow.',
+        '<strong>Programm-Empfehlung:</strong> Klaviyo (Top) · Omnisend · Mailchimp.',
+        '👉 Beispiele + Templates siehst du im Cheatsheet (Button oben rechts).',
+      ],
+    },
     items: [
       { id: 'p2-bsp', label: 'Beispiele' },
       { id: 'p2-aufbau', label: 'Aufbau-Besprechung' },
@@ -514,6 +620,17 @@ var PHASES_DEF = [
   {
     id: 'p3', icon: '📊', label: 'Ad Planung',
     sub: 'Konkrete Ad-Sets, Creatives und Roll-out-Plan.',
+    cheatsheet: '/tools/assets/mk/ad_creatives.jpg',
+    cheatsheetTitle: 'Ad Creatives — Cheatsheet',
+    note: {
+      title: 'Ad Creatives — Quick-Reference',
+      lines: [
+        '<strong>Ad-Set Aufbau:</strong> 1:1 (1080×1080) + 9:16 Bilder, jeweils max. 10 — 4:5 = 1080×1350, 9:16 = 1080×1920. Vorher Meta-Specs checken.',
+        '<strong>Ad-Aufbau:</strong> wie ein Funnel · CTA rein · FOMO rein · übersichtlich · nicht zu viel Text.',
+        '<strong>Leere Zonen:</strong> erst Insta abchecken, Screen von einer Ad machen, an Free-Spots halten — Meta switched die gerne mal.',
+        '👉 20+ Beispiele + Zonen-Visual im Cheatsheet (Button oben rechts).',
+      ],
+    },
     items: [
       { id: 'p3-sets', label: 'Ad Sets' },
       { id: 'p3-videos', label: 'Videos' },
@@ -897,6 +1014,18 @@ function renderPhase(p, num){
   title.appendChild(el('span', {class:'lbl', html: '<span class="ico">'+p.icon+'</span>'+escHtml(p.label)}));
   title.appendChild(el('span', {class:'sub', html: escHtml(p.sub)}));
   head.appendChild(title);
+  if (p.cheatsheet) {
+    head.appendChild(el('button', {
+      type: 'button',
+      class: 'cheat-btn',
+      title: p.cheatsheetTitle || 'Cheatsheet ansehen',
+      html: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="2.5" width="12" height="11" rx="1.5"/><path d="M5 6h6M5 9h6M5 12h4"/></svg><span>Cheatsheet</span>',
+      on: { click: function(e){
+        e.preventDefault(); e.stopPropagation();
+        if (window.__mkLightbox) window.__mkLightbox.open(p.cheatsheet, p.cheatsheetTitle || 'Cheatsheet');
+      }}
+    }));
+  }
   var pill = el('button', {
     class:'status-pill', 'data-status': ph.status,
     html: STATUS_LABELS[ph.status] || STATUS_LABELS.todo,
@@ -907,6 +1036,19 @@ function renderPhase(p, num){
 
   // BODY
   var body = el('div', {class:'phase-body'});
+
+  if (p.note) {
+    var note = el('div', {class:'phase-note'});
+    if (p.note.title) note.appendChild(el('strong', {html: escHtml(p.note.title)}));
+    if (p.note.lines && p.note.lines.length) {
+      var ul = el('ul');
+      p.note.lines.forEach(function(line){
+        ul.appendChild(el('li', {html: line}));
+      });
+      note.appendChild(ul);
+    }
+    body.appendChild(note);
+  }
 
   ph.items.forEach(function(it, idx){
     body.appendChild(renderItem(p.id, it, idx));
@@ -1232,6 +1374,55 @@ document.addEventListener('keydown', function(e){
 STATE = makeDefaultState();
 render();
 loadRemote();
+</script>
+
+<div class="lightbox" id="lightbox" hidden>
+  <div class="lightbox-bar">
+    <span class="lightbox-title" id="lightboxTitle">Cheatsheet</span>
+    <span class="lightbox-hint">Tap aufs Bild zum Zoomen</span>
+    <button type="button" class="lightbox-close" id="lightboxClose" aria-label="Schließen">×</button>
+  </div>
+  <div class="lightbox-scroll" id="lightboxScroll">
+    <img class="lightbox-img" id="lightboxImg" alt="" />
+  </div>
+</div>
+
+<script>
+(function () {
+  var lb = document.getElementById('lightbox');
+  var lbImg = document.getElementById('lightboxImg');
+  var lbTitle = document.getElementById('lightboxTitle');
+  var lbScroll = document.getElementById('lightboxScroll');
+  var lbClose = document.getElementById('lightboxClose');
+
+  function open(src, title) {
+    lbImg.src = src;
+    lbImg.classList.remove('zoomed');
+    lbTitle.textContent = title || 'Cheatsheet';
+    lb.hidden = false;
+    requestAnimationFrame(function () { lb.classList.add('open'); });
+    document.body.classList.add('lb-open');
+    lbScroll.scrollTop = 0;
+  }
+  function close() {
+    lb.classList.remove('open');
+    document.body.classList.remove('lb-open');
+    setTimeout(function () { lb.hidden = true; lbImg.src = ''; }, 200);
+  }
+
+  lbClose.addEventListener('click', close);
+  lb.addEventListener('click', function (e) {
+    if (e.target === lb || e.target === lbScroll) close();
+  });
+  lbImg.addEventListener('click', function () {
+    lbImg.classList.toggle('zoomed');
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && !lb.hidden) close();
+  });
+
+  window.__mkLightbox = { open: open, close: close };
+})();
 </script>
 </body>
 </html>
