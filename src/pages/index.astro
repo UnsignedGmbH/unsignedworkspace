@@ -21,6 +21,14 @@ import BaseLayout from "../layouts/BaseLayout.astro";
       </p>
 
       <div
+        id="inviteBanner"
+        class="hidden bg-brand-dim border-[0.5px] border-brand-border rounded-lg px-3 py-2 mb-4 text-[12px] text-ink"
+      >
+        ✉ Du wurdest <span id="inviteRoleLabel" class="font-bold">eingeladen</span>.
+        Registriere dich oder logge dich ein um beizutreten.
+      </div>
+
+      <div
         class="flex border-[1.5px] border-line rounded-[9px] overflow-hidden mb-4"
       >
         <button
@@ -120,6 +128,21 @@ import BaseLayout from "../layouts/BaseLayout.astro";
       if (!n.startsWith("/") || n.startsWith("//")) return "/dashboard";
       return n;
     }
+
+    // ── Invite-Detection ───────────────────────────────────
+    // If ?invite=TOKEN is in the URL, persist it to localStorage so AuthGuard can
+    // claim it after the user logs in / registers. Show a banner + suggest register.
+    (function () {
+      var inv = new URLSearchParams(location.search).get("invite");
+      if (!inv) return;
+      try { localStorage.setItem("uw.pending_invite", inv); } catch (e) {}
+      // Default to register tab when an invite is present
+      setTimeout(function () { setMode("register"); }, 0);
+      var banner = document.getElementById("inviteBanner");
+      if (banner) banner.classList.remove("hidden");
+      // Try to fetch role for nicer wording (best-effort, no auth needed since invites is auth-only-read).
+      // We do this AFTER the user logs in via authChange — for now show a generic label.
+    })();
 
     waitFb(function () {
       status.textContent = "verbunden — prüfe Anmeldung…";

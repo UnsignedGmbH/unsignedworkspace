@@ -3,8 +3,53 @@ import AppLayout from "../layouts/AppLayout.astro";
 ---
 
 <AppLayout title="Team" active="team">
-  <div id="teamList" class="flex flex-col gap-2">
-    <p class="text-[12px] text-ink-mute py-3 text-center">Lade Team…</p>
+  <div class="space-y-6">
+    <section>
+      <h2 class="text-[10px] font-bold tracking-[0.12em] uppercase text-ink-mute mb-[10px] flex items-center gap-2">
+        <span class="w-1 h-3 bg-brand rounded-sm"></span>
+        Mitglieder
+      </h2>
+      <div id="teamList" class="flex flex-col gap-2">
+        <p class="text-[12px] text-ink-mute py-3 text-center">Lade Team…</p>
+      </div>
+    </section>
+
+    <section id="inviteSection" class="hidden">
+      <h2 class="text-[10px] font-bold tracking-[0.12em] uppercase text-ink-mute mb-[10px] flex items-center gap-2">
+        <span class="w-1 h-3 bg-brand rounded-sm"></span>
+        Einladungen
+      </h2>
+
+      <div class="bg-card border-[0.5px] border-line rounded-[10px] px-4 py-4 mb-2">
+        <div class="grid grid-cols-1 md:grid-cols-[1fr_140px_140px] gap-2">
+          <input
+            id="inviteEmail"
+            type="email"
+            placeholder="Email (optional, nur als Notiz)"
+            class="border-[1.5px] border-line rounded-lg px-3 py-2 text-[13px] outline-none focus:border-brand"
+          />
+          <select
+            id="inviteRole"
+            class="border-[1.5px] border-line rounded-lg px-3 py-2 text-[13px] outline-none focus:border-brand bg-white"
+          >
+            <option value="member">Member</option>
+            <option value="admin">Admin</option>
+          </select>
+          <button
+            id="inviteCreate"
+            type="button"
+            class="text-[12px] font-bold text-white bg-brand hover:bg-brand-dark px-3 py-2 rounded-lg cursor-pointer border-0"
+            >+ Einladung erstellen</button
+          >
+        </div>
+        <p class="text-[10px] text-ink-mute mt-2">
+          Erstellt einen Link den du per WhatsApp / Mail / Slack verschickst. Empfänger
+          klickt → registriert sich → ist automatisch im Team mit der Rolle.
+        </p>
+      </div>
+
+      <div id="inviteList" class="flex flex-col gap-2"></div>
+    </section>
   </div>
 </AppLayout>
 
@@ -110,5 +155,125 @@ import AppLayout from "../layouts/AppLayout.astro";
       });
     }
     window.appUI.onAuth(start);
+
+    // ── Invite system ─────────────────────────────────────────
+    function initInvites(me) {
+      if (!me || !me.uid) return;
+      var section = document.getElementById("inviteSection");
+      var emailEl = document.getElementById("inviteEmail");
+      var roleEl = document.getElementById("inviteRole");
+      var createBtn = document.getElementById("inviteCreate");
+      var listEl = document.getElementById("inviteList");
+      if (!section) return;
+
+      var ui = window.appUI;
+      var invites = {};
+
+      function token() {
+        var s = "";
+        var alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789abcdefghjkmnpqrstuvwxyz";
+        for (var i = 0; i < 24; i++) s += alphabet[Math.floor(Math.random() * alphabet.length)];
+        return s;
+      }
+      function inviteUrl(t) {
+        return location.origin + "/?invite=" + encodeURIComponent(t);
+      }
+
+      function renderInvites() {
+        var keys = Object.keys(invites);
+        if (!keys.length) {
+          listEl.innerHTML = '<p class="text-[11px] text-ink-mute py-2">Keine offenen Einladungen.</p>';
+          return;
+        }
+        keys.sort(function (a, b) { return (invites[b].createdAt || 0) - (invites[a].createdAt || 0); });
+        listEl.innerHTML = keys.map(function (t) {
+          var inv = invites[t];
+          var emailSafe = ui.escapeHtml(inv.email || "—");
+          var role = inv.role === "admin" ? "Admin" : "Member";
+          var roleCls = inv.role === "admin"
+            ? "bg-[#fde8e8] text-[#A32D2D]"
+            : "bg-[#E6F1FB] text-[#0C447C]";
+          var ago = ui.fmtAgo(inv.createdAt);
+          var status = inv.acceptedBy
+            ? '<span class="text-[10px] font-bold text-success">✓ angenommen</span>'
+            : '<span class="text-[10px] text-ink-mute">offen · ' + ui.escapeHtml(ago) + '</span>';
+          return (
+            '<div class="bg-card border-[0.5px] border-line rounded-[10px] px-4 py-3 flex items-center gap-3" data-token="' + ui.escapeHtml(t) + '">' +
+            '<div class="flex-1 min-w-0">' +
+            '<div class="text-[12px] font-bold text-ink truncate">' + emailSafe + '</div>' +
+            '<div class="text-[11px] text-ink-mute mt-[1px] flex items-center gap-2 flex-wrap">' +
+            '<span class="text-[9px] font-bold px-[7px] py-[2px] rounded-full ' + roleCls + '">' + role + '</span>' +
+            status +
+            '</div></div>' +
+            '<button data-act="copy" data-token="' + ui.escapeHtml(t) + '" class="text-[11px] font-bold text-brand bg-transparent border-0 cursor-pointer px-2">🔗 Link kopieren</button>' +
+            '<button data-act="del" data-token="' + ui.escapeHtml(t) + '" class="text-[14px] text-ink-mute hover:text-[#b00020] bg-transparent border-0 cursor-pointer px-2" title="Einladung löschen">✕</button>' +
+            '</div>'
+          );
+        }).join("");
+
+        listEl.querySelectorAll("[data-act]").forEach(function (b) {
+          b.addEventListener("click", function () {
+            var t = b.dataset.token;
+            var inv = invites[t];
+            if (b.dataset.act === "copy") {
+              navigator.clipboard.writeText(inviteUrl(t))
+                .then(function () { ui.toast("Einladungs-Link kopiert"); })
+                .catch(function () { ui.toast(inviteUrl(t)); });
+            } else if (b.dataset.act === "del") {
+              ui.confirm({
+                title: "Einladung löschen?",
+                description: "Der Link wird ungültig. Falls schon angenommen, bleibt das Mitglied im Team.",
+                okLabel: "Löschen",
+              }).then(function (ok) {
+                if (!ok) return;
+                window.fb.ref("invites/" + t).remove()
+                  .catch(function (e) { ui.toast("Fehler: " + (e.code || e.message)); });
+              });
+            }
+          });
+        });
+      }
+
+      // Show section only for admins
+      window.fb.ref("admins/" + me.uid).on("value", function (s) {
+        if (s.val()) {
+          section.classList.remove("hidden");
+        } else {
+          section.classList.add("hidden");
+        }
+      });
+
+      window.fb.ref("invites").on("value", function (s) {
+        invites = s.val() || {};
+        renderInvites();
+      }, function (err) {
+        listEl.innerHTML =
+          '<p class="text-[11px] text-ink-mute py-2">Lese-Fehler — Rules aktualisiert? (' +
+          ui.escapeHtml(err.code || err.message) + ')</p>';
+      });
+
+      createBtn.addEventListener("click", function () {
+        var email = (emailEl.value || "").trim();
+        var role = roleEl.value === "admin" ? "admin" : "member";
+        var t = token();
+        var data = {
+          email: email,
+          role: role,
+          invitedBy: me.uid,
+          invitedByName: (window.ME && window.ME.email) || me.uid,
+          createdAt: window.fb.ts(),
+          expires: Date.now() + 7 * 24 * 60 * 60 * 1000, // 7 Tage
+        };
+        window.fb.ref("invites/" + t).set(data)
+          .then(function () {
+            emailEl.value = "";
+            roleEl.value = "member";
+            return navigator.clipboard.writeText(inviteUrl(t));
+          })
+          .then(function () { ui.toast("Einladungs-Link erstellt + kopiert ✓"); })
+          .catch(function (e) { ui.toast("Fehler: " + (e.code || e.message)); });
+      });
+    }
+    window.appUI.onAuth(initInvites);
   })();
 </script>

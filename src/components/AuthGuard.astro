@@ -32,7 +32,10 @@
             name: existing.name || window.ME.name,
           };
           if (!existing.role) patch.role = "member";
-          teamRef.update(patch);
+          teamRef.update(patch).then(function () {
+            // After team profile exists, try to claim a pending invite.
+            tryClaimInvite(user);
+          });
         });
 
         var pres = window.fb.ref("presence/" + user.uid);
@@ -52,6 +55,54 @@
         );
       });
     }
+
+    // ── Invite Claim ──────────────────────────────────────
+    function tryClaimInvite(user) {
+      var token;
+      try { token = localStorage.getItem("uw.pending_invite"); } catch (e) {}
+      if (!token) return;
+      window.fb.ref("invites/" + token).once("value").then(function (s) {
+        if (!s.exists()) {
+          // Invite gone — clear and ignore
+          try { localStorage.removeItem("uw.pending_invite"); } catch (e) {}
+          return;
+        }
+        var inv = s.val() || {};
+        // Expired?
+        if (inv.expires && Date.now() > inv.expires) {
+          try { localStorage.removeItem("uw.pending_invite"); } catch (e) {}
+          console.warn("[invite] expired", token);
+          return;
+        }
+        // Apply role to own team profile
+        var role = inv.role === "admin" ? "admin" : "member";
+        var updates = { role: role, invitedBy: inv.invitedBy || null, invitedAt: window.fb.ts() };
+        window.fb.ref("team/" + user.uid).update(updates).then(function () {
+          // For admin invites, also need to write admins/<uid>=true.
+          // Bootstrap rule lets us if admins is empty OR if invites_admin_grant marks us.
+          if (role === "admin") {
+            return window.fb.ref("invites_admin_grant/" + user.uid).set(true).then(function () {
+              return window.fb.ref("admins/" + user.uid).set(true);
+            }).then(function () {
+              return window.fb.ref("invites_admin_grant/" + user.uid).remove();
+            });
+          }
+        }).then(function () {
+          // Mark invite as accepted (for owner's UI)
+          return window.fb.ref("invites/" + token).update({
+            acceptedBy: user.uid, acceptedAt: window.fb.ts(),
+          }).catch(function () { /* OK if rules block — invite still 'used' */ });
+        }).then(function () {
+          try { localStorage.removeItem("uw.pending_invite"); } catch (e) {}
+          console.log("[invite] claimed as " + role);
+        }).catch(function (err) {
+          console.warn("[invite] claim failed:", err && (err.code || err.message));
+        });
+      }).catch(function (err) {
+        console.warn("[invite] read failed:", err && (err.code || err.message));
+      });
+    }
+
     check();
   })();
 </script>
