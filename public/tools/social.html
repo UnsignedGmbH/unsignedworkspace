@@ -161,6 +161,17 @@ body { font-family: 'Montserrat', sans-serif; background: var(--bg); color: var(
   background: var(--red);
   border-radius: 2px;
 }
+.block-note {
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--text-dim);
+  background: var(--red-dim);
+  border-left: 2px solid var(--red);
+  border-radius: 6px;
+  padding: 9px 12px;
+  margin-bottom: 14px;
+  white-space: pre-line;
+}
 
 .field { margin-bottom: 12px; }
 .field:last-child { margin-bottom: 0; }
@@ -474,30 +485,63 @@ body { font-family: 'Montserrat', sans-serif; background: var(--bg); color: var(
     },
     {
       id: 'posts', icon: '📱', label: 'WA Posts',
-      sub: 'Drop-Messages · Hooks · CTAs',
+      sub: 'BTS · Leaks · Discounts · Specials · Nischen · Über sich',
       blocks: [
         {
-          title: 'Drop 1 — Teaser-Messages',
+          title: 'Strategie',
+          note: 'Wie oft posten?\n· 3–5 Mal pro Woche\n· Vor jedem Drop\n· Nach jedem Drop\n\nDer Vorteil: Kundenbindung + Trust',
           items: [
-            { k: 'wp1_m1', label: 'Message 1', type: 'textarea', ph: 'z.B. "Yo Family — next drop is around the corner. Stay locked."' },
-            { k: 'wp1_m2', label: 'Message 2', type: 'textarea', ph: '' },
-            { k: 'wp1_m3', label: 'Message 3', type: 'textarea', ph: '' },
+            { k: 'wp_strategy', label: 'Eigene Posting-Strategie', type: 'textarea',
+              ph: 'Wann posten, in welchem Ton, welche Mischung aus den Kategorien?',
+              hint: 'Optional — der Note oben ist die Pflicht-Basis, hier nur deine Anpassungen' },
           ],
         },
         {
-          title: 'Drop 2 — Anbau-Messages',
+          title: 'BTS — Behind The Scenes',
           items: [
-            { k: 'wp2_m1', label: 'Message 1', type: 'textarea', ph: '' },
-            { k: 'wp2_m2', label: 'Message 2', type: 'textarea', ph: '' },
-            { k: 'wp2_m3', label: 'Message 3', type: 'textarea', ph: '' },
+            { k: 'wp_bts', label: 'BTS-Posts (eine Idee pro Block, leere Zeile zwischen Posts)', type: 'list',
+              ph: 'Lager-Mood: "Whole lotta samples fam 🔥 2026 gonna be hardest year so far, promise. Y\'all are really cleaning our warehouse rn 🙏 Thank you! We plan to end it soon and come up with a new drop. I\'ll slide y\'all some leaks soon 👀"\n\nField/Shooting: "einfach nicht fragen, sondern um 19:30 instagram öffnen…"\n\nFit-Foto + Size-Hinweis: "MODEL = 1.80m · ZIP: SIZE L · (Geht eine Size kleiner für einen Regular fit)"',
+              hint: 'Lager, Shooting, Fit-Pics, Size-Hinweise — alles was hinter den Kulissen passiert' },
           ],
         },
         {
-          title: 'Drop 3 — Drop-Day-Messages',
+          title: 'Leaks',
           items: [
-            { k: 'wp3_m1', label: 'Message 1', type: 'textarea', ph: 'Live now — link in bio!' },
-            { k: 'wp3_m2', label: 'Message 2', type: 'textarea', ph: '' },
-            { k: 'wp3_m3', label: 'Message 3', type: 'textarea', ph: '' },
+            { k: 'wp_leaks', label: 'Leak-Posts', type: 'list',
+              ph: '"I\'ll slide y\'all some leaks soon 👀"\n\nUnscharfes Produkt-Teaser-Foto ohne Drop-Datum\n\n1-Frame-Vorschau aus dem Lookbook',
+              hint: 'Pieces antäuern, ohne den Drop schon zu spoilern' },
+          ],
+        },
+        {
+          title: 'Discounts',
+          items: [
+            { k: 'wp_discounts', label: 'Discount-Posts', type: 'list',
+              ph: 'Early-Access-Code: "Strides JP · strides-jp.com · EARLY ACCESS LIVE! · Code: ACCLINE.01 · Better run 🏃"\n\nRestock: "Hey Gang! Some sold out sizes are back. (Knit, Raw Denim, Tailored Pants, Jackets, etc) If you couldn\'t get your size last time, now is the…"',
+              hint: 'Code-Drops, Restocks, Channel-only Aktionen' },
+          ],
+        },
+        {
+          title: 'Specials',
+          items: [
+            { k: 'wp_specials', label: 'Special-Posts (Voicemessages, Live-Calls, Events)', type: 'list',
+              ph: 'Voicemessage-Teaser: "17:30 EARLY ACCESS UND CODES. MACHT DIE GLOCKS AN"\n\nVoicemessage-Drop: "JA BRING RAUS / SPORT IST MORD — glaube wird zeit oder?"\n\nLive-Call-Ankündigung um XX Uhr',
+              hint: 'Audio, Live, Events — alles was sich nicht im normalen Post-Format abspielt' },
+          ],
+        },
+        {
+          title: 'Nischen-bezogen',
+          items: [
+            { k: 'wp_nische', label: 'Nischen-Posts', type: 'list',
+              ph: 'Skate-Spot, Snow-Trip, Subkultur-Reference\n\nMeme/Insider, der nur deine Crowd versteht\n\nKollab-Hinweis mit anderer Brand aus der Szene',
+              hint: 'Inhalte, die deine Crowd sowieso schon liebt — Skate, Snow, Streetwear-Culture' },
+          ],
+        },
+        {
+          title: 'Über sich selbst',
+          items: [
+            { k: 'wp_self', label: 'Persönliche Posts', type: 'list',
+              ph: 'Kurzer Selfie-Take im Auto, beim Café, im Studio\n\nFounder-Story-Schnipsel: warum gerade dieser Drop\n\nDanke-Message an die Community',
+              hint: 'Persönlich, ehrlich — Trust durch Gesicht und Stimme' },
           ],
         },
       ],
@@ -639,6 +683,9 @@ body { font-family: 'Montserrat', sans-serif; background: var(--bg); color: var(
     s.blocks.forEach(function (b) {
       var blockEl = el('div', 'block', sec);
       var bt = el('div', 'block-title', blockEl); bt.textContent = b.title;
+      if (b.note) {
+        var nt = el('div', 'block-note', blockEl); nt.textContent = b.note;
+      }
       b.items.forEach(function (it) { renderField(s, b, it, blockEl); });
     });
   });
