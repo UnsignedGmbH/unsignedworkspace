@@ -180,6 +180,44 @@ const notifications = [
       </div>
     </section>
 
+    <section id="defaultsSection" class="hidden">
+      <h3 class="text-[12px] font-bold text-ink mb-[10px] flex items-center gap-2">
+        <span class="w-1 h-3 bg-brand rounded-sm"></span>
+        Standard-Listen pro Tool
+      </h3>
+      <p class="text-[11px] text-ink-mute mb-[10px]">
+        Diese Items siehst du als Default bei jedem neuen Kunden / neuen Produkt.
+        Bestehende Kunden behalten ihre Daten — nur frische Räume nehmen die neuen Defaults.
+      </p>
+
+      <div class="bg-card border-[0.5px] border-line rounded-[9px] px-4 py-4">
+        <div class="flex items-center justify-between mb-2">
+          <h4 class="text-[12px] font-bold text-ink">📸 Shooting Check</h4>
+          <span id="shDefaultsStatus" class="text-[10px] text-ink-mute"></span>
+        </div>
+        <p class="text-[10px] text-ink-mute mb-3">
+          Eine Zeile = ein Listen-Eintrag. Leerzeilen werden ignoriert.
+        </p>
+
+        <div id="shDefaultsGrid" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
+
+        <div class="flex justify-end gap-2 mt-3">
+          <button
+            id="shDefaultsReset"
+            type="button"
+            class="text-[11px] text-ink-mute hover:text-brand bg-transparent border-0 cursor-pointer"
+            >Auf Original zurücksetzen</button
+          >
+          <button
+            id="shDefaultsSave"
+            type="button"
+            class="text-[11px] font-bold text-white bg-brand hover:bg-brand-dark px-3 py-2 rounded-lg cursor-pointer border-0"
+            >Speichern</button
+          >
+        </div>
+      </div>
+    </section>
+
     <section id="adminSection" class="hidden">
       <h3 class="text-[12px] font-bold text-ink mb-[10px]">Admin-Rechte</h3>
       <div class="bg-card border-[0.5px] border-line rounded-[9px] px-4 py-3 flex items-center gap-3">
@@ -470,5 +508,117 @@ const notifications = [
       });
     }
     window.appUI.onAuth(initBrandUi);
+
+    // ── Tool-Defaults: Shooting Check ──────────────────────
+    var SH_CATS = [
+      { key: "location",  label: "Pflicht-Content pro Location" },
+      { key: "laydown",   label: "Produktbilder / Laydown" },
+      { key: "model",     label: "Bilder am Model" },
+      { key: "ads",       label: "Ads / Feed Content" },
+      { key: "posen",     label: "Posen" },
+      { key: "acc",       label: "Accessoires" },
+      { key: "check",     label: "Letzter Check" },
+    ];
+    var SH_HARDCODED = {
+      location: ["Produkt solo — Bilder","Produkt solo — Videos","Erst weiter zur nächsten Location wenn alles abgehakt ist"],
+      laydown: ["Oberteil einzeln auf dem Boden","Hose einzeln auf dem Boden","Komplettes Set auf dem Boden","Detailbilder von Stoff, Logo, Print, Stick, Zip, Taschen, Bündchen, Nähten","Langsame Produktvideos / Pan-Shots"],
+      model: ["Ganzkörper frontal","Ganzkörper seitlich","Ganzkörper von hinten","Halbnahe Shots vom Oberteil","Hose komplett sichtbar","Getragene Detailbilder von Oberteil und Hose","Nahshots von Stoff, Bündchen, Taschen, Zip, Print oder Stick","Videos frontal, seitlich, hinten und Details in Bewegung"],
+      ads: ["Hero-Shots mit Attitude","Cleane Ganzkörperbilder","Laufbilder / Bewegungsshots","Stehende Street-Posen","Sitzende Posen auf Kante / Treppe / Bordstein","Bilder mit Platz für Text — Newsletter oder Ads","Enge Crop-Shots für Creatives","Hochformatbilder für Feed / Story / Reel Cover","Kurze Reel-Clips 3–5 Sekunden","Längere Clips 5–10 Sekunden","Ruhige Produktclips und aggressive Street-Clips"],
+      posen: ["Frontal stehen","Seitlich stehen","Blick in Kamera","Blick weg von Kamera","Hände in Taschen","An Wand lehnen","Sitzen","Laufen","Über Schulter schauen"],
+      acc: ["Cap / Beanie","Crossbody Bag / Shoulder Bag","Ketten, Ringe, Armband, Uhr","Sonnenbrille / Kopfhörer","Passende Sneaker — Option 1","Zweite Schuhoption","Fusselrolle, Klammern, Sicherheitsnadeln","Powerbank, Ladegerät, Spiegel"],
+      check: ["Genug Ganzkörperbilder da","Genug Detailbilder da","Genug Hochformat da","Genug Videos da","Alles scharf gecheckt"],
+    };
+
+    function initShDefaults(me) {
+      if (!me || !me.uid) return;
+      var section = document.getElementById("defaultsSection");
+      var grid = document.getElementById("shDefaultsGrid");
+      var status = document.getElementById("shDefaultsStatus");
+      var saveBtn = document.getElementById("shDefaultsSave");
+      var resetBtn = document.getElementById("shDefaultsReset");
+      if (!section || !grid) return;
+
+      var isAdmin = false;
+
+      function buildEditors(values) {
+        grid.innerHTML = "";
+        SH_CATS.forEach(function (c) {
+          var fld = document.createElement("div");
+          fld.innerHTML =
+            '<label class="text-[10px] font-bold tracking-[0.12em] uppercase text-ink-mute block mb-1">' +
+            c.label + '</label>' +
+            '<textarea data-cat="' + c.key + '" rows="6" ' +
+            'class="block w-full text-[12px] border-[1.5px] border-line rounded-lg px-[10px] py-[8px] outline-none text-ink bg-white focus:border-brand resize-y font-[ui-monospace] leading-[1.5]"></textarea>';
+          grid.appendChild(fld);
+          var ta = fld.querySelector("textarea");
+          ta.value = ((values && values[c.key]) || SH_HARDCODED[c.key] || []).join("\n");
+        });
+      }
+
+      function setEnabled(en) {
+        grid.querySelectorAll("textarea").forEach(function (t) { t.disabled = !en; });
+        saveBtn.disabled = !en;
+        resetBtn.disabled = !en;
+        saveBtn.style.opacity = en ? "" : "0.4";
+        saveBtn.style.cursor = en ? "pointer" : "not-allowed";
+        resetBtn.style.opacity = en ? "" : "0.4";
+        resetBtn.style.cursor = en ? "pointer" : "not-allowed";
+      }
+
+      // Show section once admin status is known
+      window.fb.ref("admins/" + me.uid).on("value", function (s) {
+        isAdmin = !!s.val();
+        section.classList.remove("hidden");
+        setEnabled(isAdmin);
+        if (!isAdmin) status.textContent = "nur lesen — du bist kein Admin";
+      });
+
+      // Load current defaults
+      window.fb.ref("workspace/defaults/sh").on("value", function (s) {
+        // Don't blow away in-progress edits if focus is in this section
+        var ae = document.activeElement;
+        if (ae && ae.dataset && ae.dataset.cat) return;
+        buildEditors(s.val());
+      }, function (err) {
+        status.textContent = "Lese-Fehler: " + (err.code || err.message);
+        // Still build with hardcoded fallback so at least the form is visible
+        buildEditors(null);
+      });
+
+      saveBtn.addEventListener("click", function () {
+        if (!isAdmin) return;
+        var data = {};
+        grid.querySelectorAll("textarea").forEach(function (ta) {
+          var lines = ta.value.split("\n").map(function (l) { return l.trim(); }).filter(Boolean);
+          data[ta.dataset.cat] = lines;
+        });
+        status.textContent = "Speichert…";
+        window.fb.ref("workspace/defaults/sh").set(data).then(function () {
+          status.textContent = "✓ gespeichert";
+          window.appUI.toast("Standard-Liste gespeichert");
+          setTimeout(function () { status.textContent = ""; }, 2000);
+        }).catch(function (err) {
+          status.textContent = "Fehler: " + (err.code || err.message);
+        });
+      });
+
+      resetBtn.addEventListener("click", function () {
+        if (!isAdmin) return;
+        window.appUI.confirm({
+          title: "Auf Original zurücksetzen?",
+          description: "Die Workspace-Custom-Defaults für Shooting Check werden gelöscht. Bestehende Kunden behalten ihre Daten — neue Kunden starten wieder mit den eingebauten Defaults.",
+          okLabel: "Zurücksetzen",
+        }).then(function (ok) {
+          if (!ok) return;
+          window.fb.ref("workspace/defaults/sh").remove().then(function () {
+            window.appUI.toast("Auf Original zurückgesetzt");
+            buildEditors(null);
+          }).catch(function (err) {
+            status.textContent = "Fehler: " + (err.code || err.message);
+          });
+        });
+      });
+    }
+    window.appUI.onAuth(initShDefaults);
   })();
 </script>

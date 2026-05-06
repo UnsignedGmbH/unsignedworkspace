@@ -561,22 +561,42 @@ document.getElementById('deleteProductBtn').addEventListener('click',deleteCurre
       });
     }
   }
-  if(_R && _D) {
-    _D.ref('rooms/'+_R+'/sh').once('value', function(snap) {
-      var d = snap.val();
-      if(d && d['ug_products_v2'] && d['ug_products_v2'].length) {
-        // Room has saved data — load it
-        try { _orig_set('ug_products_v2', JSON.stringify(d['ug_products_v2'])); } catch(e){}
-        if(d['ug_archive_v2']) { try { _orig_set('ug_archive_v2', JSON.stringify(d['ug_archive_v2'])); } catch(e){} }
-      } else {
-        // Room is fresh — clear any leftover from previous customer in localStorage
-        try { _orig_set('ug_products_v2', '[]'); } catch(e){}
-        try { _orig_set('ug_archive_v2', '[]'); } catch(e){}
-      }
+  function _initRoom() {
+    if(_R && _D) {
+      _D.ref('rooms/'+_R+'/sh').once('value', function(snap) {
+        var d = snap.val();
+        if(d && d['ug_products_v2'] && d['ug_products_v2'].length) {
+          // Room has saved data — load it
+          try { _orig_set('ug_products_v2', JSON.stringify(d['ug_products_v2'])); } catch(e){}
+          if(d['ug_archive_v2']) { try { _orig_set('ug_archive_v2', JSON.stringify(d['ug_archive_v2'])); } catch(e){} }
+        } else {
+          // Room is fresh — clear any leftover from previous customer in localStorage
+          try { _orig_set('ug_products_v2', '[]'); } catch(e){}
+          try { _orig_set('ug_archive_v2', '[]'); } catch(e){}
+        }
+        _run();
+      });
+    } else {
       _run();
-    });
+    }
+  }
+
+  // Try to override DEFAULTS with workspace-wide custom defaults (admin-set in /settings).
+  // Best-effort: if the read fails or there are no overrides, we just use the hardcoded ones.
+  if(_D) {
+    _D.ref('workspace/defaults/sh').once('value').then(function(snap){
+      var ws = snap.val();
+      if(ws && typeof ws === 'object'){
+        Object.keys(ws).forEach(function(cat){
+          var arr = ws[cat];
+          if(Array.isArray(arr) && arr.length && DEFAULTS.hasOwnProperty(cat)){
+            DEFAULTS[cat] = arr.filter(function(s){ return typeof s === 'string' && s.length; });
+          }
+        });
+      }
+    }).catch(function(){}).then(function(){ _initRoom(); });
   } else {
-    _run();
+    _initRoom();
   }
 })();
 </script>
