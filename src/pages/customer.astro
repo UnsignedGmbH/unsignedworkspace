@@ -279,6 +279,30 @@ import AppLayout from "../layouts/AppLayout.astro";
       });
     }
 
+    // SH/CR/AG/MK each write their own pct to rooms/<room>/<tool>_pct,
+    // independent of who is editing — owner OR customer-portal. Just listen
+    // and mirror to workspace/customers/<id>/<P>.
+    function attachPctListener(room, refKey, lastVarSet, customerKey) {
+      window.fb.ref("rooms/" + room + "/" + refKey).on("value", function (s) {
+        if (!customer) return;
+        var pct = clamp(s.val());
+        if (lastVarSet.read() === pct) return;
+        lastVarSet.write(pct);
+        window.fb.ref("workspace/customers/" + customerId + "/" + customerKey).set(pct);
+        bumpLastActive();
+      });
+    }
+    var lastShPRef  = { read: function(){ return lastShP; }, write: function(v){ lastShP = v; } };
+    var lastCrPRef  = { read: function(){ return lastCrP; }, write: function(v){ lastCrP = v; } };
+    var lastAgPRef  = { read: function(){ return lastAgP; }, write: function(v){ lastAgP = v; } };
+    var lastMkPRef  = { read: function(){ return lastMkP; }, write: function(v){ lastMkP = v; } };
+    function attachToolPctListeners(room) {
+      attachPctListener(room, "sh_pct", lastShPRef, "shP");
+      attachPctListener(room, "cr_pct", lastCrPRef, "crP");
+      attachPctListener(room, "ag_pct", lastAgPRef, "agP");
+      attachPctListener(room, "mk_pct", lastMkPRef, "mkP");
+    }
+
     // Live presence indicator + customer profile
     var hasClientProfile = false;
     function updateLiveBadges(activity) {
@@ -575,6 +599,7 @@ import AppLayout from "../layouts/AppLayout.astro";
         if (first) {
           attachBIProgress(c.room);
           attachDesignProgress(c.room);
+          attachToolPctListeners(c.room);
           attachClientPresence(c.room);
           if (initialTool && TOOL_BY_FILE[initialTool]) showTool(initialTool);
           else showOverview();

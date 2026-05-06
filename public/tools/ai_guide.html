@@ -724,7 +724,10 @@ function saveImagesToFirebase(){
     });
     _DB.ref('rooms/'+_ROOM+'/ai_guide/moodboard').set(data);
     var total = Object.values(mbImages).reduce(function(s,a){return s+a.length;},0);
-    try { window.parent.postMessage({type:'agPct', pct: Math.min(100, total*5)}, '*'); } catch(e){}
+    var pct = Math.min(100, total*5);
+    try { window.parent.postMessage({type:'agPct', pct: pct}, '*'); } catch(e){}
+    // Mirror progress to Firebase so the owner sees updates regardless of who edits.
+    try { _DB.ref('rooms/'+_ROOM+'/ag_pct').set(pct); } catch(e){}
   }, 400);
 }
 

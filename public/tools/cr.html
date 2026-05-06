@@ -409,6 +409,8 @@ function updateProgress() {
     if (el) el.textContent = d + ' / ' + a + ' erledigt';
   });
   try { window.parent.postMessage({type:'crPct', pct: pct}, '*'); } catch(e) {}
+  // Mirror progress to Firebase so the owner sees updates regardless of who edits.
+  if (_R && _D) { try { _D.ref('rooms/' + _R + '/cr_pct').set(pct); } catch(e) {} }
 }
 
 function persistState() {

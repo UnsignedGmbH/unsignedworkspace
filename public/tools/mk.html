@@ -761,6 +761,8 @@ function postProgress(){
   if (fillEl) fillEl.style.width = pct + '%';
   if (textEl) textEl.textContent = done + ' / ' + total + ' Punkten · ' + pct + '%';
   try { window.parent.postMessage({type:'mkPct', pct: pct}, '*'); } catch(e){}
+  // Mirror progress to Firebase so the owner sees updates regardless of who edits.
+  if (_DB && _ROOM) { try { _DB.ref('rooms/'+_ROOM+'/mk_pct').set(pct); } catch(e){} }
 }
 
 function loadRemote(){
