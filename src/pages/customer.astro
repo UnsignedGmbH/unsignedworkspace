@@ -491,16 +491,24 @@ import AppLayout from "../layouts/AppLayout.astro";
 
     $("btnDelete").addEventListener("click", function () {
       if (!customer) return;
+      var room = customer.room;
       ui.confirm({
         title: "Kunde löschen?",
-        description: "Daten in Brand Identity, Shooting, Creator, Design, Ai Guide bleiben im Raum. Eintrag wird aus der Kunden-Liste entfernt.",
+        description: "Der Kunde wird aus deiner Liste entfernt UND der Portal-Link wird gesperrt — der Kunde kann den Link danach nicht mehr öffnen. Tool-Daten im Raum bleiben für dich als Backup erhalten.",
         okLabel: "Löschen",
       }).then(function (ok) {
         if (!ok) return;
-        window.fb
-          .ref("workspace/customers/" + customerId)
-          .remove()
-          .then(function () { location.href = "/customers"; });
+        // 1. Sperre den Raum, damit Portal-Link tot ist
+        // 2. Lösche den Kunden-Eintrag
+        Promise.all([
+          window.fb.ref("rooms/" + room + "/_closed").set({
+            ts: window.fb.ts(),
+            reason: "customer-deleted",
+          }),
+          window.fb.ref("workspace/customers/" + customerId).remove(),
+        ])
+          .then(function () { location.href = "/customers"; })
+          .catch(function (e) { ui.toast("Löschen fehlgeschlagen: " + (e.code || e.message)); });
       });
     });
 

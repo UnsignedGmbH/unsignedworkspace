@@ -150,15 +150,17 @@ const filters = [
               title: "Kunde löschen?",
               description:
                 "„" + (c.name || "?") +
-                "“ wird entfernt. Tool-Daten unter rooms/" +
-                c.room + " bleiben erhalten.",
+                "“ wird aus der Liste entfernt UND der Portal-Link wird gesperrt. Der Kunde kann den Link danach nicht mehr öffnen. Tool-Daten im Raum bleiben für dich als Backup erhalten.",
               okLabel: "Löschen",
             }).then(function (ok) {
-              if (ok)
-                window.fb
-                  .ref("workspace/customers/" + id)
-                  .remove()
-                  .catch(function (e) { ui.toast("Fehler: " + e.code); });
+              if (!ok) return;
+              Promise.all([
+                window.fb.ref("rooms/" + c.room + "/_closed").set({
+                  ts: window.fb.ts(),
+                  reason: "customer-deleted",
+                }),
+                window.fb.ref("workspace/customers/" + id).remove(),
+              ]).catch(function (e) { ui.toast("Fehler: " + (e.code || e.message)); });
             });
           }
         });

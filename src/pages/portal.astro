@@ -98,6 +98,21 @@ import PortalFooter from "../components/PortalFooter.astro";
       >
         Kein Raum-Code in der URL. Bitte den Link von Unsigned öffnen.
       </p>
+
+      <div
+        id="portalClosed"
+        class="hidden bg-card border-[0.5px] border-line rounded-2xl px-6 md:px-8 py-12 md:py-16 text-center max-w-[520px] mx-auto"
+      >
+        <div class="text-[48px] mb-4">🔒</div>
+        <h2 class="text-[20px] md:text-[22px] font-extrabold text-ink mb-2">
+          Portal ist geschlossen
+        </h2>
+        <p class="text-[13px] text-ink-soft leading-relaxed">
+          Dein Zugang zu diesem Workspace wurde beendet. Falls das ein
+          Versehen ist, melde dich bitte direkt bei deinem Ansprechpartner
+          bei Unsigned.
+        </p>
+      </div>
     </main>
 
     <PortalFooter />
@@ -192,6 +207,24 @@ import PortalFooter from "../components/PortalFooter.astro";
     var currentTool = null;
     var heartbeat = null;
     var pingFn = function () {};
+
+    function showClosed() {
+      document.getElementById("overviewView").style.display = "none";
+      document.getElementById("toolView").classList.add("hidden");
+      emptyMsg.classList.add("hidden");
+      document.getElementById("portalClosed").classList.remove("hidden");
+      if (liveSlot) liveSlot.style.display = "none";
+    }
+
+    // Check if room was closed (customer deleted) BEFORE doing anything else.
+    function checkClosedThen(cb) {
+      window.fb.ref("rooms/" + room + "/_closed").once("value")
+        .then(function (s) {
+          if (s.exists()) { showClosed(); return; }
+          cb();
+        })
+        .catch(function () { cb(); }); // fail-open, proceed if check fails
+    }
 
     // ── Anonymous Auth ─────────────────────────────────────
     function bootAuth() {
@@ -321,6 +354,18 @@ import PortalFooter from "../components/PortalFooter.astro";
       if (window.fb && window.firebase) cb();
       else setTimeout(function () { waitForFb(cb); }, 50);
     }
-    waitForFb(bootAuth);
+    waitForFb(function () { checkClosedThen(bootAuth); });
+
+    // Live-react to closure: if owner deletes during a session, lock immediately.
+    function watchClosed() {
+      if (!window.fb) return setTimeout(watchClosed, 200);
+      window.fb.ref("rooms/" + room + "/_closed").on("value", function (s) {
+        if (s.exists()) {
+          if (heartbeat) clearInterval(heartbeat);
+          showClosed();
+        }
+      });
+    }
+    watchClosed();
   })();
 </script>

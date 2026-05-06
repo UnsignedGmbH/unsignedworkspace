@@ -29,8 +29,10 @@ import AppLayout from "../layouts/AppLayout.astro";
           var online = p && p.online;
           var isMe = window.ME && window.ME.uid === uid;
           var role = isMe ? "owner" : m.role || "member";
+          var uidSafe = ui.escapeHtml(uid);
           return (
-            '<div class="bg-card border-[0.5px] border-line rounded-[10px] px-4 py-[14px] flex items-center gap-[14px]">' +
+            '<div class="bg-card border-[0.5px] border-line rounded-[10px] px-4 py-[14px] flex items-center gap-[14px]" data-uid="' +
+            uidSafe + '">' +
             '<span class="w-10 h-10 rounded-full text-white text-[13px] font-bold flex items-center justify-center shrink-0 ' +
             ui.colorFor(uid) +
             '">' +
@@ -57,10 +59,36 @@ import AppLayout from "../layouts/AppLayout.astro";
             '">' +
             (isMe ? "Du" : role === "owner" ? "Owner" : "Member") +
             "</span>" +
+            (isMe
+              ? ""
+              : '<button type="button" data-act="remove" data-uid="' + uidSafe +
+                '" class="ml-2 text-[14px] text-ink-mute hover:text-[#b00020] bg-transparent border-0 cursor-pointer px-2 py-1 rounded-md hover:bg-[#fde8e8]" title="Aus Team entfernen">🗑</button>') +
             "</div>"
           );
         })
         .join("");
+
+      listEl.querySelectorAll('[data-act="remove"]').forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          var uid = btn.dataset.uid;
+          var m = members[uid] || {};
+          ui.confirm({
+            title: "Mitglied entfernen?",
+            description:
+              '„' + (m.name || m.email || uid) +
+              '" wird aus team und presence gelöscht. Falls die Person sich erneut einloggt, wird ein neuer Eintrag automatisch angelegt.',
+            okLabel: "Entfernen",
+          }).then(function (ok) {
+            if (!ok) return;
+            Promise.all([
+              window.fb.ref("team/" + uid).remove(),
+              window.fb.ref("presence/" + uid).remove(),
+            ])
+              .then(function () { ui.toast("Mitglied entfernt ✓"); })
+              .catch(function (e) { ui.toast("Fehler: " + (e.code || e.message)); });
+          });
+        });
+      });
     }
 
     var renderThrottled = function () {
