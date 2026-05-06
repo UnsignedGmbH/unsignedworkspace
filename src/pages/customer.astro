@@ -1,5 +1,6 @@
 ---
 import AppLayout from "../layouts/AppLayout.astro";
+import BrandworkTimeline from "../components/BrandworkTimeline.astro";
 ---
 
 <AppLayout title="Kunde" active="customers">
@@ -107,6 +108,8 @@ import AppLayout from "../layouts/AppLayout.astro";
         >
       </div>
     </div>
+
+    <BrandworkTimeline />
 
     <!-- Tool Cards Grid -->
     <h2
@@ -439,6 +442,23 @@ import AppLayout from "../layouts/AppLayout.astro";
       $("cMeta").textContent =
         "Raum " + (c.room || "—") +
         " · Ø " + avg + "% · seit " + ui.fmtAgo(c.created || c.lastActive);
+
+      // Brandwork Roadmap — derived view from the same progressMap
+      if (window.BWTimeline) {
+        window.BWTimeline.render(function (toolKey) {
+          // Map canonical tool keys to progressMap keys
+          if (toolKey === "design") return pm.dn || 0;
+          return pm[toolKey] || 0;
+        }, function (toolKey) {
+          var t = (toolKey === "design") ? TOOL_BY_FILE["design"] : TOOL_BY_FILE[toolKey];
+          if (t) {
+            var url = "/customer?id=" + encodeURIComponent(customerId) +
+              "&tool=" + encodeURIComponent(t.file);
+            history.pushState({}, "", url);
+            showTool(t.file);
+          }
+        });
+      }
     }
 
     // ── Mode Switch ──────────────────────────────────────────

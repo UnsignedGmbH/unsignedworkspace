@@ -2,6 +2,7 @@
 import BaseLayout from "../layouts/BaseLayout.astro";
 import PortalLiveBadge from "../components/PortalLiveBadge.astro";
 import PortalFooter from "../components/PortalFooter.astro";
+import BrandworkTimeline from "../components/BrandworkTimeline.astro";
 ---
 
 <BaseLayout title="Kunden-Portal · Unsigned Workspace">
@@ -90,6 +91,8 @@ import PortalFooter from "../components/PortalFooter.astro";
             </div>
           </div>
         </section>
+
+        <BrandworkTimeline />
 
         <h2
           class="text-[10px] font-bold tracking-[0.12em] uppercase text-ink-mute mb-[10px] flex items-center gap-2"
@@ -383,6 +386,13 @@ import PortalFooter from "../components/PortalFooter.astro";
       grid.querySelectorAll(".tool-card").forEach(function (b) {
         b.addEventListener("click", function () { openTool(b.dataset.tool); });
       });
+      if (window.BWTimeline) {
+        window.BWTimeline.render(function (toolKey) {
+          return TOOL_PROGRESS[toolKey] || 0;
+        }, function (toolKey) {
+          openTool(toolKey);
+        });
+      }
     }
 
     // Subscribe to per-tool progress and re-render the grid whenever any tool's pct changes.
