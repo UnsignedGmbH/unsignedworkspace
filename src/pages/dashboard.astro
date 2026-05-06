@@ -57,8 +57,9 @@ const customerActions = [
             Wähl ein Tool oder spring direkt zum Kunden.
           </p>
         </div>
-        <!-- Wordmark logo -->
+        <!-- Wordmark logo (defaults to Unsigned, overridden via workspace/brand) -->
         <img
+          id="heroWordmark"
           src="/brand/wordmark-light.png"
           alt="Unsigned"
           class="hidden sm:block h-[60px] md:h-[88px] w-auto opacity-90 shrink-0 select-none pointer-events-none"
@@ -267,6 +268,14 @@ const customerActions = [
         $("statOnline").textContent = Object.keys(v).filter(function (k) {
           return v[k] && v[k].online;
         }).length;
+      });
+
+      // Workspace-Brand: swap the wordmark image if a custom logo is set
+      window.fb.ref("workspace/brand/logo").on("value", function (s) {
+        var src = s.val();
+        var el = $("heroWordmark");
+        if (!el) return;
+        el.src = (src && typeof src === "string") ? src : "/brand/wordmark-light.png";
       });
     }
     window.appUI.onAuth(start);

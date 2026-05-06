@@ -89,6 +89,97 @@ const notifications = [
       }
     </section>
 
+    <section id="brandSection" class="hidden">
+      <h3 class="text-[12px] font-bold text-ink mb-[10px] flex items-center gap-2">
+        <span class="w-1 h-3 bg-brand rounded-sm"></span>
+        Workspace-Brand
+      </h3>
+      <p class="text-[11px] text-ink-mute mb-[10px]">
+        Die Identity die deine Kunden im Portal sehen. Wirkt im Header und auf
+        der Begrüßung. Nur Admins können bearbeiten.
+      </p>
+
+      <div class="bg-card border-[0.5px] border-line rounded-[9px] px-4 py-3 mb-[6px] flex items-center gap-3">
+        <div class="flex-1">
+          <label class="text-[10px] font-bold tracking-[0.12em] uppercase text-ink-mute block mb-1">
+            Brand-Name
+          </label>
+          <input
+            id="brandName"
+            type="text"
+            placeholder="z.B. Unsigned"
+            maxlength="40"
+            class="block w-full text-[14px] font-semibold border-[1.5px] border-line rounded-lg px-[12px] py-[9px] outline-none text-ink bg-white focus:border-brand"
+          />
+          <div class="text-[10px] text-ink-mute mt-1">Erscheint im Sidebar-Header und im Portal.</div>
+        </div>
+      </div>
+
+      <div class="bg-card border-[0.5px] border-line rounded-[9px] px-4 py-3 mb-[6px] flex items-start gap-3">
+        <div class="flex-1">
+          <label class="text-[10px] font-bold tracking-[0.12em] uppercase text-ink-mute block mb-1">
+            Logo / Wordmark
+          </label>
+          <div class="flex items-center gap-3">
+            <div
+              id="brandLogoPreview"
+              class="w-[120px] h-[60px] rounded-lg bg-[#0a0a0a] flex items-center justify-center text-white/40 text-[10px] overflow-hidden"
+            >
+              kein Logo
+            </div>
+            <div class="flex flex-col gap-1">
+              <label
+                class="text-[11px] font-bold text-brand cursor-pointer"
+                >📁 Hochladen
+                <input
+                  id="brandLogoInput"
+                  type="file"
+                  accept="image/*"
+                  class="hidden"
+                /></label
+              >
+              <button
+                id="brandLogoClear"
+                type="button"
+                class="text-[10px] text-ink-mute hover:text-brand bg-transparent border-0 cursor-pointer text-left"
+                >× entfernen</button
+              >
+            </div>
+          </div>
+          <div class="text-[10px] text-ink-mute mt-2">
+            Wird hell auf dunklem Hintergrund angezeigt — nimm ein helles
+            Logo (PNG mit transparentem Hintergrund am besten).
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-card border-[0.5px] border-line rounded-[9px] px-4 py-3 mb-[6px]">
+        <label class="text-[10px] font-bold tracking-[0.12em] uppercase text-ink-mute block mb-1">
+          Begrüßungstext im Portal
+        </label>
+        <textarea
+          id="brandWelcome"
+          rows="3"
+          maxlength="280"
+          placeholder="Hier arbeiten wir gemeinsam an deiner Brand. Alles was du eingibst, sieht dein Team bei [Brand] live."
+          class="block w-full text-[12px] border-[1.5px] border-line rounded-lg px-[12px] py-[9px] outline-none text-ink bg-white focus:border-brand resize-y"
+        ></textarea>
+        <div class="text-[10px] text-ink-mute mt-1">
+          Erscheint unter dem Greeting auf der Portal-Landing.
+        </div>
+      </div>
+
+      <div class="flex justify-end gap-2 mt-2">
+        <span id="brandStatus" class="text-[11px] text-ink-mute self-center"></span>
+        <button
+          id="brandSaveBtn"
+          type="button"
+          class="text-[11px] font-bold text-white bg-brand hover:bg-brand-dark px-4 py-2 rounded-lg cursor-pointer border-0"
+          >Speichern</button
+        >
+      </div>
+    </section>
+
     <section id="adminSection" class="hidden">
       <h3 class="text-[12px] font-bold text-ink mb-[10px]">Admin-Rechte</h3>
       <div class="bg-card border-[0.5px] border-line rounded-[9px] px-4 py-3 flex items-center gap-3">
@@ -273,5 +364,111 @@ const notifications = [
       });
     }
     window.appUI.onAuth(initAdminUi);
+
+    // ── Workspace-Brand ──────────────────────────────────────
+    function initBrandUi(me) {
+      if (!me || !me.uid) return;
+      var section = document.getElementById("brandSection");
+      var nameEl = document.getElementById("brandName");
+      var welcomeEl = document.getElementById("brandWelcome");
+      var preview = document.getElementById("brandLogoPreview");
+      var fileInput = document.getElementById("brandLogoInput");
+      var clearBtn = document.getElementById("brandLogoClear");
+      var saveBtn = document.getElementById("brandSaveBtn");
+      var statusEl = document.getElementById("brandStatus");
+      if (!section) return;
+
+      var brandLogoData = "";
+      var isAdmin = false;
+
+      function showLogo(src) {
+        brandLogoData = src || "";
+        preview.innerHTML = "";
+        if (src) {
+          var img = document.createElement("img");
+          img.src = src;
+          img.style.cssText = "max-width:100%;max-height:100%;object-fit:contain";
+          preview.appendChild(img);
+        } else {
+          preview.textContent = "kein Logo";
+        }
+      }
+
+      function setReadOnly(ro) {
+        nameEl.disabled = ro;
+        welcomeEl.disabled = ro;
+        fileInput.disabled = ro;
+        clearBtn.disabled = ro;
+        saveBtn.disabled = ro;
+        saveBtn.style.opacity = ro ? "0.4" : "";
+        saveBtn.style.cursor = ro ? "not-allowed" : "pointer";
+      }
+
+      // Show section once admin status is known
+      window.fb.ref("admins/" + me.uid).on("value", function (s) {
+        isAdmin = !!s.val();
+        section.classList.remove("hidden");
+        setReadOnly(!isAdmin);
+        statusEl.textContent = isAdmin ? "" : "Nur lesen — du bist kein Admin.";
+      });
+
+      // Load current brand
+      window.fb.ref("workspace/brand").on("value", function (s) {
+        var b = s.val() || {};
+        if (document.activeElement !== nameEl) nameEl.value = b.name || "";
+        if (document.activeElement !== welcomeEl) welcomeEl.value = b.welcome || "";
+        showLogo(b.logo || "");
+      }, function (err) {
+        statusEl.textContent = "Lese-Fehler: " + (err.code || err.message);
+      });
+
+      // Compress + read uploaded file
+      fileInput.addEventListener("change", function (e) {
+        var f = e.target.files[0];
+        if (!f) return;
+        var reader = new FileReader();
+        reader.onload = function (ev) {
+          var img = new Image();
+          img.onload = function () {
+            var maxW = 600;
+            var w = img.width, h = img.height;
+            if (w > maxW) { h = Math.round(h * maxW / w); w = maxW; }
+            var c = document.createElement("canvas");
+            c.width = w; c.height = h;
+            c.getContext("2d").drawImage(img, 0, 0, w, h);
+            // Try PNG to preserve transparency
+            showLogo(c.toDataURL("image/png"));
+          };
+          img.src = ev.target.result;
+        };
+        reader.readAsDataURL(f);
+        e.target.value = "";
+      });
+
+      clearBtn.addEventListener("click", function () { showLogo(""); });
+
+      saveBtn.addEventListener("click", function () {
+        if (!isAdmin) return;
+        statusEl.textContent = "Speichert…";
+        var data = {
+          name: nameEl.value.trim(),
+          welcome: welcomeEl.value.trim(),
+          logo: brandLogoData,
+          updatedAt: window.fb.ts(),
+          updatedBy: me.uid,
+        };
+        window.fb.ref("workspace/brand").set(data)
+          .then(function () {
+            statusEl.textContent = "✓ gespeichert";
+            window.appUI.toast("Workspace-Brand gespeichert");
+            setTimeout(function () { statusEl.textContent = ""; }, 2200);
+          })
+          .catch(function (err) {
+            statusEl.textContent = "Fehler: " + (err.code || err.message);
+            window.appUI.toast("Fehler: " + (err.code || err.message));
+          });
+      });
+    }
+    window.appUI.onAuth(initBrandUi);
   })();
 </script>

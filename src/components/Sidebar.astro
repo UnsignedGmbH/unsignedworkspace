@@ -61,7 +61,7 @@ function isActive(href: string) {
     class="px-[14px] pt-4 pb-[13px] border-b-[0.5px] border-white/10 flex items-center gap-[10px]"
   >
     <div class="flex-1 min-w-0">
-      <span class="block brand-wordmark text-[13px]">Unsigned</span>
+      <span id="sbBrandName" class="block brand-wordmark text-[13px]">Unsigned</span>
       <span class="block brand-script text-[12px] text-white/35">Workspace</span>
     </div>
     <button
@@ -213,6 +213,15 @@ function isActive(href: string) {
     if (logout) {
       logout.addEventListener("click", function () {
         window.appUI.logout();
+      });
+    }
+
+    // Workspace-Brand: live-update the sidebar header name
+    if (window.fb) {
+      window.fb.ref("workspace/brand/name").on("value", function (s) {
+        var v = s.val();
+        var el = document.getElementById("sbBrandName");
+        if (el) el.textContent = (v && v.trim()) || "Unsigned";
       });
     }
   })();

@@ -72,12 +72,16 @@ import PortalFooter from "../components/PortalFooter.astro";
                   class="text-[12px] md:text-[13px] text-white/65"
                 >
                 </p>
-                <p class="text-[13px] md:text-[14px] text-white/70 max-w-[520px] mt-3">
+                <p
+                  id="ovWelcomeText"
+                  class="text-[13px] md:text-[14px] text-white/70 max-w-[520px] mt-3"
+                >
                   Hier arbeiten wir gemeinsam an deiner Brand. Alles was du
                   eingibst, sieht dein Team bei Unsigned live.
                 </p>
               </div>
               <img
+                id="ovHeroLogo"
                 src="/brand/wordmark-light.png"
                 alt="Unsigned"
                 class="hidden sm:block h-[52px] md:h-[78px] w-auto opacity-90 shrink-0 select-none pointer-events-none"
@@ -445,6 +449,25 @@ import PortalFooter from "../components/PortalFooter.astro";
       else setTimeout(function () { waitForFb(cb); }, 50);
     }
     waitForFb(function () { checkClosedThen(bootAuth); });
+
+    // Workspace-Brand applied to portal — name in tagline, custom welcome text, logo swap
+    function applyBrand() {
+      if (!window.fb) return setTimeout(applyBrand, 100);
+      window.fb.ref("workspace/brand").on("value", function (s) {
+        var b = s.val() || {};
+        var brandName = (b.name && b.name.trim()) || "Unsigned";
+        var welcome = b.welcome && b.welcome.trim();
+        var logo = b.logo && typeof b.logo === "string" ? b.logo : "";
+        var welcomeEl = document.getElementById("ovWelcomeText");
+        if (welcomeEl) {
+          welcomeEl.textContent = welcome ||
+            ("Hier arbeiten wir gemeinsam an deiner Brand. Alles was du eingibst, sieht dein Team bei " + brandName + " live.");
+        }
+        var logoEl = document.getElementById("ovHeroLogo");
+        if (logoEl) logoEl.src = logo || "/brand/wordmark-light.png";
+      });
+    }
+    applyBrand();
 
     // Live-react to closure: if owner deletes during a session, lock immediately.
     function watchClosed() {
