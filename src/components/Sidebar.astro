@@ -177,8 +177,20 @@ function isActive(href: string) {
     var avatar = document.getElementById("sbAvatar");
 
     window.appUI.onAuth(function (me) {
-      label.textContent = (me && (me.email || me.name)) || "Du";
-      avatar.textContent = window.appUI.initials(me && (me.email || me.name));
+      // Initial fallback while team profile loads
+      var fallback = (me && (me.email || me.name)) || "Du";
+      label.textContent = fallback;
+      avatar.textContent = window.appUI.initials(fallback);
+
+      // Subscribe to team profile so the display name updates live when changed in Settings
+      if (me && me.uid) {
+        window.fb.ref("team/" + me.uid).on("value", function (s) {
+          var t = s.val() || {};
+          var disp = (t.name && t.name.trim()) || fallback;
+          label.textContent = disp;
+          avatar.textContent = window.appUI.initials(disp);
+        });
+      }
 
       if (custBadge) {
         window.appUI.subscribeCustomers(function (state) {

@@ -89,6 +89,22 @@ const notifications = [
       }
     </section>
 
+    <section id="adminSection" class="hidden">
+      <h3 class="text-[12px] font-bold text-ink mb-[10px]">Admin-Rechte</h3>
+      <div class="bg-card border-[0.5px] border-line rounded-[9px] px-4 py-3 flex items-center gap-3">
+        <div class="flex-1">
+          <div id="adminStatus" class="text-[13px] font-semibold text-ink">…</div>
+          <div id="adminHint" class="text-[11px] text-ink-mute mt-[1px]"></div>
+        </div>
+        <button
+          id="adminAddBtn"
+          type="button"
+          class="hidden text-[11px] font-bold text-white bg-brand hover:bg-brand-dark px-3 py-2 rounded-lg cursor-pointer border-0"
+          >Mich als Admin eintragen</button
+        >
+      </div>
+    </section>
+
     <section>
       <h3 class="text-[12px] font-bold text-ink mb-[10px]">Konto</h3>
       <div class="bg-card border-[0.5px] border-line rounded-[9px] px-4 py-3 flex items-center gap-3">
@@ -206,5 +222,56 @@ const notifications = [
     document.getElementById("logoutBtn").addEventListener("click", function () {
       window.appUI.logout();
     });
+
+    // ── Admin-Bootstrap ──────────────────────────────────────
+    function initAdminUi(me) {
+      if (!me || !me.uid) return;
+      var section = document.getElementById("adminSection");
+      var statusEl = document.getElementById("adminStatus");
+      var hintEl = document.getElementById("adminHint");
+      var addBtn = document.getElementById("adminAddBtn");
+      if (!section) return;
+
+      window.fb.ref("admins").on("value", function (s) {
+        var admins = s.val() || {};
+        var keys = Object.keys(admins);
+        var iAmAdmin = !!admins[me.uid];
+        var noAdminsYet = keys.length === 0;
+        section.classList.remove("hidden");
+        if (iAmAdmin) {
+          statusEl.textContent = "✓ Du bist Admin";
+          hintEl.textContent =
+            "Du kannst Team-Mitglieder entfernen und Kunden überschreiben. Aktuell " +
+            keys.length + " Admin" + (keys.length === 1 ? "" : "s") + ".";
+          addBtn.classList.add("hidden");
+        } else if (noAdminsYet) {
+          statusEl.textContent = "Kein Admin gesetzt";
+          hintEl.textContent =
+            "Solange noch niemand Admin ist, kannst du dich als ersten eintragen. Danach können nur Admins weitere Admins hinzufügen.";
+          addBtn.classList.remove("hidden");
+        } else {
+          statusEl.textContent = "Du bist kein Admin";
+          hintEl.textContent =
+            "Bitte einen bestehenden Admin (" +
+            keys.length + " aktiv) dich als Admin einzutragen.";
+          addBtn.classList.add("hidden");
+        }
+      }, function (err) {
+        // If the read fails (e.g. rules not yet updated), show a hint
+        section.classList.remove("hidden");
+        statusEl.textContent = "Rules nicht aktiv";
+        hintEl.textContent =
+          "Bitte zuerst die Firebase-Rules aktualisieren (siehe Anleitung).";
+      });
+
+      addBtn.addEventListener("click", function () {
+        window.fb.ref("admins/" + me.uid).set(true)
+          .then(function () { window.appUI.toast("Du bist jetzt Admin ✓"); })
+          .catch(function (e) {
+            window.appUI.toast("Fehler: " + (e.code || e.message));
+          });
+      });
+    }
+    window.appUI.onAuth(initAdminUi);
   })();
 </script>

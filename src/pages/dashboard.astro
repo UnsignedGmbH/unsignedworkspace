@@ -193,10 +193,25 @@ const customerActions = [
       var ui = window.appUI;
       var me = window.ME;
       var nameEl = $("heroName");
-      if (nameEl && me) {
-        var label = me.email ? me.email.split("@")[0] : (me.name || "Workspace");
+
+      function setHeroName(raw) {
+        if (!nameEl || !raw) return;
         // Capitalize first letter for friendlier look
-        nameEl.textContent = label.charAt(0).toUpperCase() + label.slice(1);
+        nameEl.textContent = raw.charAt(0).toUpperCase() + raw.slice(1);
+      }
+
+      // Initial: email-prefix fallback so it's never empty
+      if (me) {
+        var fallback = me.email ? me.email.split("@")[0] : (me.name || "Workspace");
+        setHeroName(fallback);
+
+        // Then live-subscribe to team/<uid>/name so renaming in Settings updates immediately
+        if (me.uid) {
+          window.fb.ref("team/" + me.uid + "/name").on("value", function (s) {
+            var n = s.val();
+            setHeroName((n && n.trim()) || fallback);
+          });
+        }
       }
 
       var renderRecent = ui.throttle(function (state) {
