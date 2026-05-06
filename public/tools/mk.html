@@ -676,6 +676,18 @@ function _toArr(v){ if(Array.isArray(v)) return v; if(v && typeof v==='object') 
 // merge remote state robustly — preserve item order from defaults if remote is partial
 function applyRemote(remote){
   if(!remote || typeof remote !== 'object'){ return; }
+  // Preserve UI-only flags (open detail panels) across remote sync — those are
+  // local in-memory state and not persisted to Firebase.
+  var openFlags = {};
+  if (STATE && STATE.phases) {
+    PHASES_DEF.forEach(function(p){
+      var ph = STATE.phases[p.id];
+      if (!ph || !ph.items) return;
+      ph.items.forEach(function(it){
+        if (it && it._open && it.id) openFlags[p.id + ':' + it.id] = true;
+      });
+    });
+  }
   var fresh = makeDefaultState();
   PHASES_DEF.forEach(function(p){
     var rPh = remote.phases && remote.phases[p.id];
@@ -722,6 +734,14 @@ function applyRemote(remote){
     }
   });
   STATE = fresh;
+  // Restore UI flags AFTER state is replaced
+  PHASES_DEF.forEach(function(p){
+    var ph = STATE.phases[p.id];
+    if (!ph || !ph.items) return;
+    ph.items.forEach(function(it){
+      if (it && it.id && openFlags[p.id + ':' + it.id]) it._open = true;
+    });
+  });
 }
 
 // ── Persistence ────────────────────────────────────────────────────

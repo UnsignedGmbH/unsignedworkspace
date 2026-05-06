@@ -238,6 +238,8 @@ import PortalFooter from "../components/PortalFooter.astro";
     var currentTool = null;
     var heartbeat = null;
     var pingFn = function () {};
+    var TOOL_PROGRESS = {}; // tool-id → pct (0-100)
+    function _clamp(n){ n = parseInt(n, 10) || 0; return Math.max(0, Math.min(100, n)); }
 
     function showClosed() {
       document.getElementById("overviewView").style.display = "none";
@@ -336,6 +338,7 @@ import PortalFooter from "../components/PortalFooter.astro";
       };
 
       renderGrid();
+      attachToolProgress();
       pingFn(null); // beigetreten, aber noch in Übersicht
 
       heartbeat = setInterval(function () {
@@ -352,20 +355,67 @@ import PortalFooter from "../components/PortalFooter.astro";
     function renderGrid() {
       var grid = document.getElementById("ovGrid");
       grid.innerHTML = TOOLS.map(function (t) {
+        var pct = TOOL_PROGRESS[t.id] || 0;
         return (
           '<button type="button" data-tool="' + t.id + '"' +
-          ' class="tool-card group bg-card border-[0.5px] border-line rounded-xl p-3 md:p-[14px] flex items-start gap-3 hover:border-brand-border hover:bg-brand-dim hover:shadow-[0_4px_16px_rgba(193,48,48,0.08)] transition-all text-left cursor-pointer min-w-0">' +
+          ' class="tool-card group bg-card border-[0.5px] border-line rounded-xl p-3 md:p-[14px] flex flex-col gap-2 hover:border-brand-border hover:bg-brand-dim hover:shadow-[0_4px_16px_rgba(193,48,48,0.08)] transition-all text-left cursor-pointer min-w-0">' +
+          '<div class="flex items-start gap-3 min-w-0">' +
           '<span class="w-9 h-9 md:w-10 md:h-10 rounded-lg bg-brand-dim flex items-center justify-center text-[18px] md:text-[20px] shrink-0 group-hover:bg-brand group-hover:text-white transition-colors">' +
           t.icon + '</span>' +
           '<div class="flex-1 min-w-0">' +
-          '<div class="text-[12px] md:text-[13px] font-extrabold text-ink truncate">' + t.label + '</div>' +
+          '<div class="flex items-center gap-2 min-w-0">' +
+          '<div class="text-[12px] md:text-[13px] font-extrabold text-ink truncate flex-1 min-w-0">' + t.label + '</div>' +
+          '<span class="text-[10px] font-bold text-ink-soft shrink-0">' + pct + '%</span>' +
+          '</div>' +
           '<div class="text-[10px] md:text-[11px] text-ink-mute mt-[1px] truncate">' + t.desc + '</div>' +
           '</div>' +
+          '</div>' +
+          '<div class="h-[3px] bg-[#eee] rounded-sm overflow-hidden mt-1"><div class="h-full bg-brand rounded-sm transition-all" style="width:' + pct + '%"></div></div>' +
           '</button>'
         );
       }).join("");
       grid.querySelectorAll(".tool-card").forEach(function (b) {
         b.addEventListener("click", function () { openTool(b.dataset.tool); });
+      });
+    }
+
+    // Subscribe to per-tool progress and re-render the grid whenever any tool's pct changes.
+    function attachToolProgress() {
+      function setPct(toolId, pct){
+        var p = _clamp(pct);
+        if (TOOL_PROGRESS[toolId] === p) return;
+        TOOL_PROGRESS[toolId] = p;
+        // Re-render only if overview is currently visible
+        if (!document.getElementById("overviewView").classList.contains("hidden")) renderGrid();
+      }
+      // Tools that already write a *_pct field directly
+      window.fb.ref("rooms/" + room + "/sh_pct").on("value", function(s){ setPct("sh", s.val()); });
+      window.fb.ref("rooms/" + room + "/cr_pct").on("value", function(s){ setPct("cr", s.val()); });
+      window.fb.ref("rooms/" + room + "/mk_pct").on("value", function(s){ setPct("mk", s.val()); });
+      window.fb.ref("rooms/" + room + "/ag_pct").on("value", function(s){ setPct("ai_guide", s.val()); });
+      // BI: derive from rooms/<room>/data/fields (count fields with text or images)
+      window.fb.ref("rooms/" + room + "/data/fields").on("value", function(s){
+        var v = s.val() || {};
+        var keys = Object.keys(v);
+        if (!keys.length) { setPct("bi", 0); return; }
+        var filled = 0;
+        keys.forEach(function(k){
+          var f = v[k] || {};
+          var hasText = (f.text || "").trim().length > 0;
+          var hasImg = Array.isArray(f.images) && f.images.length > 0;
+          if (hasText || hasImg) filled++;
+        });
+        setPct("bi", Math.round((filled / keys.length) * 100));
+      });
+      // Design: derive from rooms/<room>/design (count of items, capped at 5%/item)
+      window.fb.ref("rooms/" + room + "/design").on("value", function(s){
+        var v = s.val() || {};
+        var n = 0;
+        Object.keys(v).forEach(function(k){
+          var node = v[k];
+          if (node && typeof node === "object") n += Object.keys(node).length;
+        });
+        setPct("design", Math.min(100, n * 5));
       });
     }
 
