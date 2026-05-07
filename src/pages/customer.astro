@@ -239,7 +239,16 @@ import BrandworkTimeline from "../components/BrandworkTimeline.astro";
     }, ui.CONST.LAST_ACTIVE_MIN_GAP_MS);
 
     // SH/CR/AG postMessage progress
+    // Origin-Filter: nur Messages von gleicher Origin akzeptieren. Tool-iframes
+    // werden via "/tools/<name>.html" geladen (relative URL → gleiche Origin),
+    // also passen alle legitimen postMessages durch. Cross-Origin/Embed-Versuche
+    // (z.B. wenn jemand /customer in eine fremde Seite iframed um Progress zu
+    // faelschen) werden silent verworfen.
     window.addEventListener("message", function (e) {
+      // location.origin ist null bei file:// — sicherer Vergleich:
+      if (typeof e.origin === "string" && e.origin !== window.location.origin) {
+        return;
+      }
       var d = e.data || {};
       if (!customer) return;
       if (d.type === "shPct") {
