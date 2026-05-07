@@ -174,6 +174,33 @@ import BrandworkTimeline from "../components/BrandworkTimeline.astro";
     var $ = function (id) { return document.getElementById(id); };
     var customer = null;
 
+    // ── Listener-Registry (Cleanup auf pagehide) ─────────────
+    // Verhindert Memory-Leaks und Firebase-Quota-Verbrauch wenn der Owner
+    // zwischen Customer-Detail-Pages navigiert oder den Tab schließt.
+    var LISTENERS = [];
+    var INTERVALS = [];
+    function trackOn(path, eventType, cb) {
+      var ref = window.fb.ref(path);
+      ref.on(eventType, cb);
+      LISTENERS.push({ ref: ref, eventType: eventType, cb: cb });
+      return cb;
+    }
+    function trackInterval(id) {
+      INTERVALS.push(id);
+      return id;
+    }
+    function cleanupListeners() {
+      LISTENERS.forEach(function (l) {
+        try { l.ref.off(l.eventType, l.cb); } catch (_) {}
+      });
+      LISTENERS.length = 0;
+      INTERVALS.forEach(function (id) { clearInterval(id); });
+      INTERVALS.length = 0;
+    }
+    // pagehide ist bfcache-freundlich; beforeunload als Backup für ältere Browser
+    window.addEventListener("pagehide", cleanupListeners);
+    window.addEventListener("beforeunload", cleanupListeners);
+
     // Tool-Definitionen mit Files & Render-Logik
     var TOOLS = [
       { id: "ai_guide", file: "ai_guide", label: "Ai Guide", icon: "🤖",
@@ -248,7 +275,7 @@ import BrandworkTimeline from "../components/BrandworkTimeline.astro";
 
     // BI: derive from rooms/<room>/data/fields
     function attachBIProgress(room) {
-      window.fb.ref("rooms/" + room + "/data/fields").on("value", function (s) {
+      trackOn("rooms/" + room + "/data/fields", "value", function (s) {
         if (!customer) return;
         var v = s.val() || {};
         var keys = Object.keys(v);
@@ -270,7 +297,7 @@ import BrandworkTimeline from "../components/BrandworkTimeline.astro";
 
     // Design: derive from rooms/<room>/design (count of items, capped)
     function attachDesignProgress(room) {
-      window.fb.ref("rooms/" + room + "/design").on("value", function (s) {
+      trackOn("rooms/" + room + "/design", "value", function (s) {
         if (!customer) return;
         var v = s.val() || {};
         var n = 0;
@@ -290,7 +317,7 @@ import BrandworkTimeline from "../components/BrandworkTimeline.astro";
     // independent of who is editing — owner OR customer-portal. Just listen
     // and mirror to workspace/customers/<id>/<P>.
     function attachPctListener(room, refKey, lastVarSet, customerKey) {
-      window.fb.ref("rooms/" + room + "/" + refKey).on("value", function (s) {
+      trackOn("rooms/" + room + "/" + refKey, "value", function (s) {
         if (!customer) return;
         var pct = clamp(s.val());
         if (lastVarSet.read() === pct) return;
@@ -339,7 +366,7 @@ import BrandworkTimeline from "../components/BrandworkTimeline.astro";
 
     function attachClientPresence(room) {
       var lastActivity = null;
-      window.fb.ref("rooms/" + room + "/clientProfile").on("value", function (s) {
+      trackOn("rooms/" + room + "/clientProfile", "value", function (s) {
         var v = s.val() || {};
         var keys = Object.keys(v);
         if (!keys.length) {
@@ -363,17 +390,17 @@ import BrandworkTimeline from "../components/BrandworkTimeline.astro";
         updateLiveBadges(lastActivity);
       });
 
-      window.fb.ref("rooms/" + room + "/clientActivity").on("value", function (s) {
+      trackOn("rooms/" + room + "/clientActivity", "value", function (s) {
         lastActivity = s.val() || {};
         updateLiveBadges(lastActivity);
       });
-      setInterval(function () {
+      trackInterval(setInterval(function () {
         window.fb.ref("rooms/" + room + "/clientActivity").once("value")
           .then(function (s) {
             lastActivity = s.val() || {};
             updateLiveBadges(lastActivity);
           });
-      }, 30 * 1000);
+      }, 30 * 1000));
     }
 
     // ── Render Tool-Cards ────────────────────────────────────
@@ -601,7 +628,7 @@ import BrandworkTimeline from "../components/BrandworkTimeline.astro";
 
     // ── Boot ─────────────────────────────────────────────────
     function start() {
-      window.fb.ref("workspace/customers/" + customerId).on("value", function (snap) {
+      trackOn("workspace/customers/" + customerId, "value", function (snap) {
         var c = snap.val();
         if (!c) {
           $("topName").textContent = "Kunde nicht gefunden";
