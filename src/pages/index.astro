@@ -144,16 +144,33 @@ import BaseLayout from "../layouts/BaseLayout.astro";
       // We do this AFTER the user logs in via authChange — for now show a generic label.
     })();
 
+    // Routing-Logik fuer PWA-Tap und direktes Aufrufen von /
+    //  - Owner mit echter Auth (E-Mail) → next-Param oder /dashboard
+    //  - Anonymer User mit gespeichertem Portal-Raum → zurueck zu /portal?room=...
+    //    (typischer Fall: Kunde hat PWA installiert, tippt App-Icon)
+    //  - Sonst: Login-Form anzeigen
+    function _lastPortalRoom() {
+      try { return localStorage.getItem("uw.last_portal_room") || ""; } catch (e) { return ""; }
+    }
     waitFb(function () {
       status.textContent = "verbunden — prüfe Anmeldung…";
       status.style.color = "var(--color-success)";
       window.firebase.auth().onAuthStateChanged(function (u) {
-        if (u) {
-          status.textContent = "eingeloggt als " + (u.email || u.uid);
+        // Owner = authentifiziert mit E-Mail (nicht-anonym)
+        if (u && u.email) {
+          status.textContent = "eingeloggt als " + u.email;
           window.location.replace(safeNext());
-        } else {
-          status.textContent = "verbunden — nicht eingeloggt";
+          return;
         }
+        // Customer-Returning-Pfad: anonyme Auth oder gar keine Auth, aber
+        // localStorage hat ein gemerktes Portal — direkt dahin.
+        var room = _lastPortalRoom();
+        if (room) {
+          window.location.replace("/portal?room=" + encodeURIComponent(room));
+          return;
+        }
+        // Sonst: Login-Form
+        status.textContent = "verbunden — nicht eingeloggt";
       });
     });
 

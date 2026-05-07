@@ -221,6 +221,9 @@
     // Logout flow — used by Sidebar + settings.
     function logout() {
       if (!window.firebase) return;
+      // Cached Portal-Raum entfernen — verhindert dass nach Owner-Logout
+      // der Routing-Code in / wieder zu einem alten Customer-Portal redirected.
+      try { localStorage.removeItem("uw.last_portal_room"); } catch (e) {}
       var afterPresence = function () {
         window.firebase
           .auth()

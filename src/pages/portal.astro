@@ -254,6 +254,11 @@ import BrandworkTimeline from "../components/BrandworkTimeline.astro";
     var roomEl = liveSlot.querySelector("[data-room]");
     if (roomEl) roomEl.textContent = room;
 
+    // PWA-Helper: Raum-Code im Browser merken, damit Kunden bei Home-Screen-
+    // Tap (Manifest-Start = "/") automatisch zurueck zu ihrem Portal kommen.
+    // index.astro liest diesen Wert wenn keine Owner-Auth vorliegt.
+    try { localStorage.setItem("uw.last_portal_room", room); } catch (e) {}
+
     var profile = null;
     var currentTool = null;
     var heartbeat = null;

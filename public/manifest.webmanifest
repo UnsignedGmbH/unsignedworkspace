@@ -4,7 +4,7 @@
   "description": "Brand Identity & Production Workspace",
   "lang": "de",
   "dir": "ltr",
-  "start_url": "/dashboard",
+  "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "orientation": "any",
