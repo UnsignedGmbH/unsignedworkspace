@@ -279,8 +279,12 @@ import BrandworkTimeline from "../components/BrandworkTimeline.astro";
         if (u) { afterAuth(u); return; }
         auth.signInAnonymously().catch(function (e) {
           console.error("[portal] anon sign-in failed:", e);
-          alert("Anmeldung fehlgeschlagen — bitte Seite neu laden. (" +
-            (e.code || e.message) + ")");
+          window.toast(
+            "Anmeldung fehlgeschlagen — bitte Seite neu laden. (" +
+              (e.code || e.message) + ")",
+            "error",
+            { ttl: 0 }
+          );
         });
       });
     }
