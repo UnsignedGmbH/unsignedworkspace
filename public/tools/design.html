@@ -474,19 +474,45 @@ function fbLoad(){
   }catch(e){}
   // Then sync with Firebase if room exists
   if(!_DB||!_ROOM)return;
+  // pendingRender: true wenn ein Listener gefeuert hat, der Render aber wegen
+  // aktiven Eingabefeldes übersprungen wurde. Wird auf focusout geflushed.
+  var pendingRender=false;
+  function isEditing(){
+    var ae=document.activeElement;
+    return !!(ae&&(ae.contentEditable==='true'||ae.tagName==='INPUT'||ae.tagName==='SELECT'||ae.tagName==='TEXTAREA'));
+  }
+  function applyRender(){
+    if(curSec==='mood')renderMb();
+    else if(curSec==='mock')renderKb('mock');
+    else if(curSec==='sketch')renderKb('sketch');
+    else if(curSec==='plan')renderProducts();
+    pendingRender=false;
+  }
+  function applyRenderIfIdle(){
+    if(isEditing()){pendingRender=true;return;}
+    applyRender();
+  }
   _DB.ref('rooms/'+_ROOM+'/design').on('value',function(snap){
     var d=snap.val();if(!d)return;
+    // State IMMER updaten — auch während der User tippt.
+    // Sonst gehen Remote-Changes verloren bis User die Page reloadet.
     if(d.mb){MB_CATS.forEach(function(c){mbData[c]=d.mb[c]||[];});}
     if(d.mock){['testing','improve','final'].forEach(function(s){mockCards[s]=d.mock[s]||[];});}
     if(d.sketch){['testing','improve','final'].forEach(function(s){sketchCards[s]=d.sketch[s]||[];});}
     if(d.products)products=d.products;
-    var ae=document.activeElement;
-    if(ae&&(ae.contentEditable==='true'||ae.tagName==='INPUT'||ae.tagName==='SELECT'))return;
-    if(curSec==='mood')renderMb();
-    if(curSec==='mock')renderKb('mock');
-    if(curSec==='sketch')renderKb('sketch');
-    if(curSec==='plan')renderProducts();
+    applyRenderIfIdle();
     document.getElementById('liveStatus').style.display='flex';
+  });
+  // Beim Verlassen eines Eingabefelds: pending Render einlösen.
+  // setTimeout damit ein neuer Focus zuerst greifen kann (z.B. Tab zum naechsten Feld).
+  document.addEventListener('focusout',function(){
+    setTimeout(function(){
+      if(pendingRender&&!isEditing())applyRender();
+    },120);
+  });
+  // Safety-Net: Tab-Visibility-Wechsel triggert ebenfalls Sync-Catchup.
+  document.addEventListener('visibilitychange',function(){
+    if(document.visibilityState==='visible'&&pendingRender&&!isEditing())applyRender();
   });
 }
 

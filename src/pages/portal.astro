@@ -502,6 +502,11 @@ import BrandworkTimeline from "../components/BrandworkTimeline.astro";
       document.getElementById("overviewView").classList.remove("hidden");
       frame.src = "about:blank";
       pingFn(null);
+      // Wichtig: Grid neu rendern. Listener haben TOOL_PROGRESS waehrend der
+      // Customer im Tool war aktualisiert (renderGrid wird dort skipped weil
+      // overview hidden ist). Ohne diesen Aufruf zeigt das Dashboard nach
+      // Rueckkehr aus einem Tool die alten %-Werte bis zum naechsten Refresh.
+      renderGrid();
     }
     document.getElementById("toolBack").addEventListener("click", backToOverview);
 
