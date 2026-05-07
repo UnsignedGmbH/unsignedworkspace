@@ -548,9 +548,10 @@ import BrandworkTimeline from "../components/BrandworkTimeline.astro";
         value: customer.name || "",
       }).then(function (v) {
         if (v == null || !v.trim()) return;
-        window.fb
-          .ref("workspace/customers/" + customerId + "/name")
-          .set(v.trim());
+        window.fb.safeSet(
+          "workspace/customers/" + customerId + "/name",
+          v.trim()
+        );
       });
     });
 
@@ -564,9 +565,10 @@ import BrandworkTimeline from "../components/BrandworkTimeline.astro";
           : "Der Kunde wird wieder als aktiv geführt.",
       }).then(function (ok) {
         if (!ok) return;
-        window.fb
-          .ref("workspace/customers/" + customerId + "/arch")
-          .set(willArchive);
+        window.fb.safeSet(
+          "workspace/customers/" + customerId + "/arch",
+          willArchive
+        );
       });
     });
 
@@ -579,17 +581,20 @@ import BrandworkTimeline from "../components/BrandworkTimeline.astro";
         okLabel: "Löschen",
       }).then(function (ok) {
         if (!ok) return;
-        // 1. Sperre den Raum, damit Portal-Link tot ist
-        // 2. Lösche den Kunden-Eintrag
-        Promise.all([
-          window.fb.ref("rooms/" + room + "/_closed").set({
+        // Reihenfolge wichtig: erst Portal sperren, DANN Kunden-Eintrag löschen.
+        // Wenn die Sperre fehlschlägt, brechen wir ab — sonst wäre der Portal-Link
+        // weiter aktiv obwohl der Kunde aus unserer Liste verschwunden ist.
+        // safeSet/safeRemove zeigen Fehler-Toast, daher kein zusätzliches ui.toast hier.
+        window.fb
+          .safeSet("rooms/" + room + "/_closed", {
             ts: window.fb.ts(),
             reason: "customer-deleted",
-          }),
-          window.fb.ref("workspace/customers/" + customerId).remove(),
-        ])
+          })
+          .then(function () {
+            return window.fb.safeRemove("workspace/customers/" + customerId);
+          })
           .then(function () { location.href = "/customers"; })
-          .catch(function (e) { ui.toast("Löschen fehlgeschlagen: " + (e.code || e.message)); });
+          .catch(function () { /* Toast schon durch safeWrite gezeigt */ });
       });
     });
 
