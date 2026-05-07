@@ -55,6 +55,100 @@ const { title = "Unsigned Workspace" } = Astro.props;
         ref: (path) => window.firebase.database().ref(path),
         ts: () => Date.now(),
       };
+
+      // ── Toast notifications (global) ──
+      window.toast = function (msg, kind, opts) {
+        kind = kind || "info";
+        opts = opts || {};
+        var host = document.getElementById("uw-toast-host");
+        if (!host) {
+          host = document.createElement("div");
+          host.id = "uw-toast-host";
+          host.style.cssText =
+            "position:fixed;bottom:16px;right:16px;z-index:9999;display:flex;flex-direction:column;gap:8px;max-width:340px;pointer-events:none;font-family:var(--font-sans,system-ui)";
+          document.body.appendChild(host);
+        }
+        var bg = kind === "error" ? "#c13030" : kind === "success" ? "#1d9e75" : "#185fa5";
+        var t = document.createElement("div");
+        t.setAttribute("role", kind === "error" ? "alert" : "status");
+        t.style.cssText =
+          "pointer-events:auto;background:" + bg +
+          ";color:#fff;padding:10px 14px;border-radius:10px;font-size:13px;font-weight:600;box-shadow:0 8px 24px rgba(0,0,0,0.18);opacity:0;transform:translateY(8px);transition:opacity .2s,transform .2s;display:flex;align-items:center;gap:10px";
+        var span = document.createElement("span");
+        span.textContent = String(msg);
+        span.style.flex = "1";
+        var close = document.createElement("button");
+        close.textContent = "✕";
+        close.setAttribute("aria-label", "Schließen");
+        close.style.cssText =
+          "background:transparent;border:0;color:#fff;font-size:14px;cursor:pointer;padding:0 2px;opacity:.85";
+        t.appendChild(span);
+        t.appendChild(close);
+        host.appendChild(t);
+        requestAnimationFrame(function () {
+          t.style.opacity = "1";
+          t.style.transform = "translateY(0)";
+        });
+        var ttl = opts.ttl != null ? opts.ttl : kind === "error" ? 6000 : 3000;
+        var timer = ttl > 0 ? setTimeout(dismiss, ttl) : null;
+        function dismiss() {
+          if (timer) clearTimeout(timer);
+          t.style.opacity = "0";
+          t.style.transform = "translateY(8px)";
+          setTimeout(function () {
+            if (t.parentNode) t.parentNode.removeChild(t);
+          }, 220);
+        }
+        close.addEventListener("click", dismiss);
+        return dismiss;
+      };
+
+      // ── safeWrite helpers ──
+      // Wraps Firebase RTDB writes with .catch() + visible toast + 1 retry on transient errors.
+      // Always returns a Promise. Errors are surfaced to user but the promise still rejects so
+      // callers that already chain .then() get the failure too.
+      (function () {
+        var TRANSIENT_RE = /(network|disconnect|timeout|temporarily|unavailable)/i;
+        function attempt(refPath, op, value, retried) {
+          var ref = typeof refPath === "string" ? window.fb.ref(refPath) : refPath;
+          var p =
+            op === "set"
+              ? ref.set(value)
+              : op === "update"
+                ? ref.update(value)
+                : op === "remove"
+                  ? ref.remove()
+                  : op === "push"
+                    ? ref.push(value)
+                    : Promise.reject(new Error("safeWrite: unknown op " + op));
+          return p.catch(function (err) {
+            var msg = (err && err.message) || String(err);
+            if (!retried && TRANSIENT_RE.test(msg)) {
+              return attempt(ref, op, value, true);
+            }
+            try {
+              window.toast(
+                "Speichern fehlgeschlagen: " + msg.slice(0, 120),
+                "error"
+              );
+            } catch (_) {}
+            console.error("[safeWrite]", op, ref.toString(), err);
+            throw err;
+          });
+        }
+        window.fb.safeSet = function (refPath, value) {
+          return attempt(refPath, "set", value);
+        };
+        window.fb.safeUpdate = function (refPath, value) {
+          return attempt(refPath, "update", value);
+        };
+        window.fb.safeRemove = function (refPath) {
+          return attempt(refPath, "remove");
+        };
+        window.fb.safePush = function (refPath, value) {
+          return attempt(refPath, "push", value);
+        };
+      })();
       try {
         var savedAccent = localStorage.getItem("uw.accent");
         if (savedAccent) {
