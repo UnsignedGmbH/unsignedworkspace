@@ -61,6 +61,9 @@ body{font-family:'Montserrat',sans-serif;background:var(--bg);color:var(--t);min
 .mb-item:hover .mb-ov{opacity:1;}
 .mb-del{position:absolute;top:6px;right:6px;background:rgba(193,48,48,.85);border:none;border-radius:6px;width:26px;height:26px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#fff;font-size:13px;pointer-events:all;opacity:0;transition:opacity .2s;}
 .mb-item:hover .mb-del{opacity:1;}
+.mb-dl{position:absolute;top:6px;right:38px;background:rgba(0,0,0,.6);border:none;border-radius:6px;width:26px;height:26px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#fff;font-size:13px;pointer-events:all;opacity:0;transition:opacity .2s;}
+.mb-item:hover .mb-dl{opacity:1;}
+.mb-dl:hover{background:rgba(0,0,0,.85);}
 .mb-note{flex:1;font-size:10px;color:rgba(255,255,255,.9);outline:none;background:none;border:none;font-family:'Montserrat',sans-serif;font-weight:600;pointer-events:all;}
 .mb-note::placeholder{color:rgba(255,255,255,.4);}
 .mb-empty{text-align:center;padding:50px 20px;color:var(--tdd);font-size:13px;font-weight:600;}
@@ -120,6 +123,7 @@ body{font-family:'Montserrat',sans-serif;background:var(--bg);color:var(--t);min
 .lb-close:hover{background:rgba(255,255,255,.2);color:#fff;}
 .lb-bottom{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;justify-content:center;}
 .lb-btn{background:rgba(255,255,255,.08);border:.5px solid rgba(255,255,255,.15);border-radius:8px;padding:7px 14px;color:rgba(255,255,255,.8);cursor:pointer;font-family:'Montserrat',sans-serif;font-size:11px;font-weight:700;text-decoration:none;display:flex;align-items:center;gap:5px;}
+button.lb-btn{outline:none;}
 .lb-btn:hover{background:rgba(255,255,255,.15);color:#fff;}
 .lb-nav{position:fixed;top:50%;transform:translateY(-50%);background:rgba(0,0,0,.5);border:.5px solid rgba(255,255,255,.15);border-radius:50%;width:42px;height:42px;color:#fff;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(8px);}
 .lb-nav:hover{background:rgba(255,255,255,.2);}
@@ -245,7 +249,7 @@ body{font-family:'Montserrat',sans-serif;background:var(--bg);color:var(--t);min
   <div class="pc-grid" id="pcGrid"></div>
 </div>
 
-<div class="lb" id="lb"><button class="lb-close" onclick="closeLb()">✕</button><img id="lbImg" src="" onclick="this.classList.toggle('zoomed')"><div class="lb-bottom"><a class="lb-btn" id="lbUrl" href="#" target="_blank" style="display:none;">🔗 Original</a></div><button class="lb-nav prev" onclick="lbNav(-1)">‹</button><button class="lb-nav next" onclick="lbNav(1)">›</button></div>
+<div class="lb" id="lb"><button class="lb-close" onclick="closeLb()">✕</button><img id="lbImg" src="" onclick="this.classList.toggle('zoomed')"><div class="lb-bottom"><button class="lb-btn" id="lbDownload" onclick="downloadFromLb()">⬇ Download</button><a class="lb-btn" id="lbUrl" href="#" target="_blank" style="display:none;">🔗 Original</a></div><button class="lb-nav prev" onclick="lbNav(-1)">‹</button><button class="lb-nav next" onclick="lbNav(1)">›</button></div>
 
 <div class="modal-bg" id="linkModal"><div class="modal"><h3>Mock Up verknüpfen</h3><div id="linkList"></div><button class="ua" style="margin-top:12px;width:100%;text-align:center;" onclick="document.getElementById('linkModal').classList.remove('open')">Abbrechen</button></div></div>
 
@@ -274,6 +278,64 @@ var lbImgs=[],lbIdx=-1;
 var saveTO=null,dragCard=null,dragBoard=null;
 
 function _newId(p){return p+'-'+Date.now().toString(36)+Math.random().toString(36).slice(2,5);}
+
+// ── Download-Helper ──
+// Erlaubt jedem hochgeladenen Bild (data:URL oder externe URL) lokal zu speichern.
+// Fallback bei CORS-Block: oeffnet in neuem Tab, User kann dort rechts-klick speichern.
+function _safeName(s){
+  return (s||'').toString().toLowerCase()
+    .replace(/[^a-z0-9äöüß]+/g,'-')
+    .replace(/^-+|-+$/g,'').slice(0,40)||'unbenannt';
+}
+function _suggestName(img){
+  if(!img)return 'unsigned-image';
+  var parts=['unsigned'];
+  if(curSec==='mood'){
+    var folder=(moods[activeMood]||{}).name||'mood';
+    parts.push(_safeName(folder),_safeName(curMbCat),_safeName(img.note||''));
+  } else if(curSec==='mock'){
+    var f=(mocks[activeMock]||{}).name||'mock';
+    parts.push('mock',_safeName(f),_safeName(img.title||''));
+  } else if(curSec==='sketch'){
+    var f2=(sketches[activeSketch]||{}).name||'sketch';
+    parts.push('sketch',_safeName(f2),_safeName(img.title||''));
+  } else if(curSec==='plan'){
+    var f3=(cols[activeCol]||{}).name||'kollektion';
+    parts.push(_safeName(f3),_safeName(img.name||''));
+  } else {
+    parts.push(_safeName(img.note||img.title||img.name||'image'));
+  }
+  return parts.filter(function(p){return p&&p!=='unbenannt';}).join('-')||'unsigned-image';
+}
+function downloadImage(src,name){
+  if(!src)return;
+  var fname=(name||'unsigned-image')+'.jpg';
+  if(src.indexOf('data:')===0){
+    // Data-URL: direkt downloadbar, garantiert CORS-frei
+    var a=document.createElement('a');a.href=src;a.download=fname;
+    document.body.appendChild(a);a.click();a.remove();
+    toast('Heruntergeladen ✓');return;
+  }
+  if(src.indexOf('http')===0){
+    // Externe URL: erst fetch+blob versuchen, bei CORS-Fail neuen Tab oeffnen
+    fetch(src,{mode:'cors'}).then(function(r){
+      if(!r.ok)throw new Error('http '+r.status);
+      return r.blob();
+    }).then(function(b){
+      var url=URL.createObjectURL(b);
+      var a=document.createElement('a');a.href=url;a.download=fname;
+      document.body.appendChild(a);a.click();a.remove();
+      setTimeout(function(){URL.revokeObjectURL(url);},2000);
+      toast('Heruntergeladen ✓');
+    }).catch(function(){
+      window.open(src,'_blank','noopener,noreferrer');
+      toast('Tab geöffnet — Rechtsklick → Bild speichern unter…');
+    });
+    return;
+  }
+  // Unbekanntes Format
+  toast('Format nicht unterstützt');
+}
 
 // Lazy-Migration aus alter flacher Struktur (mb/mock/sketch/products) in die
 // neue Folder-Struktur. Wird einmalig beim ersten Lesen gefahren wenn die
@@ -442,13 +504,15 @@ function renderMbGrid(){
     var d=document.createElement('div');d.className='mb-item';
     var i=document.createElement('img');i.src=img.src;i.loading='lazy';
     i.onclick=function(){lbImgs=imgs;lbIdx=idx;openLb();};
-    var del=document.createElement('button');del.className='mb-del';del.innerHTML='✕';
+    var del=document.createElement('button');del.className='mb-del';del.textContent='✕';del.title='Löschen';
     del.onclick=function(e){e.stopPropagation();mbData[curMbCat].splice(idx,1);renderMb();fbSave();};
+    var dl=document.createElement('button');dl.className='mb-dl';dl.textContent='⬇';dl.title='Download';
+    dl.onclick=function(e){e.stopPropagation();downloadImage(img.src,_suggestName(img));};
     var ov=document.createElement('div');ov.className='mb-ov';
     var n=document.createElement('input');n.className='mb-note';n.placeholder='Notiz...';n.type='text';n.value=img.note||'';
     n.onclick=function(e){e.stopPropagation();};
     n.onchange=function(){img.note=n.value;fbSave();};
-    ov.appendChild(n);d.appendChild(i);d.appendChild(del);d.appendChild(ov);grid.appendChild(d);
+    ov.appendChild(n);d.appendChild(i);d.appendChild(dl);d.appendChild(del);d.appendChild(ov);grid.appendChild(d);
   });
 }
 
@@ -510,9 +574,15 @@ function renderKb(board){
       var n=document.createElement('div');n.className='kb-card-note';n.contentEditable='true';n.spellcheck=false;n.dataset.ph='Notiz...';n.textContent=card.note||'';
       n.addEventListener('blur',function(){card.note=n.textContent.trim();fbSave();});
       var acts=document.createElement('div');acts.className='kb-card-acts';
-      var del=document.createElement('button');del.className='kb-card-del';del.innerHTML='✕ Löschen';
+      var del=document.createElement('button');del.className='kb-card-del';del.textContent='✕ Löschen';
       del.onclick=function(){data[stage].splice(idx,1);renderKb(board);fbSave();toast('Entfernt');};
       acts.appendChild(del);
+      // Download nur wenn Bild vorhanden
+      if(card.img){
+        var dl=document.createElement('button');dl.className='kb-card-del';dl.textContent='⬇';dl.title='Download';
+        dl.onclick=function(e){e.stopPropagation();downloadImage(card.img,_suggestName(card));};
+        acts.appendChild(dl);
+      }
       // Link button for sketches in final stage
       if(board==='sketch'&&stage==='final'){
         var lnk=document.createElement('button');lnk.className='kb-card-link';lnk.textContent=card.linkedMock?'🔗 Verknüpft':'🔗 Mock Up verknüpfen';
@@ -585,9 +655,18 @@ function renderProducts(){
     });
     sel.style.cssText='color:'+{idee:'var(--tdd)',design:'var(--y)',sample:'var(--b)',done:'var(--g)'}[p.status||'idee']+';background:var(--cd2);';
     sel.onchange=function(){p.status=sel.value;sel.style.color={idee:'var(--tdd)',design:'var(--y)',sample:'var(--b)',done:'var(--g)'}[sel.value];fbSave();};
-    var del=document.createElement('button');del.className='pc-del';del.innerHTML='✕';
+    var del=document.createElement('button');del.className='pc-del';del.textContent='✕';del.title='Löschen';
     del.onclick=function(){products.splice(idx,1);renderProducts();fbSave();toast('Produkt entfernt');};
-    row1.appendChild(lbl1);row1.appendChild(sel);row1.appendChild(del);
+    // Download-Button nur sichtbar wenn Bild da ist
+    var dl=null;
+    if(p.img){
+      dl=document.createElement('button');dl.className='pc-del';dl.textContent='⬇';dl.title='Download';
+      dl.style.marginLeft='0';
+      dl.onclick=function(e){e.stopPropagation();downloadImage(p.img,_suggestName(p));};
+    }
+    row1.appendChild(lbl1);row1.appendChild(sel);
+    if(dl)row1.appendChild(dl);
+    row1.appendChild(del);
     var row2=document.createElement('div');row2.className='pc-row';row2.style.flexDirection='column';row2.style.alignItems='stretch';row2.style.gap='4px';
     var lbl2=document.createElement('span');lbl2.className='pc-label';lbl2.textContent='Deadline';
     var date=document.createElement('input');date.className='pc-date';date.type='date';date.value=p.deadline||'';
@@ -603,6 +682,7 @@ function renderProducts(){
 
 // ═══════════ LIGHTBOX ═══════════
 function openLb(){var img=lbImgs[lbIdx];if(!img)return;document.getElementById('lbImg').src=img.src||img.img;document.getElementById('lbImg').classList.remove('zoomed');var u=document.getElementById('lbUrl');var url=img.url||(img.src&&img.src.startsWith('http')?img.src:'');if(url&&!url.startsWith('data:')){u.href=url;u.style.display='flex';u.onclick=function(e){e.preventDefault();window.open(url,'_blank');};}else{u.style.display='none';}document.getElementById('lb').classList.add('open');}
+function downloadFromLb(){var img=lbImgs[lbIdx];if(!img)return;var src=img.src||img.img;downloadImage(src,_suggestName(img));}
 function closeLb(){document.getElementById('lb').classList.remove('open');document.getElementById('lbImg').classList.remove('zoomed');}
 function lbNav(d){lbIdx=(lbIdx+d+lbImgs.length)%lbImgs.length;openLb();}
 document.getElementById('lb').onclick=function(e){if(e.target===this)closeLb();};
