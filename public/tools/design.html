@@ -439,11 +439,25 @@ document.getElementById('lb').onclick=function(e){if(e.target===this)closeLb();}
 document.addEventListener('keydown',function(e){if(e.key==='Escape')closeLb();if(document.getElementById('lb').classList.contains('open')){if(e.key==='ArrowRight')lbNav(1);if(e.key==='ArrowLeft')lbNav(-1);}});
 
 // ═══════════ FIREBASE ═══════════
+// localStorage MUSS per-Room gescopt sein. Vorher war es ein globaler Key 'uw_design',
+// der zwischen verschiedenen Kunden geteilt wurde -> Cross-Customer-Data-Leak:
+// Owner laedt Bilder bei Kunde A hoch, oeffnet Kunde B, sieht A's Bilder im Cache,
+// macht eine Aenderung -> A's Bilder landen in B's Firebase-Daten.
+// Der alte 'uw_design' Key wird absichtlich NICHT geloescht (Forensik), nur ignoriert.
+function _lsKey(){return _ROOM?'uw_design_'+_ROOM:null;}
+// Helfer: Mood-/Mock-/Sketch-/Products-State auf leer zuruecksetzen.
+function _clearDesignState(){
+  MB_CATS.forEach(function(c){mbData[c]=[];});
+  ['testing','improve','final'].forEach(function(s){mockCards[s]=[];sketchCards[s]=[];});
+  products=[];
+}
+
 function fbSave(){
   var data={mb:mbData,mock:mockCards,sketch:sketchCards,products:products};
-  // Always save to localStorage as backup
-  try{ localStorage.setItem('uw_design', JSON.stringify(data)); }catch(e){}
-  // Also save to Firebase if room param exists
+  // Per-Room localStorage-Backup -- nur wenn Raum gesetzt ist.
+  var k=_lsKey();
+  if(k){try{ localStorage.setItem(k, JSON.stringify(data)); }catch(e){}}
+  // Firebase als Source-of-Truth wenn Raum existiert
   if(_DB&&_ROOM){
     clearTimeout(saveTO);
     saveTO=setTimeout(function(){
@@ -458,20 +472,28 @@ function fbSave(){
   toast('Gespeichert ✓');
 }
 function fbLoad(){
-  // Try localStorage first (always available)
-  try{
-    var local=JSON.parse(localStorage.getItem('uw_design'));
-    if(local){
-      if(local.mb){MB_CATS.forEach(function(c){mbData[c]=local.mb[c]||[];});}
-      if(local.mock){['testing','improve','final'].forEach(function(s){mockCards[s]=local.mock[s]||[];});}
-      if(local.sketch){['testing','improve','final'].forEach(function(s){sketchCards[s]=local.sketch[s]||[];});}
-      if(local.products)products=local.products;
-      if(curSec==='mood')renderMb();
-      if(curSec==='mock')renderKb('mock');
-      if(curSec==='sketch')renderKb('sketch');
-      if(curSec==='plan')renderProducts();
-    }
-  }catch(e){}
+  // Per-Room localStorage als Initial-Cache (Instant-UI). Wird gleich von Firebase
+  // ueberschrieben sobald die Listener-Antwort da ist. Globaler 'uw_design' Key
+  // wird absichtlich NICHT mehr gelesen -- der ist der kontaminierte Cache.
+  var k=_lsKey();
+  if(k){
+    try{
+      var local=JSON.parse(localStorage.getItem(k));
+      if(local){
+        if(local.mb){MB_CATS.forEach(function(c){mbData[c]=local.mb[c]||[];});}
+        if(local.mock){['testing','improve','final'].forEach(function(s){mockCards[s]=local.mock[s]||[];});}
+        if(local.sketch){['testing','improve','final'].forEach(function(s){sketchCards[s]=local.sketch[s]||[];});}
+        if(local.products)products=local.products;
+        if(curSec==='mood')renderMb();
+        if(curSec==='mock')renderKb('mock');
+        if(curSec==='sketch')renderKb('sketch');
+        if(curSec==='plan')renderProducts();
+      }
+    }catch(e){}
+  } else {
+    // Kein Raum (Standalone-Sandbox ohne Room-URL): explizit leer initialisieren.
+    _clearDesignState();
+  }
   // Then sync with Firebase if room exists
   if(!_DB||!_ROOM)return;
   // pendingRender: true wenn ein Listener gefeuert hat, der Render aber wegen
@@ -493,13 +515,22 @@ function fbLoad(){
     applyRender();
   }
   _DB.ref('rooms/'+_ROOM+'/design').on('value',function(snap){
-    var d=snap.val();if(!d)return;
-    // State IMMER updaten — auch während der User tippt.
-    // Sonst gehen Remote-Changes verloren bis User die Page reloadet.
-    if(d.mb){MB_CATS.forEach(function(c){mbData[c]=d.mb[c]||[];});}
-    if(d.mock){['testing','improve','final'].forEach(function(s){mockCards[s]=d.mock[s]||[];});}
-    if(d.sketch){['testing','improve','final'].forEach(function(s){sketchCards[s]=d.sketch[s]||[];});}
-    if(d.products)products=d.products;
+    var d=snap.val();
+    // CRITICAL: State IMMER aus Firebase ableiten -- auch wenn d null/empty ist.
+    // Vorher wurde bei null early-returned, dadurch blieb localStorage-Inhalt
+    // (potenziell aus anderem Kunden) sichtbar und konnte beim naechsten Save
+    // diese Fremd-Daten in den aktuellen Raum schreiben (Cross-Customer-Leak).
+    if(d){
+      if(d.mb){MB_CATS.forEach(function(c){mbData[c]=d.mb[c]||[];});}
+      else MB_CATS.forEach(function(c){mbData[c]=[];});
+      if(d.mock){['testing','improve','final'].forEach(function(s){mockCards[s]=d.mock[s]||[];});}
+      else ['testing','improve','final'].forEach(function(s){mockCards[s]=[];});
+      if(d.sketch){['testing','improve','final'].forEach(function(s){sketchCards[s]=d.sketch[s]||[];});}
+      else ['testing','improve','final'].forEach(function(s){sketchCards[s]=[];});
+      products=d.products||[];
+    } else {
+      _clearDesignState();
+    }
     applyRenderIfIdle();
     document.getElementById('liveStatus').style.display='flex';
   });
