@@ -139,6 +139,21 @@ body{font-family:'Montserrat',sans-serif;background:var(--bg);color:var(--t);min
 /* TOAST */
 #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#111;border:.5px solid rgba(255,255,255,.1);color:#fff;padding:10px 20px;border-radius:10px;font-size:12px;font-weight:700;z-index:99999;opacity:0;transition:opacity .3s;pointer-events:none;}
 #toast.show{opacity:1;}
+
+/* FOLDER CHIPS (multi-folder selector) */
+.folder-chips{display:flex;gap:6px;margin-bottom:18px;flex-wrap:wrap;align-items:center;}
+.fchip{display:inline-flex;align-items:center;gap:4px;padding:6px 12px 6px 14px;border-radius:20px;border:1px solid var(--bd);background:var(--cd);font-family:'Montserrat',sans-serif;font-size:11px;font-weight:700;color:var(--td);cursor:pointer;transition:all .15s;}
+.fchip:hover{border-color:rgba(193,48,48,.3);}
+.fchip.on{background:var(--a);border-color:var(--a);color:#fff;}
+.fchip-name{padding:0;background:transparent;border:0;color:inherit;font:inherit;cursor:pointer;outline:none;}
+.fchip-menu-btn{background:none;border:0;color:inherit;cursor:pointer;padding:0 2px 0 4px;opacity:.6;font-size:13px;line-height:1;}
+.fchip-menu-btn:hover{opacity:1;}
+.fchip-add{border-style:dashed;color:var(--tdd);background:none;}
+.fchip-add:hover{border-color:var(--a);color:var(--a);}
+.fchip-menu{position:fixed;z-index:9000;background:var(--cd);border:.5px solid var(--bd);border-radius:10px;padding:4px;box-shadow:0 8px 24px rgba(0,0,0,.12);min-width:140px;}
+.fchip-menu button{display:block;width:100%;padding:8px 14px;border:0;background:none;text-align:left;font-family:'Montserrat',sans-serif;font-size:11px;font-weight:700;color:var(--t);cursor:pointer;border-radius:6px;}
+.fchip-menu button:hover{background:var(--cd2);}
+.fchip-menu button.danger{color:var(--a);}
 </style>
 </head>
 <body>
@@ -170,6 +185,7 @@ body{font-family:'Montserrat',sans-serif;background:var(--bg);color:var(--t);min
 
 <!-- 1. MOODBOARD -->
 <div class="sec on" id="sec-mood">
+  <div class="folder-chips" id="moodChips"></div>
   <div class="mb-tabs" id="mbTabs"></div>
   <div class="mb-upload" id="uploadArea">
     <label class="ub"><input type="file" id="fileInput" accept="image/*" multiple style="display:none">↑ Hochladen</label>
@@ -181,6 +197,7 @@ body{font-family:'Montserrat',sans-serif;background:var(--bg);color:var(--t);min
 
 <!-- 2. MOCK UPS -->
 <div class="sec" id="sec-mock">
+  <div class="folder-chips" id="mockChips"></div>
   <div class="kb" id="kbMock">
     <div class="kb-col" data-stage="testing">
       <div class="kb-hd"><span class="kb-title" style="color:var(--y);">⚡ Testing</span><span class="kb-cnt" id="mc-testing">0</span></div>
@@ -202,6 +219,7 @@ body{font-family:'Montserrat',sans-serif;background:var(--bg);color:var(--t);min
 
 <!-- 3. SKETCHES -->
 <div class="sec" id="sec-sketch">
+  <div class="folder-chips" id="sketchChips"></div>
   <div class="kb" id="kbSketch">
     <div class="kb-col" data-stage="testing">
       <div class="kb-hd"><span class="kb-title" style="color:var(--y);">✏️ Sketches</span><span class="kb-cnt" id="sc-testing">0</span></div>
@@ -223,6 +241,7 @@ body{font-family:'Montserrat',sans-serif;background:var(--bg);color:var(--t);min
 
 <!-- 4. KOLLEKTIONSPLANUNG -->
 <div class="sec" id="sec-plan">
+  <div class="folder-chips" id="colChips"></div>
   <div class="pc-grid" id="pcGrid"></div>
 </div>
 
@@ -236,6 +255,17 @@ body{font-family:'Montserrat',sans-serif;background:var(--bg);color:var(--t);min
 var curSec='mood',curMbCat='farbe';
 var MB_CATS=['farbe','schnitt','stil','inhalt','details'];
 var MB_LABELS={farbe:'🎨 Farbe',schnitt:'✂ Schnitt',stil:'🖌 Design-Stil',inhalt:'📐 Design-Inhalt',details:'✦ Details'};
+
+// ── Multi-Folder-Datenmodell ──
+// moods/mocks/sketches/cols sind Listen von Foldern, jeder mit name + Inhalt.
+// activeMood/Mock/Sketch/Col speichern welcher Folder gerade angezeigt wird.
+// mbData/mockCards/sketchCards/products sind LIVE-ALIASES auf den aktiven Folder
+// — alter Code (renderMb, renderKb, ...) funktioniert dadurch unverändert weiter.
+var moods=[];      // [{id, name, cats:{farbe:[],schnitt:[],...}}]
+var mocks=[];      // [{id, name, testing:[], improve:[], final:[]}]
+var sketches=[];   // [{id, name, testing:[], improve:[], final:[]}]
+var cols=[];       // [{id, name, products:[]}]
+var activeMood=0,activeMock=0,activeSketch=0,activeCol=0;
 var mbData={};MB_CATS.forEach(function(c){mbData[c]=[];});
 var mockCards={testing:[],improve:[],final:[]};
 var sketchCards={testing:[],improve:[],final:[]};
@@ -243,15 +273,155 @@ var products=[];
 var lbImgs=[],lbIdx=-1;
 var saveTO=null,dragCard=null,dragBoard=null;
 
+function _newId(p){return p+'-'+Date.now().toString(36)+Math.random().toString(36).slice(2,5);}
+
+// Lazy-Migration aus alter flacher Struktur (mb/mock/sketch/products) in die
+// neue Folder-Struktur. Wird einmalig beim ersten Lesen gefahren wenn die
+// neuen Felder noch nicht existieren. Verlustfrei -- alte Felder bleiben in
+// Firebase erhalten (fbSave schreibt sie weiter als Fallback).
+function migrateLegacy(d){
+  if(!Array.isArray(d.moods)){
+    var defCats={};MB_CATS.forEach(function(c){defCats[c]=(d.mb&&Array.isArray(d.mb[c]))?d.mb[c]:[];});
+    d.moods=[{id:'m-default',name:'Standard',cats:defCats}];
+  }
+  if(!Array.isArray(d.mocks)){
+    d.mocks=[{
+      id:'mk-default',name:'Standard',
+      testing:(d.mock&&d.mock.testing)||[],
+      improve:(d.mock&&d.mock.improve)||[],
+      final:(d.mock&&d.mock.final)||[]
+    }];
+  }
+  if(!Array.isArray(d.sketches)){
+    d.sketches=[{
+      id:'sk-default',name:'Standard',
+      testing:(d.sketch&&d.sketch.testing)||[],
+      improve:(d.sketch&&d.sketch.improve)||[],
+      final:(d.sketch&&d.sketch.final)||[]
+    }];
+  }
+  if(!Array.isArray(d.cols)){
+    d.cols=[{id:'c-default',name:'Standard',products:Array.isArray(d.products)?d.products:[]}];
+  }
+  return d;
+}
+
+// Stellt sicher dass mindestens ein Folder pro Typ existiert und richtet die
+// Aliase mbData/mockCards/sketchCards/products auf den aktiven Folder aus.
+function syncCurFolders(){
+  if(!moods.length)moods.push({id:_newId('m'),name:'Standard',cats:(function(){var o={};MB_CATS.forEach(function(c){o[c]=[];});return o;})()});
+  if(!mocks.length)mocks.push({id:_newId('mk'),name:'Standard',testing:[],improve:[],final:[]});
+  if(!sketches.length)sketches.push({id:_newId('sk'),name:'Standard',testing:[],improve:[],final:[]});
+  if(!cols.length)cols.push({id:_newId('c'),name:'Standard',products:[]});
+  if(activeMood>=moods.length)activeMood=moods.length-1;
+  if(activeMock>=mocks.length)activeMock=mocks.length-1;
+  if(activeSketch>=sketches.length)activeSketch=sketches.length-1;
+  if(activeCol>=cols.length)activeCol=cols.length-1;
+  if(activeMood<0)activeMood=0;if(activeMock<0)activeMock=0;if(activeSketch<0)activeSketch=0;if(activeCol<0)activeCol=0;
+  // Aliases — by reference, so mutations flow back into the folder objects.
+  var m=moods[activeMood];if(!m.cats)m.cats={};MB_CATS.forEach(function(c){if(!Array.isArray(m.cats[c]))m.cats[c]=[];});mbData=m.cats;
+  var mk=mocks[activeMock];['testing','improve','final'].forEach(function(s){if(!Array.isArray(mk[s]))mk[s]=[];});mockCards=mk;
+  var sk=sketches[activeSketch];['testing','improve','final'].forEach(function(s){if(!Array.isArray(sk[s]))sk[s]=[];});sketchCards=sk;
+  var c=cols[activeCol];if(!Array.isArray(c.products))c.products=[];products=c.products;
+}
+
 function switchSec(s){
   curSec=s;
   document.querySelectorAll('.htab').forEach(function(b,i){b.classList.toggle('on',['mood','mock','sketch','plan'][i]===s);});
   document.querySelectorAll('.sec').forEach(function(el){el.classList.remove('on');});
   document.getElementById('sec-'+s).classList.add('on');
+  renderAllChips();
   if(s==='mood')renderMb();
   if(s==='mock')renderKb('mock');
   if(s==='sketch')renderKb('sketch');
   if(s==='plan')renderProducts();
+}
+
+// ═══════════ FOLDER CHIPS (Multi-Folder Management) ═══════════
+function _kindMeta(kind){
+  if(kind==='mood')return{host:'moodChips',list:moods,active:activeMood,setActive:function(i){activeMood=i;},label:'Moodboard'};
+  if(kind==='mock')return{host:'mockChips',list:mocks,active:activeMock,setActive:function(i){activeMock=i;},label:'Mockup-Ordner'};
+  if(kind==='sketch')return{host:'sketchChips',list:sketches,active:activeSketch,setActive:function(i){activeSketch=i;},label:'Sketch-Ordner'};
+  if(kind==='col')return{host:'colChips',list:cols,active:activeCol,setActive:function(i){activeCol=i;},label:'Kollektion'};
+}
+function _rerenderActive(){
+  if(curSec==='mood')renderMb();
+  else if(curSec==='mock')renderKb('mock');
+  else if(curSec==='sketch')renderKb('sketch');
+  else if(curSec==='plan')renderProducts();
+}
+function renderChips(kind){
+  var m=_kindMeta(kind);var el=document.getElementById(m.host);if(!el)return;
+  while(el.firstChild)el.removeChild(el.firstChild);
+  m.list.forEach(function(item,i){
+    var chip=document.createElement('div');chip.className='fchip'+(i===m.active?' on':'');
+    var n=document.createElement('span');n.className='fchip-name';n.textContent=item.name||'(unbenannt)';
+    n.onclick=function(){if(i===m.active)return;m.setActive(i);syncCurFolders();renderAllChips();_rerenderActive();};
+    chip.appendChild(n);
+    var mb=document.createElement('button');mb.className='fchip-menu-btn';mb.textContent='⋮';mb.title='Optionen';
+    mb.onclick=function(e){e.stopPropagation();openChipMenu(kind,i,chip);};
+    chip.appendChild(mb);
+    el.appendChild(chip);
+  });
+  var add=document.createElement('button');add.className='fchip fchip-add';add.textContent='+ Neu';
+  add.onclick=function(){createFolder(kind);};
+  el.appendChild(add);
+}
+function renderAllChips(){renderChips('mood');renderChips('mock');renderChips('sketch');renderChips('col');}
+function createFolder(kind){
+  var m=_kindMeta(kind);
+  var name=window.prompt(kind==='col'?'Name der neuen Kollektion:':'Name des neuen '+m.label+'s:','');
+  if(name===null)return;
+  name=(name||'').trim();if(!name)name='Unbenannt';
+  var item;
+  if(kind==='mood'){var cats={};MB_CATS.forEach(function(c){cats[c]=[];});item={id:_newId('m'),name:name,cats:cats};moods.push(item);activeMood=moods.length-1;}
+  else if(kind==='mock'){item={id:_newId('mk'),name:name,testing:[],improve:[],final:[]};mocks.push(item);activeMock=mocks.length-1;}
+  else if(kind==='sketch'){item={id:_newId('sk'),name:name,testing:[],improve:[],final:[]};sketches.push(item);activeSketch=sketches.length-1;}
+  else if(kind==='col'){item={id:_newId('c'),name:name,products:[]};cols.push(item);activeCol=cols.length-1;}
+  syncCurFolders();renderAllChips();_rerenderActive();fbSave();toast(m.label+' erstellt ✓');
+}
+function _closeChipMenu(){var ex=document.getElementById('_chipMenu');if(ex)ex.remove();}
+function openChipMenu(kind,idx,anchor){
+  _closeChipMenu();
+  var m=_kindMeta(kind);
+  var rect=anchor.getBoundingClientRect();
+  var menu=document.createElement('div');menu.className='fchip-menu';menu.id='_chipMenu';
+  menu.style.left=rect.left+'px';menu.style.top=(rect.bottom+4)+'px';
+  var rn=document.createElement('button');rn.textContent='Umbenennen';
+  rn.onclick=function(e){e.stopPropagation();renameFolder(kind,idx);_closeChipMenu();};menu.appendChild(rn);
+  if(m.list.length>1){
+    var del=document.createElement('button');del.className='danger';del.textContent='Löschen';
+    del.onclick=function(e){e.stopPropagation();deleteFolder(kind,idx);_closeChipMenu();};menu.appendChild(del);
+  }
+  document.body.appendChild(menu);
+  // Schließt sich beim nächsten Klick außerhalb
+  setTimeout(function(){
+    document.addEventListener('click',function _h(ev){
+      if(!menu.contains(ev.target)){_closeChipMenu();document.removeEventListener('click',_h,true);}
+    },true);
+  },10);
+}
+function renameFolder(kind,idx){
+  var m=_kindMeta(kind);var item=m.list[idx];
+  var newName=window.prompt('Neuer Name:',item.name||'');
+  if(newName===null)return;
+  item.name=(newName||'').trim()||'Unbenannt';
+  renderAllChips();fbSave();toast('Umbenannt ✓');
+}
+function deleteFolder(kind,idx){
+  var m=_kindMeta(kind);
+  if(m.list.length<=1){toast('Mindestens ein '+m.label+' muss bleiben');return;}
+  var item=m.list[idx];
+  if(!window.confirm('"'+(item.name||m.label)+'" wirklich löschen?\nAlle enthaltenen Daten gehen verloren.'))return;
+  m.list.splice(idx,1);
+  // Active-Index anpassen
+  var cur=m.active;
+  var newActive=(idx<=cur)?Math.max(0,cur-1):cur;
+  if(kind==='mood')activeMood=newActive;
+  else if(kind==='mock')activeMock=newActive;
+  else if(kind==='sketch')activeSketch=newActive;
+  else if(kind==='col')activeCol=newActive;
+  syncCurFolders();renderAllChips();_rerenderActive();fbSave();toast('Gelöscht ✓');
 }
 
 // ═══════════ MOODBOARD ═══════════
@@ -445,54 +615,73 @@ document.addEventListener('keydown',function(e){if(e.key==='Escape')closeLb();if
 // macht eine Aenderung -> A's Bilder landen in B's Firebase-Daten.
 // Der alte 'uw_design' Key wird absichtlich NICHT geloescht (Forensik), nur ignoriert.
 function _lsKey(){return _ROOM?'uw_design_'+_ROOM:null;}
-// Helfer: Mood-/Mock-/Sketch-/Products-State auf leer zuruecksetzen.
+// Setzt alle Folder-Listen auf leer und richtet die Aliase neu aus.
+// syncCurFolders() initialisiert dann automatisch je einen "Standard"-Folder.
 function _clearDesignState(){
-  MB_CATS.forEach(function(c){mbData[c]=[];});
-  ['testing','improve','final'].forEach(function(s){mockCards[s]=[];sketchCards[s]=[];});
-  products=[];
+  moods=[];mocks=[];sketches=[];cols=[];
+  activeMood=0;activeMock=0;activeSketch=0;activeCol=0;
+  syncCurFolders();
 }
 
 function fbSave(){
-  var data={mb:mbData,mock:mockCards,sketch:sketchCards,products:products};
-  // Per-Room localStorage-Backup -- nur wenn Raum gesetzt ist.
+  // Neue Folder-Strukturen + Legacy-Felder als Rückwärtskompatibilität.
+  // Legacy-Felder spiegeln den AKTIVEN Folder, damit alter Code (falls noch
+  // irgendwo) sinnvolle Daten sieht.
+  var curMood=moods[activeMood]||{cats:{}};
+  var curMock=mocks[activeMock]||{testing:[],improve:[],final:[]};
+  var curSketch=sketches[activeSketch]||{testing:[],improve:[],final:[]};
+  var curCol=cols[activeCol]||{products:[]};
+  var data={
+    moods:moods,mocks:mocks,sketches:sketches,cols:cols,
+    // Legacy-Fallback
+    mb:curMood.cats||{},
+    mock:{testing:curMock.testing||[],improve:curMock.improve||[],final:curMock.final||[]},
+    sketch:{testing:curSketch.testing||[],improve:curSketch.improve||[],final:curSketch.final||[]},
+    products:curCol.products||[]
+  };
+  // Per-Room localStorage-Backup
   var k=_lsKey();
-  if(k){try{ localStorage.setItem(k, JSON.stringify(data)); }catch(e){}}
-  // Firebase als Source-of-Truth wenn Raum existiert
+  if(k){try{localStorage.setItem(k,JSON.stringify(data));}catch(e){}}
+  // Firebase
   if(_DB&&_ROOM){
     clearTimeout(saveTO);
     saveTO=setTimeout(function(){
       _DB.ref('rooms/'+_ROOM+'/design').set(data);
-      var total=Object.values(mbData).reduce(function(s,a){return s+a.length;},0);
-      total+=[].concat(mockCards.testing||[],mockCards.improve||[],mockCards.final||[]).length;
-      total+=[].concat(sketchCards.testing||[],sketchCards.improve||[],sketchCards.final||[]).length;
-      total+=products.length;
+      // Progress: Items über ALLE Folders zählen (5%/Item, gecappt 100)
+      var total=0;
+      moods.forEach(function(m){if(m&&m.cats)Object.keys(m.cats).forEach(function(c){if(Array.isArray(m.cats[c]))total+=m.cats[c].length;});});
+      mocks.forEach(function(mk){if(mk)total+=(mk.testing||[]).length+(mk.improve||[]).length+(mk.final||[]).length;});
+      sketches.forEach(function(sk){if(sk)total+=(sk.testing||[]).length+(sk.improve||[]).length+(sk.final||[]).length;});
+      cols.forEach(function(c){if(c)total+=(c.products||[]).length;});
       window.parent.postMessage({type:'dsPct',pct:Math.min(100,total*3)},'*');
     },300);
   }
   toast('Gespeichert ✓');
 }
 function fbLoad(){
-  // Per-Room localStorage als Initial-Cache (Instant-UI). Wird gleich von Firebase
-  // ueberschrieben sobald die Listener-Antwort da ist. Globaler 'uw_design' Key
-  // wird absichtlich NICHT mehr gelesen -- der ist der kontaminierte Cache.
+  // Per-Room localStorage als Initial-Cache (Instant-UI). Firebase überschreibt
+  // gleich. Globaler 'uw_design'-Key (alte Version) wird absichtlich ignoriert.
   var k=_lsKey();
   if(k){
     try{
       var local=JSON.parse(localStorage.getItem(k));
       if(local){
-        if(local.mb){MB_CATS.forEach(function(c){mbData[c]=local.mb[c]||[];});}
-        if(local.mock){['testing','improve','final'].forEach(function(s){mockCards[s]=local.mock[s]||[];});}
-        if(local.sketch){['testing','improve','final'].forEach(function(s){sketchCards[s]=local.sketch[s]||[];});}
-        if(local.products)products=local.products;
+        // Migration aus Legacy-Cache falls neue Felder fehlen
+        local=migrateLegacy(local);
+        moods=local.moods||[];mocks=local.mocks||[];sketches=local.sketches||[];cols=local.cols||[];
+        syncCurFolders();
+        renderAllChips();
         if(curSec==='mood')renderMb();
         if(curSec==='mock')renderKb('mock');
         if(curSec==='sketch')renderKb('sketch');
         if(curSec==='plan')renderProducts();
+      } else {
+        syncCurFolders();renderAllChips();
       }
-    }catch(e){}
+    }catch(e){syncCurFolders();renderAllChips();}
   } else {
-    // Kein Raum (Standalone-Sandbox ohne Room-URL): explizit leer initialisieren.
-    _clearDesignState();
+    // Standalone-Sandbox ohne Room-URL: leer initialisieren.
+    _clearDesignState();renderAllChips();
   }
   // Then sync with Firebase if room exists
   if(!_DB||!_ROOM)return;
@@ -504,6 +693,7 @@ function fbLoad(){
     return !!(ae&&(ae.contentEditable==='true'||ae.tagName==='INPUT'||ae.tagName==='SELECT'||ae.tagName==='TEXTAREA'));
   }
   function applyRender(){
+    renderAllChips();
     if(curSec==='mood')renderMb();
     else if(curSec==='mock')renderKb('mock');
     else if(curSec==='sketch')renderKb('sketch');
@@ -516,18 +706,13 @@ function fbLoad(){
   }
   _DB.ref('rooms/'+_ROOM+'/design').on('value',function(snap){
     var d=snap.val();
-    // CRITICAL: State IMMER aus Firebase ableiten -- auch wenn d null/empty ist.
-    // Vorher wurde bei null early-returned, dadurch blieb localStorage-Inhalt
-    // (potenziell aus anderem Kunden) sichtbar und konnte beim naechsten Save
-    // diese Fremd-Daten in den aktuellen Raum schreiben (Cross-Customer-Leak).
+    // State IMMER aus Firebase ableiten -- auch bei null. Lazy-Migration aus
+    // Legacy-Feldern wenn neue Folder-Struktur fehlt. Aliase auf aktiven Folder
+    // werden durch syncCurFolders() neu gesetzt.
     if(d){
-      if(d.mb){MB_CATS.forEach(function(c){mbData[c]=d.mb[c]||[];});}
-      else MB_CATS.forEach(function(c){mbData[c]=[];});
-      if(d.mock){['testing','improve','final'].forEach(function(s){mockCards[s]=d.mock[s]||[];});}
-      else ['testing','improve','final'].forEach(function(s){mockCards[s]=[];});
-      if(d.sketch){['testing','improve','final'].forEach(function(s){sketchCards[s]=d.sketch[s]||[];});}
-      else ['testing','improve','final'].forEach(function(s){sketchCards[s]=[];});
-      products=d.products||[];
+      d=migrateLegacy(d);
+      moods=d.moods||[];mocks=d.mocks||[];sketches=d.sketches||[];cols=d.cols||[];
+      syncCurFolders();
     } else {
       _clearDesignState();
     }
