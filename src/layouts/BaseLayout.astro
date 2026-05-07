@@ -149,6 +149,92 @@ const { title = "Unsigned Workspace" } = Astro.props;
           return attempt(refPath, "push", value);
         };
       })();
+
+      // ── Online/Offline-Banner ──
+      // Hört passiv auf Connection-Events, schreibt selbst nichts.
+      // Banner wird NUR gezeigt wenn länger als 2s disconnect (vermeidet Flackern
+      // bei kurzen Aussetzern). Firebase queued Writes lokal weiter; Banner ist
+      // nur visuelles Signal "deine Änderungen sind gerade nicht synchronisiert".
+      (function () {
+        var DEBOUNCE_MS = 2000;
+        var fbConnected = true;     // Default: assume connected bis .info/connected feuert
+        var navOnline = typeof navigator !== "undefined" ? navigator.onLine : true;
+        var debounceTimer = null;
+        var bannerEl = null;
+
+        function ensureBanner() {
+          if (bannerEl) return bannerEl;
+          bannerEl = document.createElement("div");
+          bannerEl.id = "uw-offline-banner";
+          bannerEl.setAttribute("role", "status");
+          bannerEl.setAttribute("aria-live", "polite");
+          bannerEl.style.cssText =
+            "position:fixed;top:0;left:0;right:0;z-index:9998;background:#c13030;color:#fff;" +
+            "padding:8px 14px;text-align:center;font:600 12px Montserrat,system-ui,sans-serif;" +
+            "box-shadow:0 2px 8px rgba(0,0,0,0.15);transform:translateY(-100%);" +
+            "transition:transform .25s var(--ease-out-quart, ease-out);pointer-events:none;";
+          var icon = document.createElement("span");
+          icon.style.marginRight = "6px";
+          icon.textContent = "⚠";
+          bannerEl.appendChild(icon);
+          bannerEl.appendChild(
+            document.createTextNode(
+              "Offline — Änderungen werden gespeichert sobald die Verbindung zurück ist"
+            )
+          );
+          document.body.appendChild(bannerEl);
+          return bannerEl;
+        }
+        function applyState() {
+          var online = fbConnected && navOnline;
+          if (online) {
+            if (bannerEl) bannerEl.style.transform = "translateY(-100%)";
+          } else {
+            ensureBanner().style.transform = "translateY(0)";
+          }
+        }
+        function scheduleApply() {
+          if (debounceTimer) clearTimeout(debounceTimer);
+          var online = fbConnected && navOnline;
+          if (online) {
+            // Online sofort verstecken, kein Debounce
+            applyState();
+          } else {
+            // Offline erst nach Debounce zeigen
+            debounceTimer = setTimeout(applyState, DEBOUNCE_MS);
+          }
+        }
+
+        if (typeof window !== "undefined") {
+          window.addEventListener("online", function () {
+            navOnline = true;
+            scheduleApply();
+          });
+          window.addEventListener("offline", function () {
+            navOnline = false;
+            scheduleApply();
+          });
+        }
+
+        // Firebase .info/connected sobald Firebase ready ist
+        function attachFirebaseConnectionWatch() {
+          if (!window.firebase || !window.firebase.database) return false;
+          try {
+            window.firebase.database().ref(".info/connected").on("value", function (snap) {
+              fbConnected = snap.val() === true;
+              scheduleApply();
+            });
+            return true;
+          } catch (e) { return false; }
+        }
+        if (!attachFirebaseConnectionWatch()) {
+          var attempts = 0;
+          var poll = setInterval(function () {
+            if (attachFirebaseConnectionWatch() || ++attempts > 20) clearInterval(poll);
+          }, 250);
+        }
+      })();
+
       try {
         var savedAccent = localStorage.getItem("uw.accent");
         if (savedAccent) {
