@@ -1,0 +1,33 @@
+{
+  "name": "Unsigned Workspace",
+  "short_name": "Unsigned",
+  "description": "Brand Identity & Production Workspace",
+  "lang": "de",
+  "dir": "ltr",
+  "start_url": "/dashboard",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "theme_color": "#c13030",
+  "background_color": "#f4f3f0",
+  "icons": [
+    {
+      "src": "/brand/v-dark.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/brand/v-dark.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/brand/v-dark.png",
+      "sizes": "1080x1080",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
