@@ -29,8 +29,31 @@ const { title, active, tool } = Astro.props;
   </div>
 
   <div
-    class="bg-card border-[0.5px] border-line rounded-xl overflow-hidden h-[calc(100vh-150px)]"
+    class="relative bg-card border-[0.5px] border-line rounded-xl overflow-hidden h-[calc(100vh-150px)]"
   >
+    <!-- Loading-Skeleton: sichtbar bis iframe.onload feuert oder Timeout -->
+    <div
+      id="standaloneLoading"
+      class="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-card text-ink-mute pointer-events-none"
+    >
+      <span class="w-8 h-8 rounded-full border-[3px] border-line border-t-brand animate-spin" aria-hidden="true"></span>
+      <span class="text-[12px] font-bold">Tool wird geladen…</span>
+    </div>
+    <!-- Error-Fallback: nur sichtbar wenn iframe nach Timeout nicht lädt -->
+    <div
+      id="standaloneError"
+      class="hidden absolute inset-0 flex-col items-center justify-center gap-3 bg-card text-ink p-6 text-center"
+      role="alert"
+    >
+      <span class="text-[28px]" aria-hidden="true">⚠️</span>
+      <span class="text-[14px] font-extrabold">Tool konnte nicht geladen werden</span>
+      <span class="text-[12px] text-ink-mute max-w-[420px]">Verbindung prüfen oder Seite neu laden. Falls das Problem bleibt, melde dich bei Unsigned.</span>
+      <button
+        type="button"
+        id="standaloneRetry"
+        class="text-[12px] font-bold text-brand bg-brand-dim border-[0.5px] border-brand-border rounded-lg px-4 py-2 cursor-pointer"
+      >Neu laden</button>
+    </div>
     <iframe
       id="standaloneFrame"
       src="about:blank"
@@ -42,13 +65,50 @@ const { title, active, tool } = Astro.props;
 
 <script is:inline define:vars={{ tool }}>
   (function () {
+    var TIMEOUT_MS = 12000;
+    var loading = document.getElementById("standaloneLoading");
+    var errorBox = document.getElementById("standaloneError");
+    var frame = document.getElementById("standaloneFrame");
+    var retryBtn = document.getElementById("standaloneRetry");
+    var loaded = false;
+    var timer = null;
+
+    function showError() {
+      if (loaded) return;
+      loading.classList.add("hidden");
+      errorBox.classList.remove("hidden");
+      errorBox.classList.add("flex");
+    }
+    function loadIframe(src) {
+      loaded = false;
+      loading.classList.remove("hidden");
+      errorBox.classList.add("hidden");
+      errorBox.classList.remove("flex");
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(showError, TIMEOUT_MS);
+      frame.src = src;
+    }
+    frame.addEventListener("load", function () {
+      // about:blank load wird auch ausgelöst — nur als geladen markieren wenn URL gesetzt war
+      if (!frame.src || frame.src === "about:blank") return;
+      loaded = true;
+      if (timer) { clearTimeout(timer); timer = null; }
+      loading.classList.add("hidden");
+    });
+    frame.addEventListener("error", showError);
+    retryBtn.addEventListener("click", function () {
+      if (frame.src && frame.src !== "about:blank") loadIframe(frame.src);
+      else location.reload();
+    });
+
     window.appUI.onAuth(function (me) {
       var uid = (me && me.uid) || "GUEST-" + Date.now();
       var room = "PERSONAL-" + uid;
-      document.getElementById("standaloneFrame").src =
-        "/tools/" + tool + ".html?room=" +
-        encodeURIComponent(room) + "&owner=1";
       document.getElementById("standaloneRoom").textContent = "Raum " + room;
+      loadIframe(
+        "/tools/" + tool + ".html?room=" +
+        encodeURIComponent(room) + "&owner=1"
+      );
     });
   })();
 </script>

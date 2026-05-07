@@ -147,8 +147,29 @@ import BrandworkTimeline from "../components/BrandworkTimeline.astro";
     </div>
 
     <div
-      class="bg-card border-[0.5px] border-line rounded-xl overflow-hidden h-[calc(100vh-200px)]"
+      class="relative bg-card border-[0.5px] border-line rounded-xl overflow-hidden h-[calc(100vh-200px)]"
     >
+      <div
+        id="toolLoading"
+        class="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-card text-ink-mute pointer-events-none"
+      >
+        <span class="w-8 h-8 rounded-full border-[3px] border-line border-t-brand animate-spin" aria-hidden="true"></span>
+        <span class="text-[12px] font-bold">Tool wird geladen…</span>
+      </div>
+      <div
+        id="toolError"
+        class="hidden absolute inset-0 flex-col items-center justify-center gap-3 bg-card text-ink p-6 text-center"
+        role="alert"
+      >
+        <span class="text-[28px]" aria-hidden="true">⚠️</span>
+        <span class="text-[14px] font-extrabold">Tool konnte nicht geladen werden</span>
+        <span class="text-[12px] text-ink-mute max-w-[420px]">Verbindung prüfen oder Seite neu laden.</span>
+        <button
+          type="button"
+          id="toolRetry"
+          class="text-[12px] font-bold text-brand bg-brand-dim border-[0.5px] border-brand-border rounded-lg px-4 py-2 cursor-pointer"
+        >Neu laden</button>
+      </div>
       <iframe
         id="toolFrame"
         src="about:blank"
@@ -514,10 +535,25 @@ import BrandworkTimeline from "../components/BrandworkTimeline.astro";
     }
 
     // ── Mode Switch ──────────────────────────────────────────
+    var TOOL_LOAD_TIMEOUT_MS = 12000;
+    var toolLoadTimer = null;
+    var toolLoaded = false;
+    function showToolLoading() {
+      $("toolLoading").classList.remove("hidden");
+      $("toolError").classList.add("hidden");
+      $("toolError").classList.remove("flex");
+    }
+    function showToolError() {
+      if (toolLoaded) return;
+      $("toolLoading").classList.add("hidden");
+      $("toolError").classList.remove("hidden");
+      $("toolError").classList.add("flex");
+    }
     function showOverview() {
       $("overviewMode").classList.remove("hidden");
       $("toolMode").classList.add("hidden");
       $("toolFrame").src = "about:blank";
+      if (toolLoadTimer) { clearTimeout(toolLoadTimer); toolLoadTimer = null; }
     }
     function showTool(toolFile) {
       var t = TOOL_BY_FILE[toolFile];
@@ -525,10 +561,35 @@ import BrandworkTimeline from "../components/BrandworkTimeline.astro";
       $("overviewMode").classList.add("hidden");
       $("toolMode").classList.remove("hidden");
       $("toolCrumb").textContent = t.icon + " " + t.label;
+      toolLoaded = false;
+      showToolLoading();
+      if (toolLoadTimer) clearTimeout(toolLoadTimer);
+      toolLoadTimer = setTimeout(showToolError, TOOL_LOAD_TIMEOUT_MS);
       $("toolFrame").src =
         "/tools/" + t.file + ".html?room=" +
         encodeURIComponent(customer.room) + "&owner=1";
     }
+    $("toolFrame").addEventListener("load", function () {
+      var src = $("toolFrame").src;
+      if (!src || src === "about:blank") return;
+      toolLoaded = true;
+      if (toolLoadTimer) { clearTimeout(toolLoadTimer); toolLoadTimer = null; }
+      $("toolLoading").classList.add("hidden");
+    });
+    $("toolFrame").addEventListener("error", showToolError);
+    $("toolRetry").addEventListener("click", function () {
+      var src = $("toolFrame").src;
+      if (src && src !== "about:blank") {
+        toolLoaded = false;
+        showToolLoading();
+        if (toolLoadTimer) clearTimeout(toolLoadTimer);
+        toolLoadTimer = setTimeout(showToolError, TOOL_LOAD_TIMEOUT_MS);
+        // Force reload
+        $("toolFrame").src = src;
+      } else {
+        location.reload();
+      }
+    });
     $("toolBack").addEventListener("click", function () {
       var url = "/customer?id=" + encodeURIComponent(customerId);
       history.pushState({}, "", url);
