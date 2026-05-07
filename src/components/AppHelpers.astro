@@ -150,7 +150,6 @@
     function ensureCustomersListener() {
       if (customersAttached || !window.fb) return;
       customersAttached = true;
-      console.log("[fb] subscribing workspace/customers");
       window.fb.ref("workspace/customers").on(
         "value",
         function (snap) {

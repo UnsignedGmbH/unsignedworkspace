@@ -113,7 +113,6 @@
           }).catch(function () { /* OK if rules block — invite still 'used' */ });
         }).then(function () {
           try { localStorage.removeItem("uw.pending_invite"); } catch (e) {}
-          console.log("[invite] claimed as " + role);
         }).catch(function (err) {
           console.warn("[invite] claim failed:", err && (err.code || err.message));
         });

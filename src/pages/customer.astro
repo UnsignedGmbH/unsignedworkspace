@@ -165,8 +165,19 @@ import BrandworkTimeline from "../components/BrandworkTimeline.astro";
     var customerId = params.get("id");
     var initialTool = params.get("tool") || "";
 
-    if (!customerId) {
-      document.getElementById("topName").textContent = "Kein Kunde gewählt";
+    // Customer-ID validieren — nur gültige Firebase-Keys (alphanumerisch + -_),
+    // max 64 Zeichen. Verhindert URL-Manipulation mit ungültigen Zeichen.
+    var VALID_ID = /^[A-Za-z0-9_-]{1,64}$/;
+    if (!customerId || !VALID_ID.test(customerId)) {
+      document.getElementById("topName").textContent = customerId
+        ? "Ungültige Kunden-ID"
+        : "Kein Kunde gewählt";
+      // Nach 1.5s zurück zur Liste, falls jemand mit kaputtem Link landet
+      if (customerId) {
+        setTimeout(function () {
+          location.href = "/customers";
+        }, 1500);
+      }
       return;
     }
 

@@ -222,17 +222,14 @@ const filters = [
             createdBy: window.ME.uid,
           };
           var path = "workspace/customers/" + id;
-          console.log("[customer] WRITE →", path, rec);
           window.fb
             .ref(path)
             .set(rec)
             .then(function () {
-              console.log("[customer] WRITE OK ✓", path);
               return window.fb.ref(path).once("value");
             })
             .then(function (snap) {
               var v = snap.val();
-              console.log("[customer] READBACK →", v);
               if (!v || v.id !== id) {
                 throw new Error(
                   "Schreibung nicht persistiert — Readback leer."
@@ -264,7 +261,6 @@ const filters = [
     window.appUI.onAuth(function () {
       gateNewBtn(false);
       window.appUI.subscribeCustomers(function (state) {
-        console.log("[customers] snapshot:", state.list.length, "rows");
         lastState = state;
         renderThrottled();
       });
