@@ -1,0 +1,76 @@
+name: Daily Firebase Backup
+
+# Täglicher Snapshot der Firebase Realtime Database als verschlüsselter
+# GitHub-Action-Artifact (90 Tage Retention by default).
+#
+# Setup vor dem ersten Lauf:
+#   1. Firebase Console → Project Settings → Service Accounts →
+#      "Neuen privaten Schlüssel generieren" → JSON-Datei downloaden.
+#   2. GitHub Repo → Settings → Secrets and variables → Actions →
+#      "New repository secret":
+#        Name:  FIREBASE_SERVICE_ACCOUNT
+#        Value: kompletter Inhalt der JSON-Datei (raw paste)
+#   3. (Optional) workflow_dispatch unten erlaubt einen manuellen Test-Run
+#      über die "Actions"-UI.
+#
+# Restore: Backup als ZIP von der Action-Run-Page herunterladen → JSON
+# auspacken → in Firebase Console → Realtime Database → ⋮ → "JSON
+# importieren" hochladen. (Achtung: ueberschreibt die DB komplett.)
+#
+# Sicherheits-Hinweise: keine user-controlled Inputs werden interpoliert.
+# Secrets werden via env-Variable in eine Datei mit chmod 600 geschrieben
+# und am Ende gelöscht.
+
+on:
+  schedule:
+    # Täglich 03:17 UTC (= 04:17/05:17 MEZ/MESZ). Off-Peak.
+    - cron: "17 3 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Write service account JSON
+        env:
+          SA_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: |
+          if [ -z "$SA_JSON" ]; then
+            echo "::error::FIREBASE_SERVICE_ACCOUNT secret nicht gesetzt — siehe scripts/backup-firebase.mjs für Setup"
+            exit 1
+          fi
+          printf '%s' "$SA_JSON" > "$RUNNER_TEMP/sa.json"
+          chmod 600 "$RUNNER_TEMP/sa.json"
+
+      - name: Run backup
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/sa.json
+          FIREBASE_DATABASE_URL: https://unsignedworkspace-default-rtdb.europe-west1.firebasedatabase.app
+        run: |
+          DATE=$(date -u +%Y-%m-%d)
+          mkdir -p out
+          node scripts/backup-firebase.mjs "out/firebase-backup-$DATE.json"
+          ls -lh out/
+
+      - name: Upload backup artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: firebase-backup-${{ github.run_id }}
+          path: out/firebase-backup-*.json
+          retention-days: 90
+          if-no-files-found: error
+
+      - name: Cleanup secret file
+        if: always()
+        run: rm -f "$RUNNER_TEMP/sa.json"
