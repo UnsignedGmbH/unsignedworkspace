@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 800" fill="none" stroke="#111" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round">
+  <!-- Body silhouette -->
+  <path d="M 195 130 L 195 720 L 405 720 L 405 130" />
+  <!-- Hem -->
+  <path d="M 195 720 L 405 720" />
+  <!-- Sleeves -->
+  <path d="M 195 130 L 95 220 L 130 280 L 195 230 Z" />
+  <path d="M 405 130 L 505 220 L 470 280 L 405 230 Z" />
+  <!-- Back neckline (shallow) -->
+  <path d="M 245 130 Q 300 155 355 130" />
+  <!-- Shoulder seams -->
+  <path d="M 195 130 L 245 130" />
+  <path d="M 355 130 L 405 130" />
+</svg>

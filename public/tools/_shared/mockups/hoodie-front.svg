@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 850">
+  <g fill="none" stroke="#111" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round">
+    <!-- Hoodie front silhouette (clean) -->
+    <path d="M 245 215 L 220 760 L 480 760 L 455 215" />
+    <path d="M 220 760 L 480 760" />
+    <path d="M 220 745 L 480 745" stroke-width="1" />
+    <!-- Long sleeves -->
+    <path d="M 245 215 L 120 360 L 130 660 L 215 660 L 245 280 Z" />
+    <path d="M 130 645 L 215 645" stroke-width="1" />
+    <path d="M 455 215 L 580 360 L 570 660 L 485 660 L 455 280 Z" />
+    <path d="M 485 645 L 570 645" stroke-width="1" />
+    <!-- Hood -->
+    <path d="M 280 215 Q 270 105 350 95 Q 430 105 420 215 Z" />
+    <path d="M 290 215 Q 285 120 350 110 Q 415 120 410 215" stroke-width="1.5" />
+    <!-- Drawstring holes -->
+    <circle cx="330" cy="220" r="3" fill="#111" />
+    <circle cx="370" cy="220" r="3" fill="#111" />
+    <!-- Kangaroo pocket -->
+    <path d="M 270 480 L 295 450 L 405 450 L 430 480 L 430 580 L 270 580 Z" />
+  </g>
+</svg>

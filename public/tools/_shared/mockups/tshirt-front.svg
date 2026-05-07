@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 850">
+  <g fill="none" stroke="#111" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round">
+    <!-- T-shirt front silhouette (clean) -->
+    <path d="M 245 175 L 245 760 L 455 760 L 455 175" />
+    <path d="M 245 760 L 455 760" />
+    <!-- Sleeves -->
+    <path d="M 245 175 L 145 270 L 180 330 L 245 275 Z" />
+    <path d="M 455 175 L 555 270 L 520 330 L 455 275 Z" />
+    <!-- Front neckline -->
+    <path d="M 290 175 Q 350 245 410 175" />
+    <path d="M 295 165 Q 350 215 405 165" stroke-width="1.5" />
+    <!-- Shoulder seams -->
+    <path d="M 245 175 L 290 175" />
+    <path d="M 410 175 L 455 175" />
+  </g>
+</svg>

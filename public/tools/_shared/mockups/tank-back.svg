@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 800" fill="none" stroke="#111" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round">
+  <!-- Shoulder + body -->
+  <path d="M 215 95 L 200 200 L 175 720 L 425 720 L 400 200 L 385 95" />
+  <!-- Back neckline (shallow) -->
+  <path d="M 215 95 Q 300 130 385 95" />
+  <!-- Armhole left -->
+  <path d="M 200 200 Q 145 300 175 720" />
+  <path d="M 215 95 Q 175 145 200 200" />
+  <!-- Armhole right -->
+  <path d="M 400 200 Q 455 300 425 720" />
+  <path d="M 385 95 Q 425 145 400 200" />
+</svg>

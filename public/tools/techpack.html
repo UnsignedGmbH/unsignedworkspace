@@ -1,0 +1,1104 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BrandWork Techpack</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900&family=Dancing+Script:wght@700&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+<script src="/tools/_shared/img-utils.js"></script>
+<script src="/tools/_shared/techpack-render.js"></script>
+<script>
+var _ROOM = new URLSearchParams(location.search).get('room'), _DB = null;
+try {
+  firebase.initializeApp({
+    apiKey: "AIzaSyDJqdh3apGM4fcsjRYI7vZ4VrT1_A6L92U",
+    authDomain: "unsignedworkspace.firebaseapp.com",
+    databaseURL: "https://unsignedworkspace-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "unsignedworkspace"
+  });
+  _DB = firebase.database();
+} catch (e) { try { _DB = firebase.database(); } catch (e2) {} }
+document.addEventListener('DOMContentLoaded', function () {
+  if (window.self !== window.top) {
+    var st = document.createElement('style');
+    st.textContent = '#shareBtn{display:none !important;}';
+    document.head.appendChild(st);
+  }
+});
+</script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{--a:#C13030;--bg:#f4f3f0;--cd:#ffffff;--cd2:#f9f9f9;--bd:rgba(0,0,0,.09);--t:#111;--td:#555;--tdd:#aaa;--g:#1D9E75;--y:#D67A1A;--b:#185FA5;}
+body{font-family:'Montserrat',sans-serif;background:var(--bg);color:var(--t);min-height:100vh;}
+button{font-family:inherit;cursor:pointer;}
+input,textarea,select{font-family:inherit;color:var(--t);}
+
+/* HEADER */
+.hdr{position:sticky;top:0;z-index:100;background:rgba(255,255,255,.95);backdrop-filter:blur(20px);border-bottom:.5px solid var(--bd);padding:0 24px;display:flex;align-items:center;height:54px;gap:16px;box-shadow:0 1px 8px rgba(0,0,0,0.04);}
+.hdr-logo{font-size:15px;font-weight:900;font-style:italic;color:var(--a);}
+.hdr-title{font-size:13px;font-weight:800;letter-spacing:.5px;flex:1;display:flex;align-items:center;gap:10px;min-width:0;}
+.hdr-title input{background:transparent;border:0;outline:0;font-size:13px;font-weight:800;color:var(--t);width:100%;max-width:420px;padding:4px 6px;border-radius:6px;}
+.hdr-title input:focus{background:#fff;box-shadow:0 0 0 1px var(--bd);}
+.hdr-actions{display:flex;gap:8px;align-items:center;}
+.btn{padding:8px 14px;border-radius:8px;border:0;font-size:11px;font-weight:800;letter-spacing:.3px;background:var(--t);color:#fff;}
+.btn:hover{opacity:.9;}
+.btn-light{background:#fff;color:var(--t);border:1px solid var(--bd);}
+.btn-accent{background:var(--a);color:#fff;}
+.btn-icon{width:34px;height:34px;padding:0;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;font-size:14px;}
+
+/* CONTENT */
+main{max-width:1240px;margin:0 auto;padding:24px;}
+
+/* PACK LIST */
+.pack-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px;margin-top:16px;}
+.pack-card{background:var(--cd);border:.5px solid var(--bd);border-radius:14px;padding:18px;cursor:pointer;transition:transform .12s,box-shadow .12s;display:flex;flex-direction:column;gap:10px;min-height:170px;}
+.pack-card:hover{transform:translateY(-2px);box-shadow:0 4px 16px rgba(0,0,0,.06);}
+.pack-card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;}
+.pack-card-icon{font-size:28px;line-height:1;}
+.pack-card-title{font-size:14px;font-weight:800;flex:1;line-height:1.3;word-break:break-word;}
+.pack-card-meta{font-size:10px;color:var(--td);font-weight:600;display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;}
+.pack-card-status{font-size:9px;font-weight:900;letter-spacing:.6px;padding:3px 8px;border-radius:6px;background:#eee;color:var(--td);text-transform:uppercase;}
+.pack-card-status.draft{background:#f3eaea;color:#a73e3e;}
+.pack-card-status.finalized{background:#e7f3ec;color:#1d6f4f;}
+.pack-card-status.sample_1, .pack-card-status.sample_2{background:#fff4e0;color:#a06314;}
+.pack-card-status.done{background:#e6efff;color:#1c4f9c;}
+.pack-card-status.in_de{background:#efe8f8;color:#4f3580;}
+.pack-card-actions{display:flex;gap:6px;margin-top:auto;flex-wrap:wrap;}
+.pack-card-actions button{flex:1;font-size:10px;padding:6px 8px;border-radius:6px;background:#f5f5f5;border:0;color:var(--td);font-weight:700;min-width:54px;}
+.pack-card-actions button:hover{background:#ebebeb;color:var(--t);}
+.pack-card-actions .danger:hover{background:#fde7e7;color:#a73e3e;}
+
+/* EMPTY STATE */
+.empty{text-align:center;padding:80px 20px;}
+.empty-icon{font-size:54px;margin-bottom:14px;opacity:.6;}
+.empty-h{font-size:18px;font-weight:900;margin-bottom:6px;}
+.empty-p{font-size:13px;color:var(--td);margin-bottom:22px;line-height:1.5;}
+.empty-cta{padding:14px 28px;border-radius:10px;font-size:13px;font-weight:800;background:var(--a);color:#fff;border:0;}
+
+/* EDITOR SPLIT */
+.editor{display:grid;grid-template-columns:240px 1fr;gap:20px;align-items:start;}
+.editor-sidebar{background:var(--cd);border:.5px solid var(--bd);border-radius:14px;padding:14px;position:sticky;top:74px;}
+.editor-sidebar h4{font-size:10px;font-weight:900;letter-spacing:.8px;color:var(--td);margin-bottom:10px;text-transform:uppercase;}
+.page-list{list-style:none;display:flex;flex-direction:column;gap:4px;margin-bottom:10px;}
+.page-list li{padding:10px 12px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;background:#fafafa;color:var(--t);display:flex;align-items:center;gap:8px;border:1px solid transparent;}
+.page-list li:hover{background:#f1f1f1;}
+.page-list li.active{background:var(--t);color:#fff;}
+.page-list li.dragging{opacity:.4;}
+.page-list li .pi-drag{cursor:grab;color:var(--tdd);font-size:10px;}
+.page-list li .pi-num{font-size:9px;font-weight:900;color:var(--tdd);min-width:14px;}
+.page-list li.active .pi-num,.page-list li.active .pi-drag{color:#888;}
+.page-list li .pi-label{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.page-list li .pi-del{opacity:0;background:transparent;border:0;color:#a73e3e;font-size:14px;padding:0 4px;}
+.page-list li:hover .pi-del{opacity:1;}
+.page-add-btn{width:100%;padding:10px;border-radius:8px;font-size:11px;font-weight:800;background:#fff;color:var(--t);border:1px dashed var(--bd);}
+.page-add-btn:hover{background:#fafafa;border-color:var(--td);}
+
+.editor-canvas{background:#eee;border:.5px solid var(--bd);border-radius:14px;padding:18px;min-height:400px;}
+.canvas-empty{text-align:center;padding:60px 20px;color:var(--td);font-size:13px;background:var(--cd);border-radius:10px;}
+
+/* FORM FIELDS (page-type forms) */
+.field{margin-bottom:14px;}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;}
+.field-row .field{margin-bottom:0;}
+.field label{display:block;font-size:9px;font-weight:900;letter-spacing:.6px;text-transform:uppercase;color:var(--td);margin-bottom:5px;}
+.field input,.field textarea,.field select{display:block;width:100%;font-size:13px;font-weight:600;border:1.5px solid var(--bd);border-radius:8px;padding:10px 12px;outline:0;background:#fff;}
+.field input:focus,.field textarea:focus,.field select:focus{border-color:var(--a);}
+.field textarea{min-height:80px;resize:vertical;}
+.field-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin-bottom:14px;}
+.image-slot{aspect-ratio:1/1;background:#fafafa;border:1.5px dashed var(--bd);border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:11px;color:var(--td);font-weight:700;cursor:pointer;text-align:center;padding:8px;position:relative;overflow:hidden;}
+.image-slot:hover{background:#f1f1f1;border-color:var(--td);}
+.image-slot img{width:100%;height:100%;object-fit:contain;}
+.image-slot .slot-label{position:absolute;top:6px;left:8px;font-size:9px;font-weight:900;letter-spacing:.5px;color:var(--td);text-transform:uppercase;background:rgba(255,255,255,.85);padding:2px 6px;border-radius:4px;}
+.image-slot .slot-rm{position:absolute;top:6px;right:6px;background:rgba(255,255,255,.9);border:0;border-radius:6px;font-size:14px;width:24px;height:24px;cursor:pointer;color:#a73e3e;font-weight:900;}
+.image-slot input{position:absolute;inset:0;opacity:0;cursor:pointer;}
+.field-checks{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;}
+.field-checks label{display:flex;align-items:center;gap:8px;background:#fafafa;border:1px solid var(--bd);padding:8px 10px;border-radius:8px;font-size:11px;font-weight:700;color:var(--t);text-transform:none;letter-spacing:0;cursor:pointer;}
+.field-checks input[type=checkbox]{width:16px;height:16px;margin:0;}
+.field-list{display:flex;flex-direction:column;gap:8px;margin-bottom:14px;}
+.field-list-row{display:grid;grid-template-columns:50px 1fr 80px auto;gap:8px;align-items:center;}
+.field-list-row input{font-size:12px;padding:8px 10px;}
+.field-list-row .num{font-size:10px;font-weight:900;text-align:center;color:var(--td);}
+.field-list-row .rm{background:transparent;border:0;color:#a73e3e;font-size:14px;padding:0 6px;cursor:pointer;}
+.field-list-add{padding:8px 12px;background:#fff;border:1px dashed var(--bd);border-radius:8px;font-size:11px;font-weight:700;color:var(--td);align-self:flex-start;}
+
+/* STATUS PILL HEADER */
+.status-pill{display:inline-flex;align-items:center;gap:6px;font-size:10px;font-weight:900;letter-spacing:.5px;padding:6px 10px;border-radius:8px;background:#f3eaea;color:#a73e3e;cursor:pointer;border:0;text-transform:uppercase;}
+
+/* MODAL */
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:200;padding:20px;}
+.modal[hidden]{display:none;}
+.modal-card{background:#fff;border-radius:14px;padding:22px;max-width:520px;width:100%;max-height:80vh;overflow:auto;}
+.modal-h{font-size:14px;font-weight:900;margin-bottom:14px;}
+.modal-types{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;margin-bottom:14px;}
+.modal-types button{padding:14px 10px;border-radius:10px;background:#fafafa;border:1px solid var(--bd);font-size:11px;font-weight:800;color:var(--t);text-align:center;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:6px;line-height:1.3;}
+.modal-types button:hover{background:#f1f1f1;border-color:var(--td);}
+.modal-types button .em{font-size:22px;}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;}
+.modal-cancel{background:#f5f5f5;color:var(--td);border:0;padding:8px 16px;border-radius:8px;font-size:11px;font-weight:800;}
+
+/* MOCKUP PICKER */
+.mockup-picker{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px;margin-bottom:14px;}
+.mockup-picker button{aspect-ratio:3/4;background:#fafafa;border:1px solid var(--bd);border-radius:10px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:4px;padding:8px;}
+.mockup-picker button:hover{background:#f1f1f1;border-color:var(--td);}
+.mockup-picker button.active{background:#fff;border:2px solid var(--a);}
+.mockup-picker img{width:100%;flex:1;object-fit:contain;}
+.mockup-picker span{font-size:10px;font-weight:800;color:var(--t);}
+
+/* TOAST */
+#toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(40px);background:#111;color:#fff;padding:10px 18px;border-radius:8px;font-size:12px;font-weight:700;z-index:300;opacity:0;transition:opacity .2s,transform .2s;pointer-events:none;box-shadow:0 8px 24px rgba(0,0,0,.18);}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+/* MOBILE */
+@media (max-width:780px){
+  main{padding:14px;}
+  .editor{grid-template-columns:1fr;}
+  .editor-sidebar{position:static;}
+  .page-list{flex-direction:row;overflow-x:auto;padding-bottom:6px;}
+  .page-list li{flex:0 0 auto;}
+  .field-row{grid-template-columns:1fr;}
+  .hdr{padding:0 14px;height:48px;gap:8px;}
+  .hdr-title input{font-size:12px;}
+  .btn{padding:7px 10px;font-size:10px;}
+}
+</style>
+</head>
+<body>
+
+<header class="hdr">
+  <span class="hdr-logo">unsigned</span>
+  <div class="hdr-title" id="hdrTitle">
+    <span id="hdrLabel">📐 Techpack</span>
+  </div>
+  <div class="hdr-actions" id="hdrActions"></div>
+</header>
+
+<main id="viewList"></main>
+<main id="viewEditor" hidden></main>
+
+<!-- Add-Page Modal -->
+<div class="modal" id="addPageModal" hidden>
+  <div class="modal-card">
+    <div class="modal-h">Welche Seite hinzufügen?</div>
+    <div class="modal-types" id="addPageTypes"></div>
+    <div class="modal-actions">
+      <button class="modal-cancel" id="addPageCancel" type="button">Abbrechen</button>
+    </div>
+  </div>
+</div>
+
+<!-- New-Pack Modal -->
+<div class="modal" id="newPackModal" hidden>
+  <div class="modal-card">
+    <div class="modal-h">Neues Techpack anlegen</div>
+    <div class="field">
+      <label>Name</label>
+      <input id="newPackName" type="text" placeholder="z.B. Tank Top SS25" />
+    </div>
+    <div class="field">
+      <label>Base-Style</label>
+      <div class="mockup-picker" id="newPackStyles"></div>
+    </div>
+    <div class="field">
+      <label style="display:flex;align-items:center;gap:8px;font-size:11px;text-transform:none;letter-spacing:0;">
+        <input type="checkbox" id="newPackAllPages" checked /> Alle 11 Seiten direkt anlegen
+      </label>
+    </div>
+    <div class="modal-actions">
+      <button class="modal-cancel" id="newPackCancel" type="button">Abbrechen</button>
+      <button class="btn btn-accent" id="newPackOk" type="button">Anlegen</button>
+    </div>
+  </div>
+</div>
+
+<!-- Status Modal -->
+<div class="modal" id="statusModal" hidden>
+  <div class="modal-card">
+    <div class="modal-h">Status setzen</div>
+    <div class="modal-types" id="statusList"></div>
+    <div class="modal-actions">
+      <button class="modal-cancel" id="statusCancel" type="button">Abbrechen</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+/* ════════════════════════════════════════════════════════════════════
+   CONSTANTS + STATE
+   ════════════════════════════════════════════════════════════════════ */
+
+var ROOM = _ROOM || '';
+var STORAGE_KEY = 'uw.tp.last.' + (ROOM || '_');
+
+var STATE = {
+  packs: {},
+  activePackId: null,
+  activePageId: null,
+};
+
+var PAGE_TYPES = {
+  TP_START:        { icon: '🏷️', label: 'Start',          images: ['product'] },
+  TP_PRINT:        { icon: '🎨', label: 'Print',          images: ['print','look'] },
+  TP_PRINT_SIZE:   { icon: '📏', label: 'Print Size',     images: ['printsize'] },
+  TP_PRINT_INFO:   { icon: '🎯', label: 'Print Info',     images: [] },
+  TP_MOLD_INFO:    { icon: '🔨', label: 'Mold Info',      images: ['mold'] },
+  TP_WASH_INFO:    { icon: '🧺', label: 'Wash Info',      images: [] },
+  TP_FABRIC_INFO:  { icon: '🧵', label: 'Fabric Info',    images: ['fabric'] },
+  TP_MEASUREMENTS: { icon: '📐', label: 'Measurements',   images: ['mockup'] },
+  TP_LABELS:       { icon: '🏷', label: 'Labels',         images: ['hangtag','care','main','extra'] },
+  TP_EXTRA_INFO:   { icon: '✨', label: 'Extra Info',     images: ['print_look','fit_look'] },
+  TP_PACKAGING:    { icon: '📦', label: 'Packaging',      images: ['packaging'] },
+};
+
+var PAGE_TYPE_ORDER = [
+  'TP_START','TP_PRINT','TP_PRINT_SIZE','TP_PRINT_INFO',
+  'TP_MOLD_INFO','TP_WASH_INFO','TP_FABRIC_INFO','TP_MEASUREMENTS',
+  'TP_LABELS','TP_EXTRA_INFO','TP_PACKAGING'
+];
+
+var BASE_STYLES = [
+  { id: 'tshirt',       label: 'T-Shirt',         svg: '/tools/_shared/mockups/tshirt.png' },
+  { id: 'tank',         label: 'Tank Top',        svg: '/tools/_shared/mockups/tanktop.png' },
+  { id: 'longsleeve',   label: 'Longsleeve',      svg: '/tools/_shared/mockups/longsleeve.png' },
+  { id: 'summer-sleeve',label: 'Summer Sleeve',   svg: '/tools/_shared/mockups/summer-sleeve.png' },
+  { id: 'crewneck',     label: 'Crewneck',        svg: '/tools/_shared/mockups/crewneck.png' },
+  { id: 'hoodie',       label: 'Hoodie',          svg: '/tools/_shared/mockups/hoodie.png' },
+  { id: 'zipper',       label: 'Zip-Hoodie',      svg: '/tools/_shared/mockups/zipper.png' },
+  { id: 'jogger-cuffed',label: 'Jogger (cuffed)', svg: '/tools/_shared/mockups/jogger-cuffed.png' },
+  { id: 'jogger-open',  label: 'Jogger (open)',   svg: '/tools/_shared/mockups/jogger-open.png' },
+  { id: 'shorts',       label: 'Shorts',          svg: '/tools/_shared/mockups/shorts.png' },
+  { id: 'cap-normal',   label: 'Cap',             svg: '/tools/_shared/mockups/cap-normal.png' },
+  { id: 'cap-trucker',  label: 'Cap (Trucker)',   svg: '/tools/_shared/mockups/cap-trucker.png' },
+  { id: 'custom',       label: 'Custom',          svg: '' },
+];
+
+var STATUSES = [
+  { id: 'draft',     label: 'Entwurf' },
+  { id: 'finalized', label: 'Finalisiert' },
+  { id: 'sample_1',  label: 'Sample 1 in Produktion' },
+  { id: 'sample_2',  label: 'Sample 2 in Produktion' },
+  { id: 'done',      label: 'Fertig' },
+  { id: 'in_de',     label: 'In Deutschland' },
+];
+
+/* ════════════════════════════════════════════════════════════════════
+   UTILITIES
+   ════════════════════════════════════════════════════════════════════ */
+
+function $(id){ return document.getElementById(id); }
+function el(tag, cls, text){
+  var e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (text != null) e.textContent = text;
+  return e;
+}
+function clearEl(node){
+  if (!node) return;
+  while (node.firstChild) node.removeChild(node.firstChild);
+}
+function uid(prefix){ return (prefix||'p')+'_'+Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
+function fmtDate(ts){
+  if (!ts) return '—';
+  var d = new Date(ts);
+  return d.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'2-digit'});
+}
+
+function toast(msg){
+  var t = $('toast');
+  if (!t) return;
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toast._t);
+  toast._t = setTimeout(function(){ t.classList.remove('show'); }, 2000);
+}
+window.toast = toast;
+
+/* ════════════════════════════════════════════════════════════════════
+   FIREBASE WRAPPERS
+   ════════════════════════════════════════════════════════════════════ */
+
+function fbRoot(){ return _DB ? _DB.ref('rooms/' + ROOM + '/techpack') : null; }
+function fbPacks(){ return fbRoot() ? fbRoot().child('packs') : null; }
+function fbPack(id){ return fbPacks() ? fbPacks().child(id) : null; }
+
+function safeUpdate(ref, payload){
+  if (!ref) return Promise.resolve();
+  return ref.update(payload).catch(function(err){
+    console.error('[techpack] update fail', err);
+    toast('Speichern fehlgeschlagen — neuer Versuch…');
+    return new Promise(function(res){
+      setTimeout(function(){
+        ref.update(payload).then(res, function(err2){
+          console.error('[techpack] retry fail', err2);
+          toast('Speichern fehlgeschlagen: ' + (err2.code || err2.message));
+          res();
+        });
+      }, 600);
+    });
+  });
+}
+
+function safeSet(ref, payload){
+  if (!ref) return Promise.resolve();
+  return ref.set(payload).catch(function(err){
+    console.error('[techpack] set fail', err);
+    toast('Speichern fehlgeschlagen: ' + (err.code || err.message));
+  });
+}
+
+function safeRemove(ref){
+  if (!ref) return Promise.resolve();
+  return ref.remove().catch(function(err){
+    console.error('[techpack] remove fail', err);
+    toast('Löschen fehlgeschlagen: ' + (err.code || err.message));
+  });
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   LISTENER REGISTRY
+   ════════════════════════════════════════════════════════════════════ */
+
+var LISTENERS = [];
+function trackOn(ref, evt, cb){
+  if (!ref) return;
+  ref.on(evt, cb);
+  LISTENERS.push({ ref: ref, evt: evt, cb: cb });
+}
+function trackOff(){
+  LISTENERS.forEach(function(l){ try { l.ref.off(l.evt, l.cb); } catch(e) {} });
+  LISTENERS = [];
+}
+window.addEventListener('pagehide', trackOff);
+window.addEventListener('beforeunload', trackOff);
+
+/* ════════════════════════════════════════════════════════════════════
+   BOOT
+   ════════════════════════════════════════════════════════════════════ */
+
+(function boot(){
+  if (!ROOM){
+    clearEl(document.body);
+    var box = el('div');
+    box.style.cssText = 'padding:60px;text-align:center;font-family:Montserrat,sans-serif;';
+    box.appendChild(el('h2', null, 'Kein Raum-Code'));
+    var p = el('p', null, 'Dieses Tool muss aus einem Kundenraum geöffnet werden.');
+    p.style.color = '#666';
+    p.style.marginTop = '8px';
+    box.appendChild(p);
+    document.body.appendChild(box);
+    return;
+  }
+  if (!_DB){ setTimeout(boot, 200); return; }
+  attachPackListListener();
+  try {
+    var lastPackId = localStorage.getItem(STORAGE_KEY);
+    if (lastPackId) STATE.activePackId = lastPackId;
+  } catch (e) {}
+})();
+
+/* ════════════════════════════════════════════════════════════════════
+   PACK-LIST LISTENER
+   ════════════════════════════════════════════════════════════════════ */
+
+function attachPackListListener(){
+  var ref = fbPacks();
+  if (!ref) return;
+  trackOn(ref, 'value', function(snap){
+    var v = snap.val() || {};
+    STATE.packs = v;
+    if (STATE.activePackId && !v[STATE.activePackId]){
+      STATE.activePackId = null;
+      STATE.activePageId = null;
+      try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
+    }
+    renderRoute();
+  });
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   ROUTING
+   ════════════════════════════════════════════════════════════════════ */
+
+function renderRoute(){
+  if (STATE.activePackId && STATE.packs[STATE.activePackId]) renderEditor();
+  else renderList();
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   LIST VIEW
+   ════════════════════════════════════════════════════════════════════ */
+
+function renderList(){
+  $('viewEditor').hidden = true;
+  $('viewList').hidden = false;
+  // Header zurücksetzen (renderEditor leert hdrTitle, also rebuild komplett)
+  var titleHost = $('hdrTitle');
+  clearEl(titleHost);
+  var label = el('span', null, '📐 Techpack');
+  label.id = 'hdrLabel';
+  titleHost.appendChild(label);
+
+  clearEl($('hdrActions'));
+  var newBtn = el('button', 'btn', '+ Neues Techpack');
+  newBtn.id = 'newPackBtn';
+  newBtn.type = 'button';
+  newBtn.onclick = openNewPackModal;
+  $('hdrActions').appendChild(newBtn);
+
+  var v = $('viewList');
+  clearEl(v);
+  var ids = Object.keys(STATE.packs);
+  if (!ids.length){
+    var em = el('div', 'empty');
+    em.appendChild(el('div', 'empty-icon', '📐'));
+    em.appendChild(el('div', 'empty-h', 'Noch kein Techpack'));
+    em.appendChild(el('div', 'empty-p', 'Lege dein erstes Techpack an — deine Produktions-Specs an einem Ort.'));
+    var cta = el('button', 'empty-cta', 'Erstes Techpack anlegen');
+    cta.onclick = openNewPackModal;
+    em.appendChild(cta);
+    v.appendChild(em);
+    return;
+  }
+  ids.sort(function(a,b){
+    var ma = (STATE.packs[a] && STATE.packs[a].meta) || {};
+    var mb = (STATE.packs[b] && STATE.packs[b].meta) || {};
+    return (mb.updated||mb.created||0) - (ma.updated||ma.created||0);
+  });
+  var grid = el('div', 'pack-grid');
+  ids.forEach(function(id){ grid.appendChild(renderPackCard(id, STATE.packs[id])); });
+  v.appendChild(grid);
+}
+
+function renderPackCard(id, pack){
+  var m = (pack && pack.meta) || {};
+  var c = el('div', 'pack-card');
+  var head = el('div', 'pack-card-head');
+  var iconWrap = el('div');
+  iconWrap.appendChild(el('div', 'pack-card-icon', baseStyleEmoji(m.baseStyle)));
+  var titleWrap = el('div'); titleWrap.style.flex = '1';
+  titleWrap.appendChild(el('div', 'pack-card-title', m.name || 'Unbenannt'));
+  head.appendChild(iconWrap);
+  head.appendChild(titleWrap);
+  c.appendChild(head);
+
+  var meta = el('div', 'pack-card-meta');
+  meta.appendChild(el('span', null, 'Aktualisiert ' + fmtDate(m.updated || m.created)));
+  var stEntry = STATUSES.find(function(s){return s.id === m.status;}) || STATUSES[0];
+  var stPill = el('span', 'pack-card-status ' + (m.status || 'draft'), stEntry.label);
+  meta.appendChild(stPill);
+  c.appendChild(meta);
+
+  var pgCount = (pack && pack.pageOrder) ? pack.pageOrder.length : 0;
+  var pgInfo = el('div', 'pack-card-meta');
+  pgInfo.appendChild(el('span', null, pgCount + ' Seite' + (pgCount === 1 ? '' : 'n')));
+  c.appendChild(pgInfo);
+
+  var actions = el('div', 'pack-card-actions');
+  var openBtn = el('button', null, 'Öffnen');
+  openBtn.onclick = function(e){ e.stopPropagation(); openPack(id); };
+  actions.appendChild(openBtn);
+  var renameBtn = el('button', null, 'Umbenennen');
+  renameBtn.onclick = function(e){ e.stopPropagation(); renamePack(id); };
+  actions.appendChild(renameBtn);
+  var dupBtn = el('button', null, 'Duplizieren');
+  dupBtn.onclick = function(e){ e.stopPropagation(); duplicatePack(id); };
+  actions.appendChild(dupBtn);
+  var delBtn = el('button', 'danger', 'Löschen');
+  delBtn.onclick = function(e){ e.stopPropagation(); deletePack(id); };
+  actions.appendChild(delBtn);
+  c.appendChild(actions);
+
+  c.onclick = function(){ openPack(id); };
+  return c;
+}
+
+function baseStyleEmoji(b){
+  switch (b){
+    case 'tshirt':     return '👕';
+    case 'tank':       return '🎽';
+    case 'hoodie':     return '🧥';
+    case 'longsleeve': return '👔';
+    default:           return '📐';
+  }
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   PACK ACTIONS
+   ════════════════════════════════════════════════════════════════════ */
+
+function openNewPackModal(){
+  $('newPackName').value = '';
+  $('newPackAllPages').checked = true;
+  var sp = $('newPackStyles');
+  clearEl(sp);
+  var selected = 'tshirt';
+  BASE_STYLES.forEach(function(s){
+    var b = el('button');
+    b.type = 'button';
+    b.dataset.style = s.id;
+    if (s.svg){
+      var img = document.createElement('img');
+      img.src = s.svg;
+      b.appendChild(img);
+    } else {
+      var ph = el('div'); ph.style.flex = '1';
+      ph.style.display = 'flex'; ph.style.alignItems = 'center'; ph.style.justifyContent = 'center';
+      ph.style.fontSize = '36px';
+      ph.textContent = '📐';
+      b.appendChild(ph);
+    }
+    b.appendChild(el('span', null, s.label));
+    if (s.id === selected) b.classList.add('active');
+    b.onclick = function(){
+      [].forEach.call(sp.children, function(c){ c.classList.remove('active'); });
+      b.classList.add('active');
+      selected = s.id;
+    };
+    sp.appendChild(b);
+  });
+  $('newPackOk').onclick = function(){
+    var name = ($('newPackName').value || '').trim();
+    if (!name){ toast('Bitte Name eingeben'); $('newPackName').focus(); return; }
+    var all = $('newPackAllPages').checked;
+    closeAllModals();
+    createPack(name, selected, all);
+  };
+  $('newPackCancel').onclick = closeAllModals;
+  $('newPackModal').hidden = false;
+  setTimeout(function(){ $('newPackName').focus(); }, 50);
+}
+
+function createPack(name, baseStyle, addAllPages){
+  var packId = uid('pk');
+  var now = Date.now();
+  var pages = {};
+  var pageOrder = [];
+  // Standard-Measurements aus dem Render-Modul (pro baseStyle eine Liste).
+  var stdMeas = (window.tpRender && window.tpRender.STANDARD_MEASUREMENTS &&
+                 window.tpRender.STANDARD_MEASUREMENTS[baseStyle]) || [];
+  if (addAllPages){
+    PAGE_TYPE_ORDER.forEach(function(t){
+      var pid = uid('pg');
+      var pg = { type: t, fields: {}, images: {}, notes: {} };
+      // TP_START bekommt Style + Color-Defaults nach baseStyle (Style ist nur ein Hint).
+      if (t === 'TP_START'){
+        pg.fields.style = baseStyle === 'custom' ? '' : baseStyle.toUpperCase();
+      }
+      // TP_MEASUREMENTS bekommt Mockup-Ref + Standard-Maße als Vorlage.
+      if (t === 'TP_MEASUREMENTS'){
+        if (baseStyle && baseStyle !== 'custom') pg.fields.mockupRef = baseStyle;
+        if (stdMeas.length){
+          pg.fields.measurements = stdMeas.map(function(m){
+            return { name: m.name, value: '' };
+          });
+        }
+      }
+      pages[pid] = pg;
+      pageOrder.push(pid);
+    });
+  } else {
+    var pid0 = uid('pg');
+    pages[pid0] = { type: 'TP_START', fields: {}, images: {}, notes: {} };
+    pageOrder.push(pid0);
+  }
+  var pack = {
+    meta: { name: name, baseStyle: baseStyle, created: now, updated: now, status: 'draft' },
+    pageOrder: pageOrder,
+    pages: pages,
+  };
+  safeSet(fbPack(packId), pack).then(function(){
+    openPack(packId);
+    toast('Techpack angelegt ✓');
+  });
+}
+
+function openPack(id){
+  STATE.activePackId = id;
+  var pack = STATE.packs[id];
+  STATE.activePageId = (pack && pack.pageOrder && pack.pageOrder[0]) || null;
+  try { localStorage.setItem(STORAGE_KEY, id); } catch (e) {}
+  renderRoute();
+}
+
+function closePack(){
+  STATE.activePackId = null;
+  STATE.activePageId = null;
+  try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
+  renderRoute();
+}
+
+function renamePack(id){
+  var cur = (STATE.packs[id] && STATE.packs[id].meta && STATE.packs[id].meta.name) || '';
+  var nv = window.prompt('Neuer Name:', cur);
+  if (nv == null) return;
+  nv = nv.trim();
+  if (!nv) return;
+  safeUpdate(fbPack(id).child('meta'), { name: nv, updated: Date.now() });
+  toast('Umbenannt ✓');
+}
+
+function deletePack(id){
+  var n = (STATE.packs[id] && STATE.packs[id].meta && STATE.packs[id].meta.name) || 'dieses Techpack';
+  if (!window.confirm('"' + n + '" wirklich löschen? Kann nicht rückgängig gemacht werden.')) return;
+  safeRemove(fbPack(id)).then(function(){
+    if (CUSTOMER_ID){
+      safeRemove(_DB.ref('workspace/customers/' + CUSTOMER_ID + '/techpacks/' + id));
+    }
+    if (STATE.activePackId === id) closePack();
+    toast('Gelöscht ✓');
+  });
+}
+
+function duplicatePack(id){
+  var src = STATE.packs[id];
+  if (!src) return;
+  var newId = uid('pk');
+  var now = Date.now();
+  var clone = JSON.parse(JSON.stringify(src));
+  clone.meta = clone.meta || {};
+  clone.meta.name = (clone.meta.name || 'Pack') + ' (Kopie)';
+  clone.meta.created = now;
+  clone.meta.updated = now;
+  clone.meta.status = 'draft';
+  var newPages = {};
+  var newOrder = [];
+  (clone.pageOrder || []).forEach(function(oldPid){
+    var newPid = uid('pg');
+    newPages[newPid] = clone.pages[oldPid];
+    newOrder.push(newPid);
+  });
+  clone.pages = newPages;
+  clone.pageOrder = newOrder;
+  safeSet(fbPack(newId), clone).then(function(){ toast('Dupliziert ✓'); });
+}
+
+function setPackStatus(id, status){
+  safeUpdate(fbPack(id).child('meta'), { status: status, updated: Date.now() }).then(function(){
+    if (status !== 'draft') mirrorToWorkspace(id);
+  });
+}
+
+function mirrorToWorkspace(packId){
+  var pack = STATE.packs[packId];
+  if (!pack || !pack.meta) return;
+  resolveCustomerId(function(cid){
+    if (!cid) return;
+    var ref = _DB.ref('workspace/customers/' + cid + '/techpacks/' + packId);
+    safeUpdate(ref, {
+      name: pack.meta.name || '',
+      status: pack.meta.status || 'draft',
+      baseStyle: pack.meta.baseStyle || 'custom',
+      updated: pack.meta.updated || Date.now(),
+      room: ROOM,
+    });
+  });
+}
+
+var CUSTOMER_ID = null;
+function resolveCustomerId(cb){
+  if (CUSTOMER_ID){ cb(CUSTOMER_ID); return; }
+  _DB.ref('workspace/customers').orderByChild('room').equalTo(ROOM).once('value', function(snap){
+    var v = snap.val() || {};
+    var keys = Object.keys(v);
+    if (keys.length){
+      CUSTOMER_ID = keys[0];
+      cb(CUSTOMER_ID);
+    } else {
+      cb(null);
+    }
+  }, function(){ cb(null); });
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   EDITOR VIEW
+   ════════════════════════════════════════════════════════════════════ */
+
+function renderEditor(){
+  $('viewList').hidden = true;
+  $('viewEditor').hidden = false;
+  var pack = STATE.packs[STATE.activePackId];
+  if (!pack){ closePack(); return; }
+
+  clearEl($('hdrActions'));
+  var titleHost = $('hdrTitle');
+  clearEl(titleHost);
+  var back = el('button', 'btn-icon btn-light', '←');
+  back.title = 'Zurück zur Liste';
+  back.onclick = closePack;
+  titleHost.appendChild(back);
+  var titleInput = document.createElement('input');
+  titleInput.type = 'text';
+  titleInput.value = (pack.meta && pack.meta.name) || '';
+  titleInput.placeholder = 'Pack-Name';
+  titleInput.onchange = function(){
+    var v = (titleInput.value || '').trim();
+    if (!v) return;
+    safeUpdate(fbPack(STATE.activePackId).child('meta'), { name: v, updated: Date.now() });
+  };
+  titleHost.appendChild(titleInput);
+
+  var stEntry = STATUSES.find(function(s){return s.id === (pack.meta && pack.meta.status);}) || STATUSES[0];
+  var statusPill = el('button', 'status-pill ' + ((pack.meta && pack.meta.status) || 'draft'), stEntry.label);
+  statusPill.onclick = function(){ openStatusModal(STATE.activePackId); };
+  $('hdrActions').appendChild(statusPill);
+  var pdfBtn = el('button', 'btn btn-accent', 'PDF Export');
+  pdfBtn.onclick = function(){ exportPdf(STATE.activePackId); };
+  $('hdrActions').appendChild(pdfBtn);
+
+  var v = $('viewEditor');
+  clearEl(v);
+  var grid = el('div', 'editor');
+  var sidebar = el('aside', 'editor-sidebar');
+  sidebar.appendChild(el('h4', null, 'Seiten'));
+  var pageList = el('ul', 'page-list');
+  pageList.id = 'pageListEl';
+  sidebar.appendChild(pageList);
+  var addBtn = el('button', 'page-add-btn', '+ Seite hinzufügen');
+  addBtn.type = 'button';
+  addBtn.onclick = openAddPageModal;
+  sidebar.appendChild(addBtn);
+  grid.appendChild(sidebar);
+
+  var canvas = el('section', 'editor-canvas');
+  canvas.id = 'pageCanvas';
+  grid.appendChild(canvas);
+
+  v.appendChild(grid);
+
+  renderPageList();
+  renderPageCanvas();
+}
+
+function renderPageList(){
+  var list = $('pageListEl');
+  if (!list) return;
+  var pack = STATE.packs[STATE.activePackId];
+  if (!pack) return;
+  clearEl(list);
+  (pack.pageOrder || []).forEach(function(pid, idx){
+    var page = (pack.pages || {})[pid];
+    if (!page) return;
+    var def = PAGE_TYPES[page.type] || { icon: '📄', label: page.type };
+    var li = el('li');
+    li.dataset.pid = pid;
+    if (pid === STATE.activePageId) li.classList.add('active');
+    li.draggable = true;
+    li.appendChild(el('span', 'pi-drag', '⋮⋮'));
+    li.appendChild(el('span', 'pi-num', String(idx + 1).padStart(2, '0')));
+    li.appendChild(el('span', 'pi-label', def.icon + ' ' + def.label));
+    var del = el('button', 'pi-del', '×');
+    del.title = 'Seite entfernen';
+    del.type = 'button';
+    del.onclick = function(e){ e.stopPropagation(); deletePage(pid); };
+    li.appendChild(del);
+    li.onclick = function(){
+      STATE.activePageId = pid;
+      renderPageList();
+      renderPageCanvas();
+    };
+    li.ondragstart = function(e){
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', pid);
+      li.classList.add('dragging');
+    };
+    li.ondragend = function(){ li.classList.remove('dragging'); };
+    li.ondragover = function(e){ e.preventDefault(); e.dataTransfer.dropEffect = 'move'; };
+    li.ondrop = function(e){
+      e.preventDefault();
+      var src = e.dataTransfer.getData('text/plain');
+      if (src && src !== pid) reorderPage(src, pid);
+    };
+    list.appendChild(li);
+  });
+}
+
+function reorderPage(srcPid, beforePid){
+  var pack = STATE.packs[STATE.activePackId];
+  if (!pack) return;
+  var order = (pack.pageOrder || []).slice();
+  var srcIdx = order.indexOf(srcPid);
+  if (srcIdx < 0) return;
+  order.splice(srcIdx, 1);
+  var dstIdx = order.indexOf(beforePid);
+  if (dstIdx < 0) order.push(srcPid);
+  else order.splice(dstIdx, 0, srcPid);
+  safeUpdate(fbPack(STATE.activePackId), { pageOrder: order, 'meta/updated': Date.now() });
+  pack.pageOrder = order;
+  renderPageList();
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   ADD-PAGE / STATUS MODALS
+   ════════════════════════════════════════════════════════════════════ */
+
+function openAddPageModal(){
+  var host = $('addPageTypes');
+  clearEl(host);
+  PAGE_TYPE_ORDER.forEach(function(t){
+    var def = PAGE_TYPES[t];
+    var b = el('button');
+    b.type = 'button';
+    b.appendChild(el('div', 'em', def.icon));
+    b.appendChild(el('div', null, def.label));
+    b.onclick = function(){ addPage(t); closeAllModals(); };
+    host.appendChild(b);
+  });
+  $('addPageCancel').onclick = closeAllModals;
+  $('addPageModal').hidden = false;
+}
+
+function addPage(type){
+  var pack = STATE.packs[STATE.activePackId];
+  if (!pack) return;
+  var pid = uid('pg');
+  var page = { type: type, fields: {}, images: {}, notes: {} };
+  var order = (pack.pageOrder || []).slice();
+  order.push(pid);
+  var updates = {};
+  updates['pages/' + pid] = page;
+  updates['pageOrder'] = order;
+  updates['meta/updated'] = Date.now();
+  safeUpdate(fbPack(STATE.activePackId), updates);
+  STATE.activePageId = pid;
+}
+
+function deletePage(pid){
+  var pack = STATE.packs[STATE.activePackId];
+  if (!pack) return;
+  if (!window.confirm('Seite entfernen?')) return;
+  var order = (pack.pageOrder || []).filter(function(x){ return x !== pid; });
+  var updates = {};
+  updates['pages/' + pid] = null;
+  updates['pageOrder'] = order;
+  updates['meta/updated'] = Date.now();
+  safeUpdate(fbPack(STATE.activePackId), updates).then(function(){
+    if (STATE.activePageId === pid) STATE.activePageId = order[0] || null;
+    renderPageList();
+    renderPageCanvas();
+  });
+}
+
+function openStatusModal(packId){
+  var host = $('statusList');
+  clearEl(host);
+  STATUSES.forEach(function(s){
+    var b = el('button');
+    b.type = 'button';
+    b.appendChild(el('div', null, s.label));
+    b.onclick = function(){ setPackStatus(packId, s.id); closeAllModals(); };
+    host.appendChild(b);
+  });
+  $('statusCancel').onclick = closeAllModals;
+  $('statusModal').hidden = false;
+}
+
+function closeAllModals(){
+  $('addPageModal').hidden = true;
+  $('newPackModal').hidden = true;
+  $('statusModal').hidden = true;
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   PAGE CANVAS — defer-rendering during input focus
+   ════════════════════════════════════════════════════════════════════ */
+
+var _renderDeferred = false;
+function renderPageCanvas(){
+  var ae = document.activeElement;
+  if (ae && ae.tagName && ['INPUT','TEXTAREA','SELECT'].indexOf(ae.tagName) >= 0 &&
+      ae.closest && ae.closest('.editor-canvas')){
+    _renderDeferred = true;
+    return;
+  }
+  _doRenderPageCanvas();
+}
+document.addEventListener('focusout', function(){
+  if (_renderDeferred){
+    _renderDeferred = false;
+    setTimeout(_doRenderPageCanvas, 60);
+  }
+});
+document.addEventListener('visibilitychange', function(){
+  if (!document.hidden && _renderDeferred){
+    _renderDeferred = false;
+    _doRenderPageCanvas();
+  }
+});
+
+function _doRenderPageCanvas(){
+  var canvas = $('pageCanvas');
+  if (!canvas) return;
+  var pack = STATE.packs[STATE.activePackId];
+  if (!pack){ clearEl(canvas); return; }
+  var pid = STATE.activePageId;
+  if (!pid || !(pack.pages && pack.pages[pid])){
+    clearEl(canvas);
+    canvas.appendChild(el('div', 'canvas-empty', 'Wähle eine Seite oder lege eine neue an.'));
+    return;
+  }
+  var page = pack.pages[pid];
+  if (!window.tpRender || typeof window.tpRender.page !== 'function'){
+    clearEl(canvas);
+    canvas.appendChild(el('div', 'canvas-empty', 'Renderer lädt…'));
+    setTimeout(_doRenderPageCanvas, 100);
+    return;
+  }
+  clearEl(canvas);
+  canvas.appendChild(window.tpRender.page(page, buildRenderOpts(pid, page)));
+}
+
+/* Render-Opts mit Live-Save-Callbacks für den Editor */
+function buildRenderOpts(pid, page){
+  var pack = STATE.packs[STATE.activePackId] || {};
+  var baseStyle = (pack.meta && pack.meta.baseStyle) || 'custom';
+  return {
+    editable: true,
+    baseStyle: baseStyle,
+    getMockup: getMockupSrc,
+    onField: function(path, value){ debouncedSavePageField(pid, path, value); },
+    onImage: function(slot, file){
+      toast('Komprimiere…');
+      window.imgUtils.compress(file, function(dataURL){
+        if (!dataURL){ toast('Bild konnte nicht gelesen werden'); return; }
+        var u = {};
+        u['pages/' + pid + '/images/' + slot] = dataURL;
+        u['meta/updated'] = Date.now();
+        safeUpdate(fbPack(STATE.activePackId), u).then(function(){ toast('Hochgeladen ✓'); });
+      }, { maxWidth: 2000, quality: 0.9 });
+    },
+    onImageRm: function(slot){
+      var u = {};
+      u['pages/' + pid + '/images/' + slot] = null;
+      u['meta/updated'] = Date.now();
+      safeUpdate(fbPack(STATE.activePackId), u);
+    },
+    onMeasure: function(idx, key, value){
+      var ms = ((page.fields || {}).measurements || []).slice();
+      while (ms.length <= idx) ms.push({ name: '', value: '' });
+      ms[idx] = Object.assign({}, ms[idx]);
+      ms[idx][key] = value;
+      debouncedSavePageField(pid, 'fields/measurements', ms);
+    },
+    onMeasureAdd: function(){
+      var ms = ((page.fields || {}).measurements || []).slice();
+      ms.push({ name: '', value: '' });
+      var u = {};
+      u['pages/' + pid + '/fields/measurements'] = ms;
+      u['meta/updated'] = Date.now();
+      safeUpdate(fbPack(STATE.activePackId), u);
+    },
+    onMeasureRm: function(idx){
+      var ms = ((page.fields || {}).measurements || []).slice();
+      ms.splice(idx, 1);
+      var u = {};
+      u['pages/' + pid + '/fields/measurements'] = ms.length ? ms : null;
+      u['meta/updated'] = Date.now();
+      safeUpdate(fbPack(STATE.activePackId), u);
+    },
+  };
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   FIELD HELPERS
+   ════════════════════════════════════════════════════════════════════ */
+
+var DEBOUNCE_TIMERS = {};
+function debouncedSavePageField(pid, path, value){
+  var key = pid + '|' + path;
+  clearTimeout(DEBOUNCE_TIMERS[key]);
+  DEBOUNCE_TIMERS[key] = setTimeout(function(){
+    var ref = fbPack(STATE.activePackId);
+    if (!ref) return;
+    var u = {};
+    u['pages/' + pid + '/' + path] = (value === '' ? null : value);
+    u['meta/updated'] = Date.now();
+    safeUpdate(ref, u);
+  }, 700);
+}
+
+/* Mockup-Pfad-Lookup. Tank-Variante hat PNGs (aus Original extrahiert), andere SVGs.
+   User-Upload schlägt immer die Library. */
+/* Alle Mockups direkt aus den Brandwork-Originalen.
+   front = clean Outline (für TP_START PRODUCT-Box)
+   measured = mit roten nummerierten Maß-Pfeilen (für TP_MEASUREMENTS) */
+function _mp(slug) {
+  return {
+    front:    '/tools/_shared/mockups/' + slug + '.png',
+    measured: '/tools/_shared/measured/' + slug + '-only.jpg',
+  };
+}
+var MOCKUP_LIBRARY = {
+  tshirt:          _mp('tshirt'),
+  tank:            _mp('tanktop'),
+  longsleeve:      _mp('longsleeve'),
+  'summer-sleeve': _mp('summer-sleeve'),
+  crewneck:        _mp('crewneck'),
+  hoodie:          _mp('hoodie'),
+  zipper:          _mp('zipper'),
+  'jogger-cuffed': _mp('jogger-cuffed'),
+  'jogger-open':   _mp('jogger-open'),
+  shorts:          _mp('shorts'),
+  'cap-normal':    _mp('cap-normal'),
+  'cap-trucker':   _mp('cap-trucker'),
+};
+
+function getMockupSrc(page){
+  if (page.images && page.images.mockup) return page.images.mockup;
+  var ref = (page.fields || {}).mockupRef;
+  if (!ref) return null;
+  var lib = MOCKUP_LIBRARY[ref];
+  if (!lib) return null;
+  return (page.type === 'TP_MEASUREMENTS') ? (lib.measured || lib.front) : lib.front;
+}
+
+
+/* ════════════════════════════════════════════════════════════════════
+   PDF EXPORT — wires to /tools/_shared/techpack-pdf.js
+   ════════════════════════════════════════════════════════════════════ */
+
+function exportPdf(packId){
+  toast('PDF-Export wird vorbereitet…');
+  loadPdfLibs(function(){
+    try { _doExportPdf(packId); }
+    catch (e){ console.error(e); toast('PDF-Export fehlgeschlagen'); }
+  });
+}
+
+var _pdfLibsLoaded = false;
+function loadPdfLibs(cb){
+  if (_pdfLibsLoaded){ cb(); return; }
+  var todo = 2;
+  function done(){ todo--; if (todo === 0){ _pdfLibsLoaded = true; cb(); } }
+  function load(src){
+    var s = document.createElement('script');
+    s.src = src;
+    s.onload = done;
+    s.onerror = function(){ toast('Library konnte nicht geladen werden'); };
+    document.head.appendChild(s);
+  }
+  load('https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js');
+  load('https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js');
+}
+
+function _doExportPdf(packId){
+  if (typeof window.tpExportPdf === 'function'){
+    return window.tpExportPdf(packId, STATE.packs[packId]);
+  }
+  toast('PDF-Renderer noch nicht geladen');
+}
+
+/* Globals exposed to the PDF module */
+window.tpState = STATE;
+window.tpPageTypes = PAGE_TYPES;
+window.tpPageTypeOrder = PAGE_TYPE_ORDER;
+window.tpStatuses = STATUSES;
+window.tpBaseStyles = BASE_STYLES;
+window.tpGetMockupSrc = getMockupSrc;
+window.tpToast = toast;
+</script>
+<script src="/tools/_shared/techpack-pdf.js" defer></script>
+</body>
+</html>

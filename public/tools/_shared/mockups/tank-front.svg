@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 850">
+  <g fill="none" stroke="#111" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round">
+    <!-- Tank top front silhouette (clean) -->
+    <path d="M 270 130 L 250 230 L 220 760 L 480 760 L 450 230 L 430 130" />
+    <path d="M 270 130 Q 350 220 430 130" />
+    <path d="M 270 130 Q 215 175 250 230" />
+    <path d="M 430 130 Q 485 175 450 230" />
+    <!-- Inner hem detail -->
+    <path d="M 230 745 L 470 745" stroke-width="1" />
+  </g>
+</svg>

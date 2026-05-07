@@ -7,6 +7,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,700;1,900&family=Dancing+Script:wght@700&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+<script src="/tools/_shared/img-utils.js"></script>
 <script>
 var _ROOM=new URLSearchParams(location.search).get('room'),_DB=null;
 try{firebase.initializeApp({apiKey:"AIzaSyDJqdh3apGM4fcsjRYI7vZ4VrT1_A6L92U",authDomain:"unsignedworkspace.firebaseapp.com",databaseURL:"https://unsignedworkspace-default-rtdb.europe-west1.firebasedatabase.app",projectId:"unsignedworkspace"});_DB=firebase.database();}catch(e){try{_DB=firebase.database();}catch(e2){}}
@@ -338,35 +339,7 @@ function _suggestName(img){
   }
   return parts.filter(function(p){return p&&p!=='unbenannt';}).join('-')||'unsigned-image';
 }
-function downloadImage(src,name){
-  if(!src)return;
-  var fname=(name||'unsigned-image')+'.jpg';
-  if(src.indexOf('data:')===0){
-    // Data-URL: direkt downloadbar, garantiert CORS-frei
-    var a=document.createElement('a');a.href=src;a.download=fname;
-    document.body.appendChild(a);a.click();a.remove();
-    toast('Heruntergeladen ✓');return;
-  }
-  if(src.indexOf('http')===0){
-    // Externe URL: erst fetch+blob versuchen, bei CORS-Fail neuen Tab oeffnen
-    fetch(src,{mode:'cors'}).then(function(r){
-      if(!r.ok)throw new Error('http '+r.status);
-      return r.blob();
-    }).then(function(b){
-      var url=URL.createObjectURL(b);
-      var a=document.createElement('a');a.href=url;a.download=fname;
-      document.body.appendChild(a);a.click();a.remove();
-      setTimeout(function(){URL.revokeObjectURL(url);},2000);
-      toast('Heruntergeladen ✓');
-    }).catch(function(){
-      window.open(src,'_blank','noopener,noreferrer');
-      toast('Tab geöffnet — Rechtsklick → Bild speichern unter…');
-    });
-    return;
-  }
-  // Unbekanntes Format
-  toast('Format nicht unterstützt');
-}
+// downloadImage() lebt in /tools/_shared/img-utils.js — wird global zugewiesen.
 
 // Lazy-Migration aus alter flacher Struktur (mb/mock/sketch/products) in die
 // neue Folder-Struktur. Wird einmalig beim ersten Lesen gefahren wenn die
@@ -581,7 +554,7 @@ function addMbImg(src,url){
   mbData[curMbCat].push({id:Date.now().toString(36),src:src,note:'',url:url||'',ts:Date.now()});
   renderMb();fbSave();toast('Bild hinzugefügt ✓');
 }
-function compress(f,cb){var r=new FileReader();r.onload=function(e){var img=new Image();img.onload=function(){var w=img.width,h=img.height;if(w>2400){h=Math.round(h*2400/w);w=2400;}var c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(img,0,0,w,h);cb(c.toDataURL('image/jpeg',.95));};img.src=e.target.result;};r.readAsDataURL(f);}
+// compress() lebt in /tools/_shared/img-utils.js — wird global zugewiesen.
 
 // ═══════════ KANBAN ═══════════
 function renderKb(board){

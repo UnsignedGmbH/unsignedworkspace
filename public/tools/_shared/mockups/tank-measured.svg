@@ -1,0 +1,83 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 850" font-family="Montserrat, sans-serif">
+  <!-- Gray-filled tank top silhouette -->
+  <g fill="#cfcfcf" stroke="#111" stroke-width="2" stroke-linejoin="round" stroke-linecap="round">
+    <path d="M 270 130 L 250 230 L 220 760 L 480 760 L 450 230 L 430 130 Q 350 220 270 130 Z" />
+    <path d="M 270 130 Q 215 175 250 230" fill="#fff" stroke-width="0.5" />
+    <path d="M 430 130 Q 485 175 450 230" fill="#fff" stroke-width="0.5" />
+    <path d="M 270 130 Q 350 220 430 130" fill="#fff" stroke-width="0.5" />
+  </g>
+  <!-- Re-stroke clean outline so it's visible over fill -->
+  <g fill="none" stroke="#111" stroke-width="2" stroke-linejoin="round" stroke-linecap="round">
+    <path d="M 270 130 L 250 230 L 220 760 L 480 760 L 450 230 L 430 130" />
+    <path d="M 270 130 Q 350 220 430 130" />
+    <path d="M 270 130 Q 215 175 250 230" />
+    <path d="M 430 130 Q 485 175 450 230" />
+  </g>
+
+  <!-- Measurement arrows (red) -->
+  <g stroke="#d6342f" fill="#d6342f">
+    <!-- 1. Neck Width (across front neckline) -->
+    <line x1="278" y1="158" x2="422" y2="158" stroke-width="1.5" />
+    <polygon points="278,158 286,154 286,162" />
+    <polygon points="422,158 414,154 414,162" />
+
+    <!-- 2. Body Length (vertical right side) -->
+    <line x1="500" y1="135" x2="500" y2="755" stroke-width="1.5" />
+    <polygon points="500,135 496,143 504,143" />
+    <polygon points="500,755 496,747 504,747" />
+
+    <!-- 3. Chest Width -->
+    <line x1="240" y1="320" x2="460" y2="320" stroke-width="1.5" />
+    <polygon points="240,320 248,316 248,324" />
+    <polygon points="460,320 452,316 452,324" />
+
+    <!-- 4. Bottom Width -->
+    <line x1="222" y1="745" x2="478" y2="745" stroke-width="1.5" />
+    <polygon points="222,745 230,741 230,749" />
+    <polygon points="478,745 470,741 470,749" />
+
+    <!-- 5. Shoulder Width (between strap tops) -->
+    <line x1="280" y1="118" x2="420" y2="118" stroke-width="1.5" />
+    <polygon points="280,118 288,114 288,122" />
+    <polygon points="420,118 412,114 412,122" />
+
+    <!-- 6. Strap Width (vertical at left strap) -->
+    <line x1="252" y1="135" x2="241" y2="190" stroke-width="1.5" />
+    <polygon points="252,135 248,142 256,142" />
+    <polygon points="241,190 237,184 245,184" />
+
+    <!-- 7. Armhole Depth (left side) -->
+    <line x1="218" y1="180" x2="232" y2="285" stroke-width="1.5" />
+    <polygon points="218,180 213,187 222,189" />
+    <polygon points="232,285 227,278 236,278" />
+
+    <!-- 8. Neck Drop -->
+    <line x1="350" y1="135" x2="350" y2="220" stroke-width="1.5" />
+    <polygon points="350,135 346,143 354,143" />
+    <polygon points="350,220 346,212 354,212" />
+  </g>
+
+  <!-- Small numbered circles (red outline + red number) -->
+  <g font-family="Montserrat, sans-serif" font-weight="900" font-size="13">
+    <g fill="#fff" stroke="#d6342f" stroke-width="1.5">
+      <circle cx="350" cy="170" r="11" />
+      <circle cx="525" cy="445" r="11" />
+      <circle cx="350" cy="345" r="11" />
+      <circle cx="350" cy="775" r="11" />
+      <circle cx="195" cy="118" r="11" />
+      <circle cx="218" cy="170" r="11" />
+      <circle cx="190" cy="232" r="11" />
+      <circle cx="378" cy="180" r="11" />
+    </g>
+    <g fill="#d6342f" text-anchor="middle">
+      <text x="350" y="174">1</text>
+      <text x="525" y="449">2</text>
+      <text x="350" y="349">3</text>
+      <text x="350" y="779">4</text>
+      <text x="195" y="122">5</text>
+      <text x="218" y="174">6</text>
+      <text x="190" y="236">7</text>
+      <text x="378" y="184">8</text>
+    </g>
+  </g>
+</svg>

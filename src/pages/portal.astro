@@ -236,6 +236,8 @@ import BrandworkTimeline from "../components/BrandworkTimeline.astro";
         desc: "Briefing & Skripts für deine Inhalte" },
       { id: "design", icon: "🎨", label: "Design",
         desc: "Layouts & Visuals planen" },
+      { id: "techpack", icon: "📐", label: "Techpack",
+        desc: "Produktions-Specs pro Garment" },
       { id: "mk", icon: "📈", label: "Marketing Plan",
         desc: "Personal Brand · Ads · Email-Flows" },
       { id: "shop", icon: "🛒", label: "Shop",
@@ -413,9 +415,26 @@ import BrandworkTimeline from "../components/BrandworkTimeline.astro";
       });
     }
 
+    // Techpack hat kein einzelner %-Wert (mehrere Packs pro Customer) — eigene Card.
+    function _tpPortalCard(t) {
+      var parts = [];
+      parts.push('<button type="button" data-tool="' + t.id + '"');
+      parts.push(' class="tool-card group bg-card border-[0.5px] border-line rounded-xl p-3 md:p-[14px] flex flex-col gap-2 hover:border-brand-border hover:bg-brand-dim hover:shadow-[0_4px_16px_rgba(193,48,48,0.08)] transition-all text-left cursor-pointer min-w-0">');
+      parts.push('<div class="flex items-start gap-3 min-w-0">');
+      parts.push('<span class="w-9 h-9 md:w-10 md:h-10 rounded-lg bg-brand-dim flex items-center justify-center text-[18px] md:text-[20px] shrink-0 group-hover:bg-brand group-hover:text-white transition-colors">' + t.icon + '</span>');
+      parts.push('<div class="flex-1 min-w-0">');
+      parts.push('<div class="text-[12px] md:text-[13px] font-extrabold text-ink truncate">' + t.label + '</div>');
+      parts.push('<div class="text-[10px] md:text-[11px] text-ink-mute mt-[1px] truncate">' + t.desc + '</div>');
+      parts.push('</div></div>');
+      parts.push('<div class="text-[10px] text-ink-soft mt-1">&rarr; Pro Garment ein Techpack</div>');
+      parts.push('</button>');
+      return parts.join("");
+    }
+
     function renderGrid() {
       var grid = document.getElementById("ovGrid");
       grid.innerHTML = TOOLS.map(function (t) {
+        if (t.id === "techpack") return _tpPortalCard(t);
         var pct = TOOL_PROGRESS[t.id] || 0;
         return (
           '<button type="button" data-tool="' + t.id + '"' +

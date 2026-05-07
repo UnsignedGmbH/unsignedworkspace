@@ -245,6 +245,8 @@ import BrandworkTimeline from "../components/BrandworkTimeline.astro";
         desc: "Briefing & Skripts" },
       { id: "dn", file: "design", label: "Design", icon: "🎨",
         desc: "Layouts & Visuals" },
+      { id: "tp", file: "techpack", label: "Techpack", icon: "📐",
+        desc: "Produktions-Specs pro Garment" },
       { id: "mk", file: "mk", label: "Marketing Plan", icon: "📈",
         desc: "Personal Brand · Ads · Flows" },
       { id: "shop", file: "shop", label: "Shop", icon: "🛒",
@@ -460,11 +462,29 @@ import BrandworkTimeline from "../components/BrandworkTimeline.astro";
         social: pctOf(c, "socialP"),
       };
     }
+    // Techpack hat keine zentrale Progress (mehrere Packs pro Customer).
+    // Eigene Card ohne Prozent-Bar, nur als Tool-Einstieg.
+    function _tpCard(t, cid) {
+      var url = "/customer?id=" + encodeURIComponent(cid) + "&tool=" + encodeURIComponent(t.file);
+      var parts = [];
+      parts.push('<a href="' + url + '" class="bg-card border-[0.5px] border-line rounded-xl p-4 no-underline hover:border-brand-border hover:bg-brand-dim transition-colors block">');
+      parts.push('<div class="flex items-center gap-3 mb-3">');
+      parts.push('<span class="w-10 h-10 rounded-lg bg-brand-dim flex items-center justify-center text-[20px] shrink-0">' + t.icon + '</span>');
+      parts.push('<div class="flex-1 min-w-0">');
+      parts.push('<div class="text-[13px] font-extrabold text-ink truncate">' + ui.escapeHtml(t.label) + '</div>');
+      parts.push('<div class="text-[10px] text-ink-mute truncate">' + ui.escapeHtml(t.desc) + '</div>');
+      parts.push('</div></div>');
+      parts.push('<div class="text-[10px] text-ink-mute">&rarr; Pro Garment ein Techpack</div>');
+      parts.push('</a>');
+      return parts.join("");
+    }
+
     function renderToolGrid(c) {
       var pm = progressMap(c);
       var totalDone = 0;
       var grid = $("toolGrid");
       grid.innerHTML = TOOLS.map(function (t) {
+        if (t.id === "tp") return _tpCard(t, customerId);
         var pct = pm[t.id] || 0;
         totalDone += pct;
         var pctTxt = pct + "% ausgefüllt";
@@ -510,8 +530,9 @@ import BrandworkTimeline from "../components/BrandworkTimeline.astro";
       var btnPrint = $("btnPrint");
       if (btnPrint) btnPrint.addEventListener("click", function () { window.print(); });
 
-      // Update meta line with avg progress
-      var avg = Math.round(totalDone / TOOLS.length);
+      // Update meta line with avg progress (Techpack vom Schnitt ausgenommen, da kein einzelner %-Wert).
+      var progressTools = TOOLS.filter(function (t) { return t.id !== "tp"; });
+      var avg = progressTools.length ? Math.round(totalDone / progressTools.length) : 0;
       $("cMeta").textContent =
         "Raum " + (c.room || "—") +
         " · Ø " + avg + "% · seit " + ui.fmtAgo(c.created || c.lastActive);

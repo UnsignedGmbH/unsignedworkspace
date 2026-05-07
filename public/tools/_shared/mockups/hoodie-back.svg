@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 800" fill="none" stroke="#111" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round">
+  <!-- Body -->
+  <path d="M 195 175 L 175 720 L 425 720 L 405 175" />
+  <!-- Hem -->
+  <path d="M 175 720 L 425 720" />
+  <path d="M 175 705 L 425 705" stroke-width="1" />
+  <!-- Sleeves -->
+  <path d="M 195 175 L 75 320 L 75 600 L 165 600 L 195 240 Z" />
+  <path d="M 75 580 L 165 580" stroke-width="1" />
+  <path d="M 405 175 L 525 320 L 525 600 L 435 600 L 405 240 Z" />
+  <path d="M 435 580 L 525 580" stroke-width="1" />
+  <!-- Hood (back view, more dome-like) -->
+  <path d="M 230 175 Q 215 70 300 60 Q 385 70 370 175 Z" />
+  <path d="M 300 60 L 300 175" stroke-width="1.5" />
+</svg>
