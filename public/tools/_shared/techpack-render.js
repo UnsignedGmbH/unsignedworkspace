@@ -559,7 +559,7 @@
       // Linker Quadrant: BRAND / STYLE / COLLECTION DROP + SAMPLE SIZE / QTY
       var left = el('div', { style: { display: 'flex', flexDirection: 'column', gap: '10px' } });
       left.appendChild(row([
-        fieldBox({ label: 'Brand',           path: 'fields/brand',     page: page, opts: opts, big: true, upper: true, placeholder: 'UNSIGNED', flex: '0 0 30%' }),
+        fieldBox({ label: 'Brand',           path: 'fields/brand',     page: page, opts: opts, big: true, upper: true, placeholder: 'UNSIGNED' }),
         fieldBox({ label: 'Style',           path: 'fields/style',     page: page, opts: opts, big: true, upper: true, placeholder: 'TSHIRT' }),
         fieldBox({ label: 'Collection Drop', path: 'fields/drop',      page: page, opts: opts, big: true, upper: true, placeholder: 'B/FRIDAY 25' }),
       ], { gap: 10, mb: 0 }));
