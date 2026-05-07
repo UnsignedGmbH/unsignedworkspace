@@ -222,6 +222,7 @@
 
   // Field box: header (black bar with white text) + value area (input or text).
   function fieldBox(o) {
+    var isMobile = (typeof window !== 'undefined') && window.innerWidth < 600;
     var box = el('div', {
       style: {
         border: BORDER,
@@ -241,9 +242,9 @@
         color: '#fff',
         fontFamily: FONT,
         fontWeight: '900',
-        fontSize: '13px',
+        fontSize: isMobile ? '11px' : '13px',
         letterSpacing: '0.6px',
-        padding: '8px 12px',
+        padding: isMobile ? '6px 8px' : '8px 12px',
         textTransform: 'uppercase',
         textAlign: 'center',
       },
@@ -255,10 +256,10 @@
       flex: '1',
       border: '0',
       outline: '0',
-      padding: o.big ? '14px 12px' : '10px 12px',
+      padding: o.big ? (isMobile ? '10px 10px' : '14px 12px') : (isMobile ? '8px 10px' : '10px 12px'),
       fontFamily: FONT,
       fontWeight: o.big ? '800' : '700',
-      fontSize: o.big ? '20px' : '15px',
+      fontSize: o.big ? (isMobile ? '15px' : '20px') : (isMobile ? '13px' : '15px'),
       textAlign: o.multiline ? 'left' : 'center',
       background: '#fff',
       color: '#111',
@@ -279,17 +280,27 @@
         input.style.resize = 'none';
         input.style.display = 'block';
         common.alignItems = 'stretch';
+      } else if (o.type === 'select' && Array.isArray(o.options)) {
+        input = document.createElement('select');
+        o.options.forEach(function (op) {
+          var optEl = document.createElement('option');
+          optEl.value = op.value !== undefined ? op.value : op;
+          optEl.textContent = op.label !== undefined ? op.label : op;
+          if (optEl.value === v) optEl.selected = true;
+          input.appendChild(optEl);
+        });
       } else {
         input = document.createElement('input');
         input.type = o.type || 'text';
       }
-      input.value = String(v);
+      if (input.tagName !== 'SELECT') input.value = String(v);
       input.placeholder = o.placeholder || '';
       Object.keys(common).forEach(function (k) { input.style[k] = common[k]; });
-      // Layout-hack: inputs/textareas need block, not flex.
-      input.style.display = o.multiline ? 'block' : 'block';
+      // Layout-hack: form-controls block, not flex.
+      input.style.display = 'block';
       input.style.alignItems = '';
       input.style.justifyContent = '';
+      if (input.tagName === 'SELECT') input.style.cursor = 'pointer';
       var save = function () { o.opts.onField(o.path, input.value); };
       input.oninput = save;
       input.onchange = save;
@@ -484,17 +495,16 @@
   }
 
   function pageRoot(builder) {
-    // Editor-Mode: Natural content height (kein aspect-ratio — sonst kollabiert das
-    // Layout in schmalen Containern). PDF-Mode setzt nachträglich fixed 1200×1200
-    // via direktem style-Override im techpack-pdf.js.
+    // Editor-Mode: Content-driven height (auf Handy fluide). PDF-Mode überschreibt
+    // nachträglich fixed 1200×1200 via direktem style-Override in techpack-pdf.js.
+    var isMobile = (typeof window !== 'undefined') && window.innerWidth < 600;
     var wrap = el('div', {
       style: {
         width: '100%',
         maxWidth: '1080px',
-        minHeight: '900px',
         margin: '0 auto',
         background: '#fff',
-        padding: '32px 32px 50px',
+        padding: isMobile ? '14px 14px 40px' : '32px 32px 50px',
         boxSizing: 'border-box',
         fontFamily: FONT,
         color: '#111',
@@ -537,7 +547,7 @@
       var top = el('div', {
         style: {
           display: 'grid',
-          gridTemplateColumns: '1fr 1fr',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
           gap: '14px',
           marginBottom: '12px',
         },
@@ -602,12 +612,23 @@
         opts: opts,
         big: true,
         upper: true,
-        placeholder: 'DTG · SCREENPRINT · SUBLIMATION · EMBROIDERY · PATCH · HEAT TRANSFER',
+        type: 'select',
+        options: [
+          { value: '',             label: '— wählen —' },
+          { value: 'DTG',          label: 'DTG (Direct-to-Garment)' },
+          { value: 'Screenprint',  label: 'Screenprint' },
+          { value: 'Sublimation',  label: 'Sublimation' },
+          { value: 'Embroidery',   label: 'Embroidery' },
+          { value: 'Patch',        label: 'Patch' },
+          { value: 'Heat Transfer',label: 'Heat Transfer' },
+          { value: 'Puff Print',   label: 'Puff Print' },
+          { value: 'Foil',         label: 'Foil' },
+        ],
       }));
       var grid = el('div', {
         style: {
           display: 'grid',
-          gridTemplateColumns: '1fr 1fr',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
           gap: '12px',
           flex: '1',
         },
@@ -746,7 +767,7 @@
       var grid = el('div', {
         style: {
           display: 'grid',
-          gridTemplateColumns: '1fr 1fr',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
           gap: '8px',
           padding: '12px',
         },
@@ -831,20 +852,46 @@
       var grid = el('div', {
         style: {
           display: 'grid',
-          gridTemplateColumns: '1fr 1fr',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
           gap: '14px',
           flex: '1',
         },
       });
 
-      // ---- Left: mockup ----
-      var mockHost = bigBox('Mock Up', [imageSlot({
+      // ---- Left: mockup + (editor only) Style-Picker ----
+      var mockChildren = [];
+      if (opts.editable) {
+        // Inline-Picker direkt über dem Mockup — User wechselt die Basis-Zeichnung.
+        var picker = el('div', { style: { padding: '8px 10px', display: 'flex', gap: '8px', alignItems: 'center', borderBottom: BORDER_THIN, background: '#fafafa', fontSize: '11px', flexWrap: 'wrap' } });
+        picker.appendChild(el('span', { text: 'Mockup-Style:', style: { fontWeight: '900', color: '#555' } }));
+        var sel = document.createElement('select');
+        sel.style.cssText = 'border:1px solid #ccc;border-radius:6px;padding:4px 8px;font-family:' + FONT + ';font-weight:700;font-size:11px;background:#fff;cursor:pointer;';
+        var styles = [
+          { id: 'tshirt', label: 'T-Shirt' }, { id: 'tank', label: 'Tank Top' },
+          { id: 'longsleeve', label: 'Longsleeve' }, { id: 'summer-sleeve', label: 'Summer Sleeve' },
+          { id: 'crewneck', label: 'Crewneck' }, { id: 'hoodie', label: 'Hoodie' },
+          { id: 'zipper', label: 'Zip-Hoodie' }, { id: 'jogger-cuffed', label: 'Jogger (cuffed)' },
+          { id: 'jogger-open', label: 'Jogger (open)' }, { id: 'shorts', label: 'Shorts' },
+          { id: 'cap-normal', label: 'Cap' }, { id: 'cap-trucker', label: 'Cap (Trucker)' },
+        ];
+        styles.forEach(function (s) {
+          var op = document.createElement('option');
+          op.value = s.id; op.textContent = s.label;
+          if (s.id === f.mockupRef) op.selected = true;
+          sel.appendChild(op);
+        });
+        sel.onchange = function () { opts.onField('fields/mockupRef', sel.value); };
+        picker.appendChild(sel);
+        mockChildren.push(picker);
+      }
+      mockChildren.push(imageSlot({
         src: mockSrc,
         slot: 'mockup',
         label: 'Mockup hochladen',
         opts: opts,
-        height: 580,
-      })], { center: true, flex: '1' });
+        height: 520,
+      }));
+      var mockHost = bigBox('Mock Up', mockChildren, { center: false, flex: '1', padded: false });
       grid.appendChild(mockHost);
 
       // ---- Right: measurement list ----
@@ -955,7 +1002,7 @@
       var grid = el('div', {
         style: {
           display: 'grid',
-          gridTemplateColumns: '1fr 1fr',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
           gap: '12px',
           flex: '1',
         },
@@ -992,7 +1039,7 @@
       var grid = el('div', {
         style: {
           display: 'grid',
-          gridTemplateColumns: '1fr 1fr',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
           gap: '12px',
           flex: '1',
         },
@@ -1024,7 +1071,7 @@
       var grid = el('div', {
         style: {
           display: 'grid',
-          gridTemplateColumns: '1fr 1fr',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
           gap: '14px',
           flex: '1',
         },

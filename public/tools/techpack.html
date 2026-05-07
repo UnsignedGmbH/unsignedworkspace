@@ -733,11 +733,17 @@ function renderEditor(){
   titleInput.type = 'text';
   titleInput.value = (pack.meta && pack.meta.name) || '';
   titleInput.placeholder = 'Pack-Name';
-  titleInput.onchange = function(){
+  var _titleSaveTimer = null;
+  function saveTitle(){
     var v = (titleInput.value || '').trim();
     if (!v) return;
     safeUpdate(fbPack(STATE.activePackId).child('meta'), { name: v, updated: Date.now() });
+  }
+  titleInput.oninput = function(){
+    clearTimeout(_titleSaveTimer);
+    _titleSaveTimer = setTimeout(saveTitle, 600);
   };
+  titleInput.onblur = saveTitle;
   titleHost.appendChild(titleInput);
 
   var stEntry = STATUSES.find(function(s){return s.id === (pack.meta && pack.meta.status);}) || STATUSES[0];
