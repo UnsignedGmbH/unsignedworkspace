@@ -105,6 +105,32 @@ body{font-family:'Montserrat',sans-serif;background:var(--bg);color:var(--text);
 .modal-btn{flex:1;padding:12px;border-radius:9px;font-family:'Montserrat',sans-serif;font-size:12px;font-weight:800;cursor:pointer;border:none;touch-action:manipulation;}
 .modal-btn.cancel{background:var(--bg2);color:var(--text-dim);}
 .modal-btn.confirm{background:var(--red);color:#fff;}
+
+/* MOBILE (<= 600px) — kompakteres Layout, weniger Padding */
+@media (max-width:600px){
+  .main{padding:14px 12px 0;}
+  .header{padding:10px 12px;gap:8px;}
+  .header img.u{height:32px;}
+  .header-title{font-size:13px;}
+  .header-eyebrow{font-size:9px;}
+  .header img.wm{height:13px;}
+  .progress-wrap{margin-left:auto;gap:6px;}
+  .progress-bar-bg{width:60px;}
+  .progress-count{font-size:10px;min-width:30px;}
+  .tabs-wrap{padding:8px 12px;gap:6px;}
+  .tab{padding:6px 11px;font-size:10px;}
+  .tab .tab-pct{font-size:9px;}
+  .product-hero{padding:14px 16px;gap:10px;margin-bottom:16px;}
+  .product-name-input{font-size:16px;}
+  .hero-actions{width:100%;}
+  .archive-btn,.delete-product-btn{padding:9px 12px;font-size:10px;flex:1;}
+  .section{margin-bottom:20px;}
+  .section-header{gap:10px;}
+  .section-icon{width:28px;height:28px;font-size:13px;}
+  .section-title{font-size:12px;}
+  .modal-overlay{padding:14px;}
+  .modal{padding:18px 16px;}
+}
 </style>
 
 <script>

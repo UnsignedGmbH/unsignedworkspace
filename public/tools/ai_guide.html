@@ -280,6 +280,26 @@ body {
   white-space: nowrap;
 }
 #toast.show { opacity: 1; }
+
+/* MOBILE (<= 600px) — Header scrollbar, kleinere Cards, weniger Padding */
+@media (max-width: 600px) {
+  .hdr { padding: 0 10px; gap: 6px; height: 46px; }
+  .hdr-logo { font-size: 12px; }
+  .hdr-logo span { display: none; }
+  .hdr-tabs { margin-left: 4px; gap: 2px; overflow-x: auto; -webkit-overflow-scrolling: touch; flex: 1 1 auto; min-width: 0; scrollbar-width: none; }
+  .hdr-tabs::-webkit-scrollbar { display: none; }
+  .htab { padding: 5px 10px; font-size: 9px; flex-shrink: 0; white-space: nowrap; }
+  .hdr-live { font-size: 9px; flex-shrink: 0; gap: 4px; }
+  .live-dot { width: 6px; height: 6px; }
+  .section { padding: 14px; }
+  .guide-block { padding: 16px; margin-bottom: 12px; border-radius: 12px; }
+  .guide-block-title { font-size: 16px; margin-bottom: 12px; }
+  .guide-block-body { font-size: 12px; line-height: 1.6; }
+  .edit-hint { font-size: 9px; padding: 3px 7px; top: 8px; right: 8px; }
+  .mb-tabs { gap: 6px; margin-bottom: 16px; }
+  .mbtab { padding: 6px 12px; font-size: 10px; }
+  .mb-grid { columns: 2 140px; gap: 8px; }
+}
 </style>
 </head>
 <body>
