@@ -113,6 +113,26 @@ const customerActions = [
     </div>
   </section>
 
+  <!-- ═══════ QUICK-SEARCH (Kunden direkt anspringen) ═══════ -->
+  <div class="relative mb-3 md:mb-4">
+    <span
+      class="absolute left-3 top-1/2 -translate-y-1/2 text-ink-mute text-[14px] pointer-events-none"
+      aria-hidden="true">🔍</span>
+    <input
+      id="qsInput"
+      type="search"
+      placeholder="Kunde suchen — Name oder Raum-Code…  (Tipp: „/" zum Fokussieren)"
+      class="block w-full text-[13px] font-semibold border-[1.5px] border-line rounded-lg pl-10 pr-3 py-[10px] outline-none text-ink bg-white focus:border-brand"
+      autocomplete="off"
+      spellcheck="false"
+    />
+    <div
+      id="qsResults"
+      class="hidden absolute top-full left-0 right-0 mt-1 bg-card border-[0.5px] border-line rounded-lg shadow-[0_8px_24px_rgba(0,0,0,0.10)] max-h-[320px] overflow-y-auto z-50"
+      role="listbox"
+    ></div>
+  </div>
+
   <!-- ═══════ KUNDEN-ACTIONS (Quick chips) ═══════ -->
   <div class="flex gap-2 mb-5 md:mb-6 flex-wrap">
     {
@@ -279,6 +299,119 @@ const customerActions = [
         var el = $("heroWordmark");
         if (!el) return;
         el.src = (src && typeof src === "string") ? src : "/brand/wordmark-light.png";
+      });
+
+      // ── Quick-Search: live-Filter mit Tastatur-Navigation, Direktsprung zu /customer ──
+      var qsInput = $("qsInput");
+      var qsResults = $("qsResults");
+      var allCustomers = [];
+      var qsMatches = [];
+      var qsSelected = -1;
+
+      function renderQs() {
+        var query = (qsInput.value || "").trim().toLowerCase();
+        while (qsResults.firstChild) qsResults.removeChild(qsResults.firstChild);
+        if (!query) { qsResults.classList.add("hidden"); qsSelected = -1; return; }
+        qsMatches = allCustomers.filter(function (c) {
+          var hay = ((c.name || "") + " " + (c.room || "")).toLowerCase();
+          return hay.indexOf(query) !== -1;
+        }).slice(0, 8);
+        qsResults.classList.remove("hidden");
+        if (!qsMatches.length) {
+          var em = document.createElement("div");
+          em.className = "px-4 py-3 text-[12px] text-ink-mute";
+          em.textContent = "Keine Treffer";
+          qsResults.appendChild(em);
+          // Link zur vollen Suche in /customers anbieten
+          var fallback = document.createElement("a");
+          fallback.href = "/customers?q=" + encodeURIComponent(qsInput.value);
+          fallback.className = "block px-4 py-2 text-[11px] font-bold text-brand hover:bg-brand-dim border-t-[0.5px] border-line";
+          fallback.textContent = "→ Trotzdem in der Kunden-Liste suchen";
+          qsResults.appendChild(fallback);
+          qsSelected = -1;
+          return;
+        }
+        qsMatches.forEach(function (c, i) {
+          var a = document.createElement("a");
+          a.href = "/customer?id=" + encodeURIComponent(c.id);
+          a.className = "flex items-center gap-3 px-3 py-2 text-[13px] no-underline text-ink hover:bg-brand-dim border-b-[0.5px] border-line last:border-b-0";
+          a.dataset.idx = String(i);
+          var av = document.createElement("span");
+          av.className = "w-7 h-7 rounded-full bg-brand-dim text-brand text-[10px] font-bold flex items-center justify-center shrink-0";
+          av.textContent = ui.initials(c.name);
+          var meta = document.createElement("div");
+          meta.className = "flex-1 min-w-0";
+          var name = document.createElement("div");
+          name.className = "font-bold truncate";
+          name.textContent = c.name || "Unbenannt";
+          var sub = document.createElement("div");
+          sub.className = "text-[11px] text-ink-mute truncate";
+          sub.textContent = "Raum " + (c.room || "—") + (c.arch ? " · archiviert" : "");
+          meta.appendChild(name);
+          meta.appendChild(sub);
+          a.appendChild(av);
+          a.appendChild(meta);
+          // Hover = Auswahl synchron halten
+          a.addEventListener("mouseenter", function () {
+            qsSelected = i;
+            highlightQs();
+          });
+          qsResults.appendChild(a);
+        });
+        qsSelected = 0;
+        highlightQs();
+      }
+      function highlightQs() {
+        Array.prototype.forEach.call(qsResults.children, function (el, i) {
+          if (el.tagName !== "A") return;
+          if (i === qsSelected) el.classList.add("bg-brand-dim");
+          else el.classList.remove("bg-brand-dim");
+        });
+      }
+
+      qsInput.addEventListener("input", renderQs);
+      qsInput.addEventListener("focus", renderQs);
+      qsInput.addEventListener("keydown", function (e) {
+        if (e.key === "Escape") { qsInput.value = ""; renderQs(); qsInput.blur(); return; }
+        if (!qsResults.classList.contains("hidden") && qsMatches.length) {
+          if (e.key === "ArrowDown") {
+            e.preventDefault();
+            qsSelected = (qsSelected + 1) % qsMatches.length;
+            highlightQs();
+          } else if (e.key === "ArrowUp") {
+            e.preventDefault();
+            qsSelected = (qsSelected - 1 + qsMatches.length) % qsMatches.length;
+            highlightQs();
+          } else if (e.key === "Enter") {
+            e.preventDefault();
+            var pick = qsMatches[qsSelected] || qsMatches[0];
+            if (pick) location.href = "/customer?id=" + encodeURIComponent(pick.id);
+          }
+        } else if (e.key === "Enter" && qsInput.value.trim()) {
+          // Keine Live-Treffer: Fallback auf volle Suche
+          location.href = "/customers?q=" + encodeURIComponent(qsInput.value.trim());
+        }
+      });
+      // Klick außerhalb schließt die Dropdown-Liste
+      document.addEventListener("click", function (e) {
+        if (e.target !== qsInput && !qsResults.contains(e.target)) {
+          qsResults.classList.add("hidden");
+        }
+      });
+      // "/" als globaler Shortcut (außer wenn der User schon in einem Eingabefeld ist)
+      document.addEventListener("keydown", function (e) {
+        if (e.key === "/" && document.activeElement && document.activeElement.tagName !== "INPUT" && document.activeElement.tagName !== "TEXTAREA") {
+          e.preventDefault();
+          qsInput.focus();
+          qsInput.select();
+        }
+      });
+
+      // Customer-Liste live abonnieren — wir nutzen denselben Helper wie alle anderen Pages.
+      ui.subscribeCustomers(function (state) {
+        allCustomers = (state && state.list) || [];
+        // Falls Suche aktiv ist, neu rendern (z.B. wenn Kunde gerade umbenannt wurde)
+        if (qsInput.value.trim()) renderQs();
       });
     }
     window.appUI.onAuth(start);

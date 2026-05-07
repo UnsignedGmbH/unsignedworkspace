@@ -10,6 +10,26 @@ const filters = [
 ---
 
 <AppLayout title="Kunden" active="customers">
+  <!-- Such-Leiste: filtert die Liste live, persistiert in URL (?q=) -->
+  <div class="relative mb-3">
+    <span
+      class="absolute left-3 top-1/2 -translate-y-1/2 text-ink-mute text-[14px] pointer-events-none"
+      aria-hidden="true">🔍</span>
+    <input
+      id="searchInput"
+      type="search"
+      placeholder="Kunde suchen — Name oder Raum-Code…"
+      class="block w-full text-[13px] font-semibold border-[1.5px] border-line rounded-lg pl-10 pr-10 py-[10px] outline-none text-ink bg-white focus:border-brand"
+      autocomplete="off"
+      spellcheck="false"
+    />
+    <button
+      type="button"
+      id="searchClear"
+      class="hidden absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 flex items-center justify-center text-ink-mute hover:text-ink bg-transparent border-0 rounded-md cursor-pointer text-[16px]"
+      title="Suche löschen (Esc)"
+      aria-label="Suche löschen">✕</button>
+  </div>
   <div class="flex gap-[6px] mb-[14px] flex-wrap items-center" id="filterBar">
     {
       filters.map((f, i) => (
@@ -62,6 +82,18 @@ const filters = [
     </div>
   </div>
 
+  <!-- "Keine Treffer" — sichtbar wenn Suche nichts findet -->
+  <div id="noMatchMsg" class="hidden py-10">
+    <div class="flex flex-col items-center justify-center gap-2 text-center">
+      <span class="text-[28px]" aria-hidden="true">🔍</span>
+      <span class="text-[13px] font-extrabold text-ink">Keine Treffer für „<span id="noMatchQuery"></span>"</span>
+      <span class="text-[11px] text-ink-mute">Anderer Filter oder Schreibweise probieren.</span>
+    </div>
+  </div>
+
+  <!-- Result-Counter — sichtbar wenn Suche aktiv und Treffer vorhanden -->
+  <div id="resultCount" class="hidden text-[11px] text-ink-mute mb-2 font-medium" aria-live="polite"></div>
+
   <div class="flex flex-col gap-[7px]" id="customerList"></div>
 </AppLayout>
 
@@ -70,10 +102,40 @@ const filters = [
     var listEl = document.getElementById("customerList");
     var loadingEl = document.getElementById("loadingMsg");
     var emptyEl = document.getElementById("emptyMsg");
+    var noMatchEl = document.getElementById("noMatchMsg");
+    var noMatchQueryEl = document.getElementById("noMatchQuery");
+    var resultCountEl = document.getElementById("resultCount");
+    var searchInput = document.getElementById("searchInput");
+    var searchClear = document.getElementById("searchClear");
     var pills = document.querySelectorAll(".filter-pill");
     var newBtn = document.getElementById("newCustomerBtn");
     var currentFilter = "all";
+    var searchQuery = "";
     var lastState = { list: [] };
+
+    // Initial-Query aus URL (?q=...) übernehmen
+    (function initFromUrl(){
+      var q = new URLSearchParams(location.search).get("q");
+      if (q) {
+        searchQuery = q.trim().toLowerCase();
+        searchInput.value = q;
+        searchClear.classList.remove("hidden");
+      }
+    })();
+
+    function syncUrl() {
+      var url = new URL(location.href);
+      if (searchQuery) url.searchParams.set("q", searchQuery);
+      else url.searchParams.delete("q");
+      // replaceState statt pushState — kein Browser-History-Müll bei jedem Tippen
+      history.replaceState({}, "", url.toString());
+    }
+
+    function matchesSearch(c) {
+      if (!searchQuery) return true;
+      var hay = ((c.name || "") + " " + (c.room || "") + " " + (c.id || "")).toLowerCase();
+      return hay.indexOf(searchQuery) !== -1;
+    }
 
     function progressOf(c) {
       var keys = ["agP", "biP", "shP", "crP", "dP", "mkP"];
@@ -85,15 +147,35 @@ const filters = [
     function render() {
       var ui = window.appUI;
       var me = (window.ME && window.ME.uid) || null;
-      var rows = lastState.list.filter(function (c) {
+      var allCount = lastState.list.length;
+      // Erst Filter (all/mine/active/archived), dann Suche
+      var filtered = lastState.list.filter(function (c) {
         if (currentFilter === "mine") return c.createdBy === me;
         if (currentFilter === "active") return !c.arch;
         if (currentFilter === "archived") return c.arch;
         return true;
       });
+      var rows = filtered.filter(matchesSearch);
 
       loadingEl.classList.add("hidden");
-      emptyEl.classList.toggle("hidden", rows.length > 0);
+
+      // Drei mögliche Zustände:
+      //  a) Liste leer + keine Suche = "Noch keine Kunden"
+      //  b) Suche aktiv aber keine Treffer = "Keine Treffer"
+      //  c) Treffer vorhanden = Liste rendern + (bei Suche) Counter
+      var hasResults = rows.length > 0;
+      var hasSearch = !!searchQuery;
+      emptyEl.classList.toggle("hidden", hasResults || hasSearch || allCount > 0);
+      noMatchEl.classList.toggle("hidden", hasResults || !hasSearch);
+      if (hasSearch && !hasResults) {
+        noMatchQueryEl.textContent = searchInput.value;
+      }
+      if (hasSearch && hasResults) {
+        resultCountEl.classList.remove("hidden");
+        resultCountEl.textContent = rows.length + " von " + filtered.length + " Kunden";
+      } else {
+        resultCountEl.classList.add("hidden");
+      }
       listEl.innerHTML = rows
         .map(function (c) {
           var pct = progressOf(c);
@@ -199,6 +281,41 @@ const filters = [
         );
         render();
       });
+    });
+
+    // Search-Handler
+    function applySearch() {
+      searchQuery = searchInput.value.trim().toLowerCase();
+      searchClear.classList.toggle("hidden", !searchInput.value);
+      syncUrl();
+      render();
+    }
+    searchInput.addEventListener("input", applySearch);
+    searchInput.addEventListener("keydown", function (e) {
+      if (e.key === "Escape") {
+        searchInput.value = "";
+        applySearch();
+        searchInput.blur();
+      } else if (e.key === "Enter") {
+        // Erstes Resultat öffnen falls vorhanden
+        var firstLink = listEl.querySelector('a[href^="/customer?id="]');
+        if (firstLink) {
+          location.href = firstLink.getAttribute("href");
+        }
+      }
+    });
+    searchClear.addEventListener("click", function () {
+      searchInput.value = "";
+      applySearch();
+      searchInput.focus();
+    });
+    // "/" als globaler Shortcut um die Suche zu fokussieren
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "/" && document.activeElement && document.activeElement.tagName !== "INPUT" && document.activeElement.tagName !== "TEXTAREA") {
+        e.preventDefault();
+        searchInput.focus();
+        searchInput.select();
+      }
     });
 
     function openNewCustomer() {
