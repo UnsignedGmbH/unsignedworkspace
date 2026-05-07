@@ -43,12 +43,24 @@ const filters = [
     >
   </div>
 
-  <p id="loadingMsg" class="text-[12px] text-ink-mute py-6 text-center">
-    Lade Kunden aus Firebase…
-  </p>
-  <p id="emptyMsg" class="hidden text-[13px] text-ink-mute py-10 text-center">
-    Noch keine Kunden — leg den ersten an.
-  </p>
+  <div id="loadingMsg" class="py-10">
+    <div class="flex flex-col items-center justify-center gap-3">
+      <span class="w-7 h-7 rounded-full border-[3px] border-line border-t-brand animate-spin" aria-hidden="true"></span>
+      <span class="text-[12px] text-ink-mute font-bold">Lade Kunden…</span>
+    </div>
+  </div>
+  <div id="emptyMsg" class="hidden py-12">
+    <div class="flex flex-col items-center justify-center gap-3 text-center">
+      <span class="text-[36px]" aria-hidden="true">👥</span>
+      <span class="text-[14px] font-extrabold text-ink">Noch keine Kunden</span>
+      <span class="text-[12px] text-ink-mute max-w-[360px]">Leg deinen ersten Kunden an — er bekommt einen eigenen Raum mit Brand Identity, Shooting Check, Creator Guide und mehr.</span>
+      <button
+        type="button"
+        id="emptyNewBtn"
+        class="mt-2 px-[18px] py-[10px] rounded-full bg-brand text-white text-[12px] font-bold cursor-pointer hover:bg-brand-dark"
+      >➕ Ersten Kunden anlegen</button>
+    </div>
+  </div>
 
   <div class="flex flex-col gap-[7px]" id="customerList"></div>
 </AppLayout>
@@ -257,6 +269,8 @@ const filters = [
     }
     gateNewBtn(true);
     newBtn.addEventListener("click", openNewCustomer);
+    var emptyNewBtn = document.getElementById("emptyNewBtn");
+    if (emptyNewBtn) emptyNewBtn.addEventListener("click", openNewCustomer);
 
     window.appUI.onAuth(function () {
       gateNewBtn(false);
