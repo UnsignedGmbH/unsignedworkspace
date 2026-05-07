@@ -1,0 +1,53 @@
+name: Build Check
+
+# Verifiziert dass `npm run build` durchläuft. Läuft auf:
+# - jeden Push auf main (nach Vercel-Deploy → Signal "letzter Push war OK")
+# - jede Pull-Request gegen main (PR-Gate)
+#
+# Kein Test-Suite-Lauf — wir haben (noch) keine Tests. Nur Build-Sanity.
+#
+# Sicherheits-Hinweise: keine user-controlled Inputs werden interpoliert,
+# keine Secrets nötig, kein Schreibzugriff irgendwohin.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Astro build
+        run: npm run build
+
+      - name: Smoke-test build output
+        run: |
+          # Mindestens diese Pages müssen existieren — fehlen heißt build broken.
+          for page in dashboard customers customer portal team settings index; do
+            if [ ! -f "dist/$page/index.html" ] && [ ! -f "dist/$page.html" ]; then
+              # /index.html ist Spezialfall (root)
+              if [ "$page" = "index" ] && [ -f "dist/index.html" ]; then
+                continue
+              fi
+              echo "::error::dist/$page/ fehlt im Build-Output"
+              exit 1
+            fi
+          done
+          echo "✓ Alle Kern-Pages im Build vorhanden."
