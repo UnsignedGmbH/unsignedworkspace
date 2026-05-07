@@ -50,6 +50,25 @@
           online: false,
           lastSeen: window.fb.ts(),
         });
+
+        // Heartbeat: alle 30s lastSeen aktualisieren, damit der Owner-Filter
+        // (presence/<uid>/lastSeen aelter als TTL = offline) Browser-Crashes
+        // erkennt und keine Zombie-Online-Anzeigen entstehen.
+        // Pausiert wenn Tab unsichtbar (Browser drosseln Timer dort sowieso).
+        var HEARTBEAT_INT = (window.appUI && window.appUI.CONST.PRESENCE_HEARTBEAT_MS) || 30000;
+        function beat() {
+          if (document.visibilityState !== "visible") return;
+          pres.update({ online: true, lastSeen: window.fb.ts() }).catch(function () {});
+        }
+        var heartbeatId = setInterval(beat, HEARTBEAT_INT);
+        document.addEventListener("visibilitychange", function () {
+          if (document.visibilityState === "visible") beat();
+        });
+        // Beim Verlassen Cleanup (verhindert offene Intervals nach Logout)
+        window.addEventListener("pagehide", function () {
+          clearInterval(heartbeatId);
+        });
+
         document.dispatchEvent(
           new CustomEvent("auth-ready", { detail: window.ME })
         );

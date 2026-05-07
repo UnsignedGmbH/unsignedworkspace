@@ -67,11 +67,12 @@ import AppLayout from "../layouts/AppLayout.astro";
           '<p class="text-[12px] text-ink-mute py-3 text-center">Noch keine Mitglieder.</p>';
         return;
       }
+      var now = Date.now();
       listEl.innerHTML = keys
         .map(function (uid) {
           var m = members[uid] || {};
           var p = presence[uid] || {};
-          var online = p && p.online;
+          var online = ui.isPresenceFresh(p, now);
           var isMe = window.ME && window.ME.uid === uid;
           var role = isMe ? "owner" : m.role || "member";
           var uidSafe = ui.escapeHtml(uid);

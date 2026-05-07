@@ -203,8 +203,9 @@ function isActive(href: string) {
       if (teamBadge) {
         window.fb.ref("presence").on("value", function (s) {
           var v = s.val() || {};
+          var now = Date.now();
           var n = Object.keys(v).filter(function (k) {
-            return v[k] && v[k].online;
+            return window.appUI.isPresenceFresh(v[k], now);
           }).length;
           teamBadge.textContent = String(n);
         });

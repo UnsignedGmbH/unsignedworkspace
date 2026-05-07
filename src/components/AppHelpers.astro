@@ -40,6 +40,11 @@
     var CONST = {
       CLIENT_ACTIVE_MS: 5 * 60 * 1000,
       HEARTBEAT_MS: 60 * 1000,
+      // Owner-Heartbeat (presence/<uid>/lastSeen alle 30s)
+      PRESENCE_HEARTBEAT_MS: 30 * 1000,
+      // Wird im Owner-Filter verwendet: lastSeen aelter als 5 Min = offline.
+      // Generoeser Cushion (10× Heartbeat) damit Tab-Throttling nicht zu false-offline fuehrt.
+      PRESENCE_TTL_MS: 5 * 60 * 1000,
       LAST_ACTIVE_MIN_GAP_MS: 10 * 1000,
       ROOM_LEN: 6,
       ROOM_ALPHABET: "ABCDEFGHJKLMNPQRSTUVWXYZ23456789",
@@ -53,6 +58,15 @@
         { id: "mk", label: "Marketing Plan", icon: "📈", file: "mk" },
       ],
     };
+
+    // Presence ist "online" wenn online:true UND lastSeen frisch ist.
+    // Legacy-Eintraege ohne lastSeen → trust online:true (verhindert dass alle
+    // alten Eintraege bei Deploy auf einmal als offline angezeigt werden).
+    function isPresenceFresh(p, now) {
+      if (!p || p.online !== true) return false;
+      if (typeof p.lastSeen !== "number") return true;
+      return (now || Date.now()) - p.lastSeen < CONST.PRESENCE_TTL_MS;
+    }
 
     function escapeHtml(str) {
       return String(str == null ? "" : str)
@@ -302,6 +316,7 @@
       prompt: prompt,
       confirm: confirm,
       toast: toast,
+      isPresenceFresh: isPresenceFresh,
     };
   })();
 </script>
