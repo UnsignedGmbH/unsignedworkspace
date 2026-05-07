@@ -152,15 +152,19 @@ main{max-width:1240px;margin:0 auto;padding:24px;}
 
 /* MOBILE */
 @media (max-width:780px){
-  main{padding:14px;}
-  .editor{grid-template-columns:1fr;}
-  .editor-sidebar{position:static;}
-  .page-list{flex-direction:row;overflow-x:auto;padding-bottom:6px;}
-  .page-list li{flex:0 0 auto;}
+  main{padding:8px;}
+  .editor{grid-template-columns:1fr;gap:10px;}
+  .editor-sidebar{position:static;padding:10px;}
+  .editor-canvas{padding:6px;border-radius:10px;}
+  .page-list{flex-direction:row;overflow-x:auto;padding-bottom:6px;gap:6px;}
+  .page-list li{flex:0 0 auto;padding:8px 10px;font-size:11px;}
   .field-row{grid-template-columns:1fr;}
-  .hdr{padding:0 14px;height:48px;gap:8px;}
+  .hdr{padding:0 12px;height:48px;gap:8px;}
   .hdr-title input{font-size:12px;}
   .btn{padding:7px 10px;font-size:10px;}
+  /* Pack-Card: kompakter auf Handy */
+  .pack-grid{grid-template-columns:1fr;gap:10px;}
+  .pack-card{padding:14px;min-height:140px;}
 }
 </style>
 </head>

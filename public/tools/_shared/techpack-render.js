@@ -313,9 +313,11 @@
 
   function row(items, opts) {
     opts = opts || {};
+    var isMobile = (typeof window !== 'undefined') && window.innerWidth < 600;
     return el('div', {
       style: {
         display: 'flex',
+        flexDirection: isMobile ? 'column' : 'row',
         gap: (opts.gap || 12) + 'px',
         marginBottom: (opts.mb != null ? opts.mb : 12) + 'px',
         flex: opts.flex || 'none',
@@ -375,7 +377,9 @@
 
   function imageSlot(o) {
     // o: { src, slot, label, page, opts, height, fallback? (HTMLElement) }
+    var isMobile = (typeof window !== 'undefined') && window.innerWidth < 600;
     var h = o.height || 320;
+    if (isMobile) h = Math.min(h, 240);
     var slot = el('div', {
       style: {
         position: 'relative',
