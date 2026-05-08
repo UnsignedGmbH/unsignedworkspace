@@ -358,20 +358,76 @@ const { title = "Unsigned Workspace" } = Astro.props;
           if (connectedOnce) return;
           var attempts = recentAttempts();
           if (attempts.length >= MAX_ATTEMPTS) {
-            console.warn("[boot] watchdog: " + attempts.length + " attempts in last 5min, giving up");
-            // Sichtbares Feedback statt stiller Hänger
-            try {
-              window.toast(
-                "Verbindung hängt. Bitte App schließen und neu öffnen, oder kurz warten.",
-                "error", { ttl: 0 }
-              );
-            } catch (e) {}
+            console.warn("[boot] watchdog: " + attempts.length + " attempts in last 5min, giving up → showing reset UI");
+            showStuckUI();
             return;
           }
           recordAttempt();
           console.warn("[boot] watchdog: no connection after " + BOOT_RELOAD_MS + "ms (attempt " + (attempts.length + 1) + "/" + MAX_ATTEMPTS + ") → reload");
           location.reload();
         }, BOOT_RELOAD_MS);
+
+        // ── Letzte Verteidigungslinie: sichtbarer Reset-Button ──────
+        // Wenn nichts mehr hilft, Nutzer kann einen vollständigen
+        // Cache-Reset auslösen: Auth signOut + Firebase-IndexedDB löschen
+        // + alle localStorage/sessionStorage uw.* Schlüssel weg + reload.
+        // Das löst >99% aller hartnäckigen iOS-PWA-Stuck-Cases.
+        function showStuckUI() {
+          if (document.getElementById("uw-stuck-overlay")) return;
+          var ov = document.createElement("div");
+          ov.id = "uw-stuck-overlay";
+          ov.style.cssText =
+            "position:fixed;inset:0;z-index:99999;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px;font:600 14px Montserrat,system-ui,sans-serif;color:#111;text-align:center;gap:14px;";
+          ov.innerHTML =
+            '<div style="font:900 24px Montserrat;color:#c13030">⚠ Verbindung hängt</div>' +
+            '<div style="max-width:340px;line-height:1.4;color:#555">Die Datenverbindung lässt sich nicht herstellen. Klick unten auf <strong>App-Cache zurücksetzen</strong> — das löst es zuverlässig.</div>' +
+            '<button id="uw-stuck-reset" style="margin-top:8px;background:#c13030;color:#fff;border:0;border-radius:10px;padding:14px 22px;font:800 14px Montserrat;cursor:pointer">App-Cache zurücksetzen</button>' +
+            '<button id="uw-stuck-retry" style="background:transparent;color:#555;border:0;font:600 12px Montserrat;cursor:pointer;margin-top:4px">Erneut versuchen</button>';
+          document.body.appendChild(ov);
+          document.getElementById("uw-stuck-retry").onclick = function () {
+            try { sessionStorage.removeItem(WATCHDOG_KEY); } catch (e) {}
+            location.reload();
+          };
+          document.getElementById("uw-stuck-reset").onclick = function () {
+            try {
+              // 1) Sign out aus Firebase Auth
+              if (window.firebase && window.firebase.auth) {
+                window.firebase.auth().signOut().catch(function () {});
+              }
+              // 2) Alle uw.* aus localStorage + sessionStorage
+              try {
+                Object.keys(localStorage || {}).forEach(function (k) {
+                  if (k.indexOf("uw.") === 0) localStorage.removeItem(k);
+                });
+              } catch (e) {}
+              try {
+                Object.keys(sessionStorage || {}).forEach(function (k) {
+                  if (k.indexOf("uw.") === 0) sessionStorage.removeItem(k);
+                });
+              } catch (e) {}
+              // 3) Firebase-IndexedDB-Datenbanken löschen
+              if (window.indexedDB && indexedDB.databases) {
+                indexedDB.databases().then(function (dbs) {
+                  var dels = (dbs || []).map(function (db) {
+                    return new Promise(function (res) {
+                      try {
+                        var req = indexedDB.deleteDatabase(db.name);
+                        req.onsuccess = req.onerror = req.onblocked = function () { res(); };
+                      } catch (e) { res(); }
+                    });
+                  });
+                  Promise.all(dels).then(function () {
+                    location.replace("/");
+                  });
+                }).catch(function () { location.replace("/"); });
+              } else {
+                location.replace("/");
+              }
+            } catch (e) {
+              location.replace("/");
+            }
+          };
+        }
       })();
     </script>
   </head>

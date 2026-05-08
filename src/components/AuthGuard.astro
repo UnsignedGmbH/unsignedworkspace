@@ -22,56 +22,90 @@
           name: (user.email || "").split("@")[0],
         };
 
-        // Profile: never overwrite role on a re-auth.
-        var teamRef = window.fb.ref("team/" + user.uid);
-        teamRef.once("value").then(function (snap) {
-          var existing = snap.val() || {};
-          var patch = {
+        // ── KRITISCH: Token-Refresh + DB-Reconnect VOR auth-ready ──────
+        // iOS-PWA-Bug: Bestehende RTDB-WebSocket-Verbindung benutzt evtl.
+        // alten/keinen Auth-Token (besonders nach Login-Flow oder PWA-Cold-
+        // Start). Subscriptions liefern dann nie Daten — silent permission-
+        // denied. Fix: Token zwangs-refreshen, DB-Connection neu starten,
+        // DANN auth-ready dispatchen damit Subscribers auf der frisch-
+        // authentifizierten Connection registrieren.
+        function refreshAndReconnect() {
+          return new Promise(function (resolve) {
+            var done = false;
+            var finish = function () { if (!done) { done = true; resolve(); } };
+            // 3s Timeout damit ein hängender Token-Refresh (schwaches Netz)
+            // nicht den ganzen Boot blockiert
+            setTimeout(finish, 3000);
+            user.getIdToken(true)
+              .catch(function (err) {
+                console.warn("[auth] token refresh failed:", err && err.code);
+              })
+              .then(function () {
+                try {
+                  window.firebase.database().goOffline();
+                  setTimeout(function () {
+                    try { window.firebase.database().goOnline(); } catch (e) {}
+                    finish();
+                  }, 150);
+                } catch (e) {
+                  finish();
+                }
+              });
+          });
+        }
+
+        refreshAndReconnect().then(function () {
+          // Profile: never overwrite role on a re-auth.
+          var teamRef = window.fb.ref("team/" + user.uid);
+          teamRef.once("value").then(function (snap) {
+            var existing = snap.val() || {};
+            var patch = {
+              uid: user.uid,
+              email: user.email,
+              name: existing.name || window.ME.name,
+            };
+            if (!existing.role) patch.role = "member";
+            teamRef.update(patch).then(function () {
+              // After team profile exists, try to claim a pending invite.
+              tryClaimInvite(user);
+            });
+          });
+
+          var pres = window.fb.ref("presence/" + user.uid);
+          pres.update({
+            online: true,
+            lastSeen: window.fb.ts(),
             uid: user.uid,
             email: user.email,
-            name: existing.name || window.ME.name,
-          };
-          if (!existing.role) patch.role = "member";
-          teamRef.update(patch).then(function () {
-            // After team profile exists, try to claim a pending invite.
-            tryClaimInvite(user);
+            name: window.ME.name,
           });
-        });
+          pres.onDisconnect().update({
+            online: false,
+            lastSeen: window.fb.ts(),
+          });
 
-        var pres = window.fb.ref("presence/" + user.uid);
-        pres.update({
-          online: true,
-          lastSeen: window.fb.ts(),
-          uid: user.uid,
-          email: user.email,
-          name: window.ME.name,
-        });
-        pres.onDisconnect().update({
-          online: false,
-          lastSeen: window.fb.ts(),
-        });
+          // Heartbeat: alle 30s lastSeen aktualisieren, damit der Owner-Filter
+          // (presence/<uid>/lastSeen aelter als TTL = offline) Browser-Crashes
+          // erkennt und keine Zombie-Online-Anzeigen entstehen.
+          // Pausiert wenn Tab unsichtbar (Browser drosseln Timer dort sowieso).
+          var HEARTBEAT_INT = (window.appUI && window.appUI.CONST.PRESENCE_HEARTBEAT_MS) || 30000;
+          function beat() {
+            if (document.visibilityState !== "visible") return;
+            pres.update({ online: true, lastSeen: window.fb.ts() }).catch(function () {});
+          }
+          var heartbeatId = setInterval(beat, HEARTBEAT_INT);
+          document.addEventListener("visibilitychange", function () {
+            if (document.visibilityState === "visible") beat();
+          });
+          // Beim Verlassen Cleanup (verhindert offene Intervals nach Logout)
+          window.addEventListener("pagehide", function () {
+            clearInterval(heartbeatId);
+          });
 
-        // Heartbeat: alle 30s lastSeen aktualisieren, damit der Owner-Filter
-        // (presence/<uid>/lastSeen aelter als TTL = offline) Browser-Crashes
-        // erkennt und keine Zombie-Online-Anzeigen entstehen.
-        // Pausiert wenn Tab unsichtbar (Browser drosseln Timer dort sowieso).
-        var HEARTBEAT_INT = (window.appUI && window.appUI.CONST.PRESENCE_HEARTBEAT_MS) || 30000;
-        function beat() {
-          if (document.visibilityState !== "visible") return;
-          pres.update({ online: true, lastSeen: window.fb.ts() }).catch(function () {});
-        }
-        var heartbeatId = setInterval(beat, HEARTBEAT_INT);
-        document.addEventListener("visibilitychange", function () {
-          if (document.visibilityState === "visible") beat();
+          document.dispatchEvent(
+            new CustomEvent("auth-ready", { detail: window.ME })
+          );
         });
-        // Beim Verlassen Cleanup (verhindert offene Intervals nach Logout)
-        window.addEventListener("pagehide", function () {
-          clearInterval(heartbeatId);
-        });
-
-        document.dispatchEvent(
-          new CustomEvent("auth-ready", { detail: window.ME })
-        );
       });
     }
 
