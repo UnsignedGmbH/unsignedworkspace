@@ -51,7 +51,7 @@ input,textarea,select{font-family:inherit;color:var(--t);}
 .btn-icon{width:34px;height:34px;padding:0;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;font-size:14px;}
 
 /* CONTENT */
-main{max-width:1240px;margin:0 auto;padding:24px;}
+main{max-width:1240px;margin:0 auto;padding:24px;min-width:0;width:100%;box-sizing:border-box;}
 
 /* PACK LIST */
 .pack-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px;margin-top:16px;}
@@ -80,8 +80,9 @@ main{max-width:1240px;margin:0 auto;padding:24px;}
 .empty-cta{padding:14px 28px;border-radius:10px;font-size:13px;font-weight:800;background:var(--a);color:#fff;border:0;}
 
 /* EDITOR SPLIT */
-.editor{display:grid;grid-template-columns:240px 1fr;gap:20px;align-items:start;}
-.editor-sidebar{background:var(--cd);border:.5px solid var(--bd);border-radius:14px;padding:14px;position:sticky;top:74px;}
+.editor{display:grid;grid-template-columns:240px minmax(0, 1fr);gap:20px;align-items:start;min-width:0;}
+.editor > *{min-width:0;}
+.editor-sidebar{background:var(--cd);border:.5px solid var(--bd);border-radius:14px;padding:14px;position:sticky;top:74px;min-width:0;overflow:hidden;}
 .editor-sidebar h4{font-size:10px;font-weight:900;letter-spacing:.8px;color:var(--td);margin-bottom:10px;text-transform:uppercase;}
 .page-list{list-style:none;display:flex;flex-direction:column;gap:4px;margin-bottom:10px;}
 .page-list li{padding:10px 12px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;background:#fafafa;color:var(--t);display:flex;align-items:center;gap:8px;border:1px solid transparent;}
@@ -171,14 +172,15 @@ main{max-width:1240px;margin:0 auto;padding:24px;}
 /* ── RESPONSIVE TECHPACK-PAGE-LAYOUT ──────────────────────────────────
    Klassen statt Inline-JS-checks. CSS @media greift garantiert auf
    tatsaechliche Viewport-Breite (nicht auf JS-Evaluation-Zeit). */
-.tp-page{width:100%;max-width:1080px;margin:0 auto;background:#fff;padding:32px 32px 50px;box-sizing:border-box;font-family:'Montserrat',sans-serif;color:#111;position:relative;display:flex;flex-direction:column;gap:12px;border:0.5px solid rgba(0,0,0,0.1);border-radius:8px;box-shadow:0 4px 18px rgba(0,0,0,0.04);overflow:hidden;}
-.tp-row{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:12px;}
+.tp-page{width:100%;max-width:1080px;margin:0 auto;background:#fff;padding:32px 32px 50px;box-sizing:border-box;font-family:'Montserrat',sans-serif;color:#111;position:relative;display:flex;flex-direction:column;gap:12px;border:0.5px solid rgba(0,0,0,0.1);border-radius:8px;box-shadow:0 4px 18px rgba(0,0,0,0.04);overflow:hidden;min-width:0;}
+.tp-row{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:12px;min-width:0;}
 .tp-row.tp-row-tight{margin-bottom:0;gap:10px;}
-.tp-quadrant{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-bottom:12px;}
+.tp-quadrant{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-bottom:12px;min-width:0;}
 .tp-quadrant > div{display:flex;flex-direction:column;gap:10px;min-width:0;}
-.tp-grid-2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;}
+.tp-grid-2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;min-width:0;}
 .tp-field{flex:1 1 160px;min-width:0;display:flex;flex-direction:column;border:2px solid #111;border-radius:6px;overflow:hidden;background:#fff;}
-.tp-bigbox{flex:1 1 auto;display:flex;flex-direction:column;border:2px solid #111;border-radius:8px;overflow:hidden;background:#fff;margin-bottom:12px;}
+.tp-field input,.tp-field textarea,.tp-field select{min-width:0;max-width:100%;}
+.tp-bigbox{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;border:2px solid #111;border-radius:8px;overflow:hidden;background:#fff;margin-bottom:12px;}
 
 @media (max-width:780px){
   .tp-page{padding:10px;border-radius:6px;}
