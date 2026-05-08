@@ -228,10 +228,10 @@
         border: BORDER,
         borderRadius: '6px',
         overflow: 'hidden',
-        // flex: '1 1 auto' = grow into extra space, shrink if needed, basis content-size.
-        // Basis 'auto' (statt 0) verhindert dass das Element auf Mobile in einem
-        // column-flex auf 0px kollabiert.
-        flex: o.flex || '1 1 auto',
+        // flex 1 1 180px: basis 180px = "Wenn-mehr-Platz-da-grow, sonst-shrink-bis-180".
+        // Im flex-wrap:wrap row: passt die Box nicht in Restplatz, wrappt sie zur
+        // naechsten Zeile (statt horizontal zu overflow).
+        flex: o.flex || '1 1 180px',
         minWidth: '0',
         display: 'flex',
         flexDirection: 'column',
@@ -317,28 +317,15 @@
 
   function row(items, opts) {
     opts = opts || {};
-    var isMobile = (typeof window !== 'undefined') && window.innerWidth < 600;
-    // Mobile: pure block flow — items stacken sich automatisch in voller Breite.
-    // Flex auf den Children (z.B. fieldBox flex:1) wird im Block-Parent ignoriert,
-    // also kein collapse-zu-0px durch flex-basis:0 in column-flex.
-    if (isMobile) {
-      var wrap = el('div', {
-        style: { marginBottom: (opts.mb != null ? opts.mb : 12) + 'px' },
-      });
-      items.forEach(function (it, i) {
-        if (it) {
-          if (i > 0) it.style.marginTop = '8px';
-          wrap.appendChild(it);
-        }
-      });
-      return wrap;
-    }
+    // flex-wrap:wrap macht dass Items automatisch in die naechste Zeile rutschen
+    // wenn sie nicht in eine Zeile passen — egal wie schmal der Container ist.
+    // Kein viewport-Check noetig, funktioniert ueberall (Mobile, Iframe, Desktop).
     return el('div', {
       style: {
         display: 'flex',
+        flexWrap: 'wrap',
         gap: (opts.gap || 12) + 'px',
         marginBottom: (opts.mb != null ? opts.mb : 12) + 'px',
-        flex: opts.flex || 'none',
       },
       children: items,
     });
