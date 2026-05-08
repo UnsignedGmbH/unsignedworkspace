@@ -25,7 +25,7 @@ const { title, active } = Astro.props;
 
     <Sidebar active={active} />
 
-    <main class="flex-1 flex flex-col overflow-hidden min-w-0">
+    <main class="flex-1 flex flex-col overflow-hidden min-w-0 relative">
       <header
         class="bg-card border-b-[0.5px] border-line px-4 md:px-[22px] py-3 flex items-center gap-[10px] shrink-0"
       >
@@ -40,9 +40,18 @@ const { title, active } = Astro.props;
         </button>
         <h1 class="text-[15px] font-extrabold text-ink flex-1 truncate">{title}</h1>
       </header>
-      <div class="flex-1 overflow-y-auto px-4 md:px-6 py-4 md:py-[22px]">
+      <div class="flex-1 overflow-y-auto px-4 md:px-6 py-4 md:py-[22px] min-w-0">
         <slot />
       </div>
+      <!-- Brand-Stamp "by IIIII!" — verspielt über Header-/Hero-Boundary, bleibt fix oben -->
+      <img
+        src="/brand/tag.png"
+        alt=""
+        aria-hidden="true"
+        class="brand-tag-head"
+        loading="lazy"
+        decoding="async"
+      />
     </main>
   </div>
 </BaseLayout>

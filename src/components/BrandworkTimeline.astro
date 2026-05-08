@@ -77,6 +77,13 @@ const RING_C = 113.097;
   </div>
 </section>
 
+<style is:global>
+  /* Auf Seiten mit der BrandWork-Timeline ist der "by IIIII!"-Tag schon
+     im Roadmap-Footer drin → AppLayout-Header-Stamp verstecken
+     damit's nicht doppelt auftaucht. */
+  body:has(.bw-tl) .brand-tag-head { display: none !important; }
+</style>
+
 <style>
   .bw-tl {
     position: relative;

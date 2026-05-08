@@ -113,4 +113,60 @@
       box-shadow: 0 0 0 8px rgba(255, 255, 255, 0);
     }
   }
+
+  /* ────────────────────────────────────────────────────────────
+   * Brand-Tag-Stamp ("by IIIII!" Graffiti)
+   * Sitzt im Header oben rechts — kleiner, dezenter Stempel.
+   * Liegt NICHT auf Content (Header ist immer sichtbar, rechts daneben
+   * ist Leerraum). Skaliert mit Header-Höhe via height statt width
+   * damit der sichtbare Graffiti-Anteil im Header-Strip bleibt.
+   * tag.png ist 5000² mit Inhalt nur im Center (~30%) → height:160px
+   * heißt sichtbarer Tag ist ca. 50px hoch — passt in den Header.
+   * ────────────────────────────────────────────────────────────*/
+  .brand-tag-head {
+    position: absolute;
+    top: -30px;            /* bleed above main → Graffiti landet auf Header-/Hero-Kante */
+    right: 14px;
+    height: 165px;          /* sichtbarer Graffiti ~50px hoch */
+    width: auto;
+    opacity: 0.72;
+    transform: rotate(-13deg);  /* verspielter Tilt */
+    pointer-events: none;
+    user-select: none;
+    -webkit-user-drag: none;
+    z-index: 4;             /* über Hero, unter Modals */
+  }
+  @media (max-width: 480px) {
+    .brand-tag-head {
+      height: 120px;
+      top: -22px;
+      right: 6px;
+      opacity: 0.62;
+      transform: rotate(-15deg);
+    }
+  }
+
+  /* Footer-Variante für Pages ohne Header (Login, 404) */
+  .brand-tag-foot {
+    display: flex;
+    justify-content: flex-end;
+    align-items: flex-end;
+    padding: 24px 0 4px;
+    margin-top: auto;
+    pointer-events: none;
+    user-select: none;
+  }
+  .brand-tag-foot img {
+    width: 200px;
+    height: auto;
+    opacity: 0.32;
+    transform: rotate(-9deg);
+    pointer-events: none;
+    -webkit-user-drag: none;
+    user-select: none;
+  }
+  @media (max-width: 480px) {
+    .brand-tag-foot { padding: 16px 0 4px; }
+    .brand-tag-foot img { width: 140px; opacity: 0.28; }
+  }
 }
