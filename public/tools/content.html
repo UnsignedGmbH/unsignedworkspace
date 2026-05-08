@@ -84,30 +84,44 @@ body { font-family: 'Montserrat', sans-serif; background: var(--bg); color: var(
 .field-radio input { display: none; }
 .field-radio.is-on { background: var(--red); border-color: var(--red); color: #fff; }
 
-/* Video-Slots */
-.videos-toolbar { display: flex; gap: 8px; align-items: center; margin-bottom: 14px; }
-.videos-count { font-size: 11px; font-weight: 700; color: var(--text-dim); }
-.btn-add-video { background: var(--red); color: #fff; border: 0; border-radius: 9px; padding: 9px 14px; font: 800 12px Montserrat; cursor: pointer; -webkit-tap-highlight-color: transparent; transition: background 0.15s; flex-shrink: 0; margin-left: auto; }
-.btn-add-video:hover { background: var(--red-dark); }
-.video-card { position: relative; padding-top: 14px; }
-.video-card-head { display: flex; align-items: center; gap: 8px; padding-bottom: 12px; margin-bottom: 12px; border-bottom: 1px solid var(--border); }
-.video-card-title-input { font-family: inherit; font-size: 13px; font-weight: 800; color: var(--text); flex: 1; min-width: 0; background: transparent; border: 1px solid transparent; border-radius: 6px; padding: 4px 6px; margin: -4px -6px; outline: none; transition: border-color 0.15s, background 0.15s; }
-.video-card-title-input:hover { border-color: var(--border); background: var(--bg); }
-.video-card-title-input:focus { border-color: var(--border-red); background: #fff; }
-.video-card-title-input::placeholder { color: var(--text-dimmer); font-weight: 700; }
-.video-card.is-archived .video-card-title-input { color: var(--green); }
-.video-typ-pill { font-size: 9px; font-weight: 800; padding: 3px 8px; border-radius: 10px; background: var(--bg3); color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.08em; flex-shrink: 0; }
-.video-typ-pill.pb { background: rgba(193,48,48,0.12); color: var(--red); }
-.video-typ-pill.ba { background: rgba(24,95,165,0.12); color: #185fa5; }
-.video-typ-pill.ads { background: rgba(29,158,117,0.12); color: var(--green); }
-.video-actions { display: flex; gap: 4px; flex-shrink: 0; }
-.video-action-btn { background: transparent; border: 1px solid var(--border); border-radius: 7px; padding: 5px 8px; font-size: 13px; cursor: pointer; color: var(--text-dim); transition: all 0.15s; -webkit-tap-highlight-color: transparent; line-height: 1; }
-.video-action-btn:hover { color: var(--red); border-color: var(--border-red); }
-.video-action-btn.archive-btn:hover { color: var(--green); border-color: var(--green); }
-.video-card.is-archived { opacity: 0.85; background: rgba(0,0,0,0.02); }
-.video-card-archive-mark { color: var(--green); font-weight: 900; flex-shrink: 0; font-size: 14px; line-height: 1; }
-.empty-videos { text-align: center; padding: 40px 20px; color: var(--text-dimmer); font-size: 12px; font-weight: 600; background: var(--bg2); border: 1.5px dashed var(--border); border-radius: 12px; line-height: 1.6; }
-.empty-videos strong { color: var(--red); font-weight: 800; }
+/* Sub-Card-Toolbar (Slot-Listen: Strategy + Videos) */
+.slot-toolbar { display: flex; gap: 8px; align-items: center; margin-bottom: 14px; }
+.slot-count { font-size: 11px; font-weight: 700; color: var(--text-dim); }
+.btn-add-slot { background: var(--red); color: #fff; border: 0; border-radius: 9px; padding: 9px 14px; font: 800 12px Montserrat; cursor: pointer; -webkit-tap-highlight-color: transparent; transition: background 0.15s; flex-shrink: 0; margin-left: auto; }
+.btn-add-slot:hover { background: var(--red-dark); }
+
+/* Slot-Card (Strategy & Video) */
+.slot-card { position: relative; padding-top: 14px; }
+.slot-card-head { display: flex; align-items: center; gap: 8px; padding-bottom: 12px; margin-bottom: 12px; border-bottom: 1px solid var(--border); }
+.slot-card-title-input { font-family: inherit; font-size: 13px; font-weight: 800; color: var(--text); flex: 1; min-width: 0; background: transparent; border: 1px solid transparent; border-radius: 6px; padding: 4px 6px; margin: -4px -6px; outline: none; transition: border-color 0.15s, background 0.15s; }
+.slot-card-title-input:hover { border-color: var(--border); background: var(--bg); }
+.slot-card-title-input:focus { border-color: var(--border-red); background: #fff; }
+.slot-card-title-input::placeholder { color: var(--text-dimmer); font-weight: 700; }
+.slot-card.is-archived .slot-card-title-input { color: var(--green); }
+
+.slot-typ-pill { font-size: 9px; font-weight: 800; padding: 3px 8px; border-radius: 10px; background: var(--bg3); color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.08em; flex-shrink: 0; }
+.slot-typ-pill.pb { background: rgba(193,48,48,0.12); color: var(--red); }
+.slot-typ-pill.ba { background: rgba(24,95,165,0.12); color: #185fa5; }
+.slot-typ-pill.ads { background: rgba(29,158,117,0.12); color: var(--green); }
+.slot-typ-pill.cc { background: rgba(120,60,180,0.12); color: #783cb4; }
+.slot-typ-pill.multi { background: var(--red-dim); color: var(--red); }
+
+.slot-actions { display: flex; gap: 4px; flex-shrink: 0; }
+.slot-action-btn { background: transparent; border: 1px solid var(--border); border-radius: 7px; padding: 5px 8px; font-size: 13px; cursor: pointer; color: var(--text-dim); transition: all 0.15s; -webkit-tap-highlight-color: transparent; line-height: 1; }
+.slot-action-btn:hover { color: var(--red); border-color: var(--border-red); }
+.slot-action-btn.archive-btn:hover { color: var(--green); border-color: var(--green); }
+
+.slot-card.is-archived { opacity: 0.85; background: rgba(0,0,0,0.02); }
+.slot-card-archive-mark { color: var(--green); font-weight: 900; flex-shrink: 0; font-size: 14px; line-height: 1; }
+
+.empty-slots { text-align: center; padding: 40px 20px; color: var(--text-dimmer); font-size: 12px; font-weight: 600; background: var(--bg2); border: 1.5px dashed var(--border); border-radius: 12px; line-height: 1.6; }
+.empty-slots strong { color: var(--red); font-weight: 800; }
+
+/* Group: Block-Gruppe innerhalb einer Strategy-Card (kein doppeltes border-radius) */
+.slot-group { padding: 14px 0; border-top: 1px solid var(--border); }
+.slot-group:first-of-type { padding-top: 0; border-top: 0; }
+.slot-group-title { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text); margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+.slot-group-title::before { content: ""; width: 3px; height: 12px; background: var(--red); border-radius: 2px; }
 
 .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 @media (max-width: 640px) {
@@ -117,7 +131,7 @@ body { font-family: 'Montserrat', sans-serif; background: var(--bg); color: var(
   .main { padding: 16px 16px 0; }
   .brand-wm .bw, .brand-wm .rm { font-size: 18px; }
   .progress-bar-bg { width: 70px; }
-  .videos-toolbar { flex-wrap: wrap; }
+  .slot-toolbar { flex-wrap: wrap; }
 }
 
 .foot { max-width: 980px; margin: 24px auto 0; padding: 0 24px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
@@ -151,7 +165,7 @@ body { font-family: 'Montserrat', sans-serif; background: var(--bg); color: var(
 
 <main class="main">
   <div class="intro">
-    <p><strong>Strategie</strong> setzt die Grundrichtung — <strong>Videos</strong> sind einzelne Ideen die du sammelst und durchziehst. Live-synchron mit deinem Team.</p>
+    <p><strong>Strategien</strong> setzen die Grundrichtung — du kannst mehrere parallel pflegen (z.B. Personal Brand vs. Brand Account). <strong>Videos</strong> sind einzelne Ideen, <strong>Archiv</strong> hält fertige.</p>
   </div>
 
   <div id="sections"></div>
@@ -168,53 +182,51 @@ body { font-family: 'Montserrat', sans-serif; background: var(--bg); color: var(
 <script>
 (function () {
   // ── SCHEMA ────────────────────────────────────────────────
-  // Strategy-Sektion bleibt 1:1 wie der bisherige Content-Tab in Social.
-  var SCHEMA = [
+  // Pro Strategy-Slot werden alle diese Block-Felder gerendert.
+  // Account-Typ ist 'checks' = Multi-Select, deselekt-bar.
+  var STRATEGY_BLOCKS = [
     {
-      id: 'strategy', icon: '🎯', label: 'Strategie',
-      sub: 'Plan · Hooks · Creator',
-      blocks: [
-        {
-          title: 'Contentplan',
-          items: [
-            { k: 'richtung', label: 'Richtung', type: 'text', ph: 'In welche Richtung soll der Content gehen?' },
-            { k: 'nische', label: 'Nische', type: 'text', ph: 'z.B. Streetwear · Y2K · Skate · High-End' },
-            { k: 'ueberthemen', label: 'Überthemen', type: 'list', ph: 'Eine Zeile pro Überthema', hint: '3–5 Themen, die immer wiederkehren' },
-            { k: 'story', label: 'Story', type: 'textarea', ph: 'Welche Story zieht sich durch den ganzen Content?' },
-          ],
-        },
-        {
-          title: 'Account-Typ',
-          items: [
-            { k: 'accountTyp', label: 'Wie willst du es machen?', type: 'radio',
-              options: ['Personal Brand', 'Brand Account', 'Only Ads', 'Alles', 'Manches'] },
-          ],
-        },
-        {
-          title: 'Was wichtig ist',
-          items: [
-            { k: 'variation', label: 'Variation', type: 'list', ph: 'Z.B. von dir, vom Produkt, BTS, Kunden-Story…',
-              hint: 'Mische Formate — keine Monotonie' },
-            { k: 'werblichkeit', label: 'Werblichkeit', type: 'textarea', ph: 'Verhältnis unwerblich vs. werblich. PB eher unwerblich, BA-Werbevideos sind okay.' },
-            { k: 'hooks', label: 'Hook-Sammlung', type: 'list', ph: 'Eine Zeile pro Hook',
-              hint: 'Sammle alles was hängen bleibt — pro Video pickst du eine raus' },
-          ],
-        },
-        {
-          title: 'Creator einbauen',
-          items: [
-            { k: 'creator_ugc', label: 'UGC-Creator', type: 'list', ph: '@username · Kontakt · Format' },
-            { k: 'creator_mikro', label: 'Mikro-Influencer (Nische muss passen)', type: 'list', ph: '@username · Reichweite · Nische' },
-            { k: 'creator_inf', label: 'Influencer (Stats checken!)', type: 'list', ph: '@username · Reichweite · Stats-Link' },
-          ],
-        },
+      title: 'Contentplan',
+      fields: [
+        { k: 'richtung', label: 'Richtung', type: 'text', ph: 'In welche Richtung soll der Content gehen?' },
+        { k: 'nische', label: 'Nische', type: 'text', ph: 'z.B. Streetwear · Y2K · Skate · High-End' },
+        { k: 'ueberthemen', label: 'Überthemen', type: 'list', ph: 'Eine Zeile pro Überthema', hint: '3–5 Themen, die immer wiederkehren' },
+        { k: 'story', label: 'Story', type: 'textarea', ph: 'Welche Story zieht sich durch den ganzen Content?' },
+      ],
+    },
+    {
+      title: 'Account-Typ',
+      fields: [
+        { k: 'accountTyp', label: 'Wie willst du es machen? (mehrere möglich, Klick toggled)', type: 'checks',
+          options: ['Personal Brand', 'Brand Account', 'Ads', 'Content Creator / Influencer'] },
+      ],
+    },
+    {
+      title: 'Was wichtig ist',
+      fields: [
+        { k: 'variation', label: 'Variation', type: 'list', ph: 'Z.B. von dir, vom Produkt, BTS, Kunden-Story…',
+          hint: 'Mische Formate — keine Monotonie' },
+        { k: 'werblichkeit', label: 'Werblichkeit', type: 'textarea', ph: 'Verhältnis unwerblich vs. werblich. PB eher unwerblich, BA-Werbevideos sind okay.' },
+        { k: 'hooks', label: 'Hook-Sammlung', type: 'list', ph: 'Eine Zeile pro Hook',
+          hint: 'Sammle alles was hängen bleibt — pro Video pickst du eine raus' },
+      ],
+    },
+    {
+      title: 'Creator einbauen',
+      fields: [
+        { k: 'creator_ugc', label: 'UGC-Creator', type: 'list', ph: '@username · Kontakt · Format' },
+        { k: 'creator_mikro', label: 'Mikro-Influencer (Nische muss passen)', type: 'list', ph: '@username · Reichweite · Nische' },
+        { k: 'creator_inf', label: 'Influencer (Stats checken!)', type: 'list', ph: '@username · Reichweite · Stats-Link' },
       ],
     },
   ];
+  // Flat-list aller Strategy-Felder (für Iteration in Sync/Persistence)
+  var STRATEGY_FIELDS = [];
+  STRATEGY_BLOCKS.forEach(function (b) { b.fields.forEach(function (f) { STRATEGY_FIELDS.push(f); }); });
 
   // Felder pro Video-Slot — title wird inline im Card-Header geeditet
   var VIDEO_FIELDS = [
-    { k: 'videoTyp', label: 'Video-Typ', type: 'radio', options: ['Personal Brand', 'Brand Account', 'Ads'] },
+    { k: 'videoTyp', label: 'Video-Typ', type: 'radio', options: ['Personal Brand', 'Brand Account', 'Ads', 'Content Creator / Influencer'] },
     { k: 'hook', label: 'Hook', type: 'text', ph: 'Die Aufmerksamkeits-Zeile in den ersten 2 Sek' },
     { k: 'idee', label: 'Idee / Skript', type: 'textarea', ph: 'Was passiert im Video? Welche Szenen? Wie der Aufbau?' },
     { k: 'link', label: '🔗 Beispielvideo / Inspiration-Link', type: 'text', ph: 'https://… (Instagram, TikTok, YouTube — was dich inspiriert hat)' },
@@ -228,36 +240,19 @@ body { font-family: 'Montserrat', sans-serif; background: var(--bg); color: var(
     if (parent) parent.appendChild(e);
     return e;
   }
-  function clearChildren(node) {
-    while (node && node.firstChild) node.removeChild(node.firstChild);
-  }
+  function clearChildren(node) { while (node && node.firstChild) node.removeChild(node.firstChild); }
+  function isFilled(v) { return typeof v === 'string' && v.trim().length > 0; }
 
-  // Total field count for progress (Strategy fields only — Videos zählen separat)
-  var STRATEGY_FIELDS = 0;
-  SCHEMA.forEach(function (s) {
-    s.blocks.forEach(function (b) {
-      b.items.forEach(function () { STRATEGY_FIELDS++; });
-    });
-  });
+  // ── STATE ──────────────────────────────────────────────────
+  var STRATEGIES = {};       // id -> { name, _order, ...fields }
+  var STRATEGY_REFS = {};    // id -> { fieldKey -> { applyValue, isFocused, input } }
+  var VIDEOS = {};           // id -> { title, videoTyp, hook, idee, link, status, _order, archived? }
+  var VIDEO_REFS = {};       // id -> { fieldKey -> { applyValue, isFocused, input } }
 
-  // STATE
-  var STATE = {};       // section -> field -> value (für Strategy)
-  var FIELD_REFS = {};  // section -> field -> { applyValue, isFocused }
-  SCHEMA.forEach(function (s) {
-    STATE[s.id] = {};
-    FIELD_REFS[s.id] = {};
-    s.blocks.forEach(function (b) {
-      b.items.forEach(function (it) { STATE[s.id][it.k] = ''; });
-    });
-  });
-
-  // VIDEOS State
-  var VIDEOS = {};        // id -> { title, videoTyp, hook, idee, status, _order, archived? }
-  var VIDEO_REFS = {};    // id -> { fieldKey -> { applyValue, isFocused } }
-  var videosWrapEl;
-  var videosCountEl;
-  var archiveWrapEl;
-  var archiveCountEl;
+  var strategyWrapEl, strategyCountEl;
+  var videosWrapEl, videosCountEl;
+  var archiveWrapEl, archiveCountEl;
+  var tabBtns = {};
 
   var tabsEl = document.getElementById('tabs');
   var sectionsEl = document.getElementById('sections');
@@ -265,45 +260,146 @@ body { font-family: 'Montserrat', sans-serif; background: var(--bg); color: var(
   var progCount = document.getElementById('progCount');
   var savedTag = document.getElementById('savedTag');
   var connTag = document.getElementById('connTag');
-  var TAB_PCT = {};
 
   // ── Render Tabs ────────────────────────────────────────────
-  var tabBtns = {};
-  SCHEMA.forEach(function (s, idx) {
-    var btn = el('button', 'tab' + (idx === 0 ? ' active' : ''), tabsEl);
+  function makeTab(id, icon, label, initialPct, isActive) {
+    var btn = el('button', 'tab' + (isActive ? ' active' : ''), tabsEl);
     btn.type = 'button';
-    btn.dataset.tab = s.id;
-    var ic = el('span', 'tab-icon', btn); ic.textContent = s.icon;
-    var lbl = el('span', null, btn); lbl.textContent = s.label;
-    var pct = el('span', 'tab-pct', btn); pct.textContent = '0%';
-    btn.addEventListener('click', function () { showTab(s.id); });
-    tabBtns[s.id] = { btn: btn, pct: pct };
-  });
-  // Tab Videos
+    btn.dataset.tab = id;
+    var ic = el('span', 'tab-icon', btn); ic.textContent = icon;
+    var lbl = el('span', null, btn); lbl.textContent = label;
+    var pct = el('span', 'tab-pct', btn); pct.textContent = initialPct;
+    btn.addEventListener('click', function () { showTab(id); });
+    tabBtns[id] = { btn: btn, pct: pct };
+  }
+  makeTab('strategy', '🎯', 'Strategie', '0', true);
+  makeTab('videos', '🎬', 'Videos', '0', false);
+  makeTab('archive', '📦', 'Archiv', '0', false);
+
+  function showTab(id) {
+    Object.keys(tabBtns).forEach(function (k) {
+      tabBtns[k].btn.classList.toggle('active', k === id);
+    });
+    sectionsEl.querySelectorAll('.section').forEach(function (s) {
+      s.classList.toggle('active', s.dataset.section === id);
+    });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  // ── Render Sections (3 Tabs) ──────────────────────────────
+  // Strategy-Section
   (function () {
-    var btn = el('button', 'tab', tabsEl);
-    btn.type = 'button';
-    btn.dataset.tab = 'videos';
-    var ic = el('span', 'tab-icon', btn); ic.textContent = '🎬';
-    var lbl = el('span', null, btn); lbl.textContent = 'Videos';
-    var pct = el('span', 'tab-pct', btn); pct.textContent = '0';
-    btn.addEventListener('click', function () { showTab('videos'); });
-    tabBtns['videos'] = { btn: btn, pct: pct };
-  })();
-  // Tab Archiv
-  (function () {
-    var btn = el('button', 'tab', tabsEl);
-    btn.type = 'button';
-    btn.dataset.tab = 'archive';
-    var ic = el('span', 'tab-icon', btn); ic.textContent = '📦';
-    var lbl = el('span', null, btn); lbl.textContent = 'Archiv';
-    var pct = el('span', 'tab-pct', btn); pct.textContent = '0';
-    btn.addEventListener('click', function () { showTab('archive'); });
-    tabBtns['archive'] = { btn: btn, pct: pct };
+    var sec = el('section', 'section active', sectionsEl);
+    sec.dataset.section = 'strategy';
+
+    var head = el('div', 'section-head', sec);
+    var ic = el('div', 'ic', head); ic.textContent = '🎯';
+    var titleWrap = el('div', null, head);
+    var h = el('h1', null, titleWrap); h.textContent = 'Strategie';
+    var meta = el('div', 'meta', titleWrap); meta.textContent = 'Mehrere Strategien parallel — z.B. Personal Brand vs Brand Account';
+
+    var toolbar = el('div', 'slot-toolbar', sec);
+    strategyCountEl = el('span', 'slot-count', toolbar);
+    strategyCountEl.textContent = '0 Strategien';
+    var addBtn = el('button', 'btn-add-slot', toolbar);
+    addBtn.type = 'button';
+    addBtn.textContent = '+ Neue Strategie';
+    addBtn.onclick = function () { addStrategy(); };
+
+    strategyWrapEl = el('div', null, sec);
+    strategyWrapEl.id = 'strategy-wrap';
+    renderEmptyStrategy();
   })();
 
-  // ── Strategy Sektion rendern ──────────────────────────────
-  function renderStrategyField(s, b, it, parent) {
+  // Videos-Section
+  (function () {
+    var sec = el('section', 'section', sectionsEl);
+    sec.dataset.section = 'videos';
+
+    var head = el('div', 'section-head', sec);
+    var ic = el('div', 'ic', head); ic.textContent = '🎬';
+    var titleWrap = el('div', null, head);
+    var h = el('h1', null, titleWrap); h.textContent = 'Videos';
+    var meta = el('div', 'meta', titleWrap); meta.textContent = 'Einzelne Video-Ideen';
+
+    var toolbar = el('div', 'slot-toolbar', sec);
+    videosCountEl = el('span', 'slot-count', toolbar);
+    videosCountEl.textContent = '0 Videos';
+    var addBtn = el('button', 'btn-add-slot', toolbar);
+    addBtn.type = 'button';
+    addBtn.textContent = '+ Neues Video';
+    addBtn.onclick = function () { addVideo(); };
+
+    videosWrapEl = el('div', null, sec);
+    videosWrapEl.id = 'videos-wrap';
+    renderEmptyVideos();
+  })();
+
+  // Archive-Section
+  (function () {
+    var sec = el('section', 'section', sectionsEl);
+    sec.dataset.section = 'archive';
+
+    var head = el('div', 'section-head', sec);
+    var ic = el('div', 'ic', head); ic.textContent = '📦';
+    var titleWrap = el('div', null, head);
+    var h = el('h1', null, titleWrap); h.textContent = 'Archiv';
+    var meta = el('div', 'meta', titleWrap); meta.textContent = 'Fertige Videos — kannst du wiederherstellen';
+
+    var toolbar = el('div', 'slot-toolbar', sec);
+    archiveCountEl = el('span', 'slot-count', toolbar);
+    archiveCountEl.textContent = '0 Archiv';
+
+    archiveWrapEl = el('div', null, sec);
+    archiveWrapEl.id = 'archive-wrap';
+    renderEmptyArchive();
+  })();
+
+  // ── Empty States ──────────────────────────────────────────
+  function renderEmptyStrategy() {
+    if (!strategyWrapEl) return;
+    if (Object.keys(STRATEGIES).length > 0) return;
+    clearChildren(strategyWrapEl);
+    var em = el('div', 'empty-slots', strategyWrapEl);
+    em.appendChild(document.createTextNode('Noch keine Strategie.'));
+    em.appendChild(document.createElement('br'));
+    em.appendChild(document.createTextNode('Klick oben auf '));
+    var s = el('strong', null, em); s.textContent = '+ Neue Strategie';
+    em.appendChild(document.createTextNode(' um deine erste anzulegen.'));
+  }
+  function renderEmptyVideos() {
+    if (!videosWrapEl) return;
+    if (countActiveVideos() > 0) return;
+    clearChildren(videosWrapEl);
+    var em = el('div', 'empty-slots', videosWrapEl);
+    em.appendChild(document.createTextNode('Noch keine Videos.'));
+    em.appendChild(document.createElement('br'));
+    em.appendChild(document.createTextNode('Klick oben auf '));
+    var s = el('strong', null, em); s.textContent = '+ Neues Video';
+    em.appendChild(document.createTextNode(' um die erste Idee zu sammeln.'));
+  }
+  function renderEmptyArchive() {
+    if (!archiveWrapEl) return;
+    if (countArchivedVideos() > 0) return;
+    clearChildren(archiveWrapEl);
+    var em = el('div', 'empty-slots', archiveWrapEl);
+    em.appendChild(document.createTextNode('Noch nichts archiviert.'));
+    em.appendChild(document.createElement('br'));
+    em.appendChild(document.createTextNode('Wenn ein Video fertig ist, klick auf '));
+    var s = el('strong', null, em); s.textContent = '📦';
+    em.appendChild(document.createTextNode(' an der Card um es hier abzulegen.'));
+  }
+
+  function countActiveVideos() { return Object.keys(VIDEOS).filter(function (id) { return !VIDEOS[id].archived; }).length; }
+  function countArchivedVideos() { return Object.keys(VIDEOS).filter(function (id) { return !!VIDEOS[id].archived; }).length; }
+
+  // ── Field-Rendering (gemeinsam für Strategy + Video) ──────
+  // Multi-Value-Helper für 'checks'-Type
+  function multiArr(v) { return (v || '').split('|').filter(function (x) { return x; }); }
+  function multiJoin(arr) { return arr.join('|'); }
+
+  // dataObj: STRATEGIES[id] oder VIDEOS[id]; refsBag: STRATEGY_REFS[id] oder VIDEO_REFS[id]
+  function renderField(it, parent, dataObj, refsBag, onPersist, onChange) {
     var f = el('div', 'field', parent);
     var lab = el('label', 'field-label', f); lab.textContent = it.label;
     var inputEl;
@@ -320,21 +416,27 @@ body { font-family: 'Montserrat', sans-serif; background: var(--bg); color: var(
       it.options.forEach(function (opt) {
         var lbl2 = el('label', 'field-radio', grp);
         var inp = el('input', null, lbl2);
-        inp.type = 'radio'; inp.name = s.id + '_' + it.k; inp.value = opt;
+        inp.type = 'radio'; inp.name = it.k + '_' + Math.random().toString(36).slice(2, 7); inp.value = opt;
         var sp = el('span', null, lbl2); sp.textContent = opt;
         lbl2.addEventListener('click', function (e) {
           if (e.target !== inp) e.preventDefault();
-          STATE[s.id][it.k] = opt;
+          // Toggle radio: zweimal klicken deselektiert
+          if (dataObj[it.k] === opt) {
+            dataObj[it.k] = '';
+          } else {
+            dataObj[it.k] = opt;
+          }
           grp.querySelectorAll('.field-radio').forEach(function (l) {
-            l.classList.toggle('is-on', l.querySelector('input').value === opt);
+            l.classList.toggle('is-on', l.querySelector('input').value === dataObj[it.k]);
           });
-          persistStrategy(s.id, it.k);
+          onPersist(it.k);
+          if (onChange) onChange();
           updateProgress();
         });
       });
-      FIELD_REFS[s.id][it.k] = {
+      refsBag[it.k] = {
         applyValue: function (v) {
-          STATE[s.id][it.k] = v || '';
+          dataObj[it.k] = v || '';
           grp.querySelectorAll('.field-radio').forEach(function (l) {
             l.classList.toggle('is-on', l.querySelector('input').value === v);
           });
@@ -345,152 +447,166 @@ body { font-family: 'Montserrat', sans-serif; background: var(--bg); color: var(
         var hint = el('div', 'field-hint', f); hint.textContent = it.hint;
       }
       return;
+    } else if (it.type === 'checks') {
+      var grp2 = el('div', 'field-radio-group', f);
+      it.options.forEach(function (opt) {
+        var lbl3 = el('label', 'field-radio', grp2);
+        var inp2 = el('input', null, lbl3);
+        inp2.type = 'checkbox'; inp2.value = opt;
+        var sp2 = el('span', null, lbl3); sp2.textContent = opt;
+        lbl3.addEventListener('click', function (e) {
+          if (e.target !== inp2) e.preventDefault();
+          var arr = multiArr(dataObj[it.k]);
+          var idx = arr.indexOf(opt);
+          if (idx >= 0) arr.splice(idx, 1); else arr.push(opt);
+          dataObj[it.k] = multiJoin(arr);
+          grp2.querySelectorAll('.field-radio').forEach(function (l) {
+            l.classList.toggle('is-on', arr.indexOf(l.querySelector('input').value) >= 0);
+          });
+          onPersist(it.k);
+          if (onChange) onChange();
+          updateProgress();
+        });
+      });
+      refsBag[it.k] = {
+        applyValue: function (v) {
+          dataObj[it.k] = v || '';
+          var arr = multiArr(v);
+          grp2.querySelectorAll('.field-radio').forEach(function (l) {
+            l.classList.toggle('is-on', arr.indexOf(l.querySelector('input').value) >= 0);
+          });
+        },
+        isFocused: function () { return false; },
+      };
+      if (it.hint) {
+        var hint2 = el('div', 'field-hint', f); hint2.textContent = it.hint;
+      }
+      return;
     }
     if (inputEl) {
+      if (dataObj[it.k]) inputEl.value = dataObj[it.k];
       var deb;
       inputEl.addEventListener('input', function () {
-        STATE[s.id][it.k] = inputEl.value;
+        dataObj[it.k] = inputEl.value;
+        if (onChange) onChange();
         clearTimeout(deb);
         deb = setTimeout(function () {
-          persistStrategy(s.id, it.k);
+          onPersist(it.k);
           updateProgress();
         }, 350);
       });
-      FIELD_REFS[s.id][it.k] = {
+      refsBag[it.k] = {
         input: inputEl,
         applyValue: function (v) {
-          STATE[s.id][it.k] = v || '';
+          dataObj[it.k] = v || '';
           inputEl.value = v || '';
         },
         isFocused: function () { return document.activeElement === inputEl; },
       };
     }
     if (it.hint) {
-      var hint2 = el('div', 'field-hint', f); hint2.textContent = it.hint;
+      var hint3 = el('div', 'field-hint', f); hint3.textContent = it.hint;
     }
   }
 
-  SCHEMA.forEach(function (s, idx) {
-    var sec = el('section', 'section' + (idx === 0 ? ' active' : ''), sectionsEl);
-    sec.dataset.section = s.id;
+  // ── Strategy-Card-Render ──────────────────────────────────
+  function renderStrategyCard(stratId) {
+    var data = STRATEGIES[stratId] || {};
+    var card = el('div', 'block slot-card', strategyWrapEl);
+    card.dataset.id = stratId;
 
-    var head = el('div', 'section-head', sec);
-    var ic = el('div', 'ic', head); ic.textContent = s.icon;
-    var titleWrap = el('div', null, head);
-    var h = el('h1', null, titleWrap); h.textContent = s.label;
-    var meta = el('div', 'meta', titleWrap); meta.textContent = s.sub;
-
-    s.blocks.forEach(function (b) {
-      var blockEl = el('div', 'block', sec);
-      var bt = el('div', 'block-title', blockEl); bt.textContent = b.title;
-      b.items.forEach(function (it) { renderStrategyField(s, b, it, blockEl); });
+    var head = el('div', 'slot-card-head', card);
+    var titleInput = el('input', 'slot-card-title-input', head);
+    titleInput.type = 'text';
+    titleInput.placeholder = 'Neue Strategie';
+    titleInput.value = data.name || '';
+    var titleDeb;
+    titleInput.addEventListener('input', function () {
+      if (!STRATEGIES[stratId]) STRATEGIES[stratId] = {};
+      STRATEGIES[stratId].name = titleInput.value;
+      clearTimeout(titleDeb);
+      titleDeb = setTimeout(function () {
+        persistStrategyField(stratId, 'name');
+      }, 350);
     });
-  });
+    var typPill = el('span', 'slot-typ-pill', head);
+    updateStrategyPill(typPill, data.accountTyp);
+    var actions = el('div', 'slot-actions', head);
+    var dupBtn = el('button', 'slot-action-btn', actions);
+    dupBtn.type = 'button'; dupBtn.title = 'Duplizieren'; dupBtn.textContent = '⧉';
+    dupBtn.onclick = function (e) { e.stopPropagation(); duplicateStrategy(stratId); };
+    var delBtn = el('button', 'slot-action-btn', actions);
+    delBtn.type = 'button'; delBtn.title = 'Löschen'; delBtn.textContent = '🗑';
+    delBtn.onclick = function (e) { e.stopPropagation(); deleteStrategy(stratId); };
 
-  // ── Videos-Sektion rendern ────────────────────────────────
-  (function () {
-    var sec = el('section', 'section', sectionsEl);
-    sec.dataset.section = 'videos';
+    STRATEGY_REFS[stratId] = {};
+    // Title-Ref
+    STRATEGY_REFS[stratId]['name'] = {
+      input: titleInput,
+      applyValue: function (v) {
+        if (!STRATEGIES[stratId]) STRATEGIES[stratId] = {};
+        STRATEGIES[stratId].name = v || '';
+        titleInput.value = v || '';
+      },
+      isFocused: function () { return document.activeElement === titleInput; },
+    };
 
-    var head = el('div', 'section-head', sec);
-    var ic = el('div', 'ic', head); ic.textContent = '🎬';
-    var titleWrap = el('div', null, head);
-    var h = el('h1', null, titleWrap); h.textContent = 'Videos';
-    var meta = el('div', 'meta', titleWrap); meta.textContent = 'Einzelne Video-Ideen';
-
-    var toolbar = el('div', 'videos-toolbar', sec);
-    videosCountEl = el('span', 'videos-count', toolbar);
-    videosCountEl.textContent = '0 Videos';
-    var addBtn = el('button', 'btn-add-video', toolbar);
-    addBtn.type = 'button';
-    addBtn.textContent = '+ Neues Video';
-    addBtn.onclick = function () { addVideo(); };
-
-    videosWrapEl = el('div', null, sec);
-    videosWrapEl.id = 'videos-wrap';
-    renderEmptyVideos();
-  })();
-
-  // ── Archive-Sektion rendern ───────────────────────────────
-  (function () {
-    var sec = el('section', 'section', sectionsEl);
-    sec.dataset.section = 'archive';
-
-    var head = el('div', 'section-head', sec);
-    var ic = el('div', 'ic', head); ic.textContent = '📦';
-    var titleWrap = el('div', null, head);
-    var h = el('h1', null, titleWrap); h.textContent = 'Archiv';
-    var meta = el('div', 'meta', titleWrap); meta.textContent = 'Fertige Videos — kannst du wiederherstellen';
-
-    var toolbar = el('div', 'videos-toolbar', sec);
-    archiveCountEl = el('span', 'videos-count', toolbar);
-    archiveCountEl.textContent = '0 Archiv';
-
-    archiveWrapEl = el('div', null, sec);
-    archiveWrapEl.id = 'archive-wrap';
-    renderEmptyArchive();
-  })();
-
-  function renderEmptyVideos() {
-    if (!videosWrapEl) return;
-    if (countActive() > 0) return;
-    clearChildren(videosWrapEl);
-    var em = el('div', 'empty-videos', videosWrapEl);
-    em.appendChild(document.createTextNode('Noch keine Videos.'));
-    em.appendChild(document.createElement('br'));
-    em.appendChild(document.createTextNode('Klick oben auf '));
-    var s = el('strong', null, em);
-    s.textContent = '+ Neues Video';
-    em.appendChild(document.createTextNode(' um die erste Idee zu sammeln.'));
+    // Block-Gruppen rendern
+    STRATEGY_BLOCKS.forEach(function (block) {
+      var grpEl = el('div', 'slot-group', card);
+      var bt = el('div', 'slot-group-title', grpEl); bt.textContent = block.title;
+      block.fields.forEach(function (f) {
+        renderField(f, grpEl,
+          STRATEGIES[stratId],
+          STRATEGY_REFS[stratId],
+          function (k) { persistStrategyField(stratId, k); },
+          function () {
+            if (f && f.k === 'accountTyp') {
+              updateStrategyPill(typPill, STRATEGIES[stratId].accountTyp);
+            }
+          }
+        );
+      });
+    });
   }
 
-  function renderEmptyArchive() {
-    if (!archiveWrapEl) return;
-    if (countArchived() > 0) return;
-    clearChildren(archiveWrapEl);
-    var em = el('div', 'empty-videos', archiveWrapEl);
-    em.appendChild(document.createTextNode('Noch nichts archiviert.'));
-    em.appendChild(document.createElement('br'));
-    em.appendChild(document.createTextNode('Wenn ein Video fertig ist, klick auf '));
-    var s = el('strong', null, em);
-    s.textContent = '📦';
-    em.appendChild(document.createTextNode(' an der Card um es hier abzulegen.'));
+  function updateStrategyPill(pillEl, accountTyp) {
+    var arr = multiArr(accountTyp);
+    if (arr.length === 0) {
+      pillEl.className = 'slot-typ-pill';
+      pillEl.textContent = '—';
+    } else if (arr.length === 1) {
+      var t = arr[0];
+      var cls = t === 'Personal Brand' ? 'pb' :
+                t === 'Brand Account' ? 'ba' :
+                t === 'Ads' ? 'ads' :
+                t === 'Content Creator / Influencer' ? 'cc' : '';
+      var sh = t === 'Personal Brand' ? 'PB' :
+               t === 'Brand Account' ? 'BA' :
+               t === 'Ads' ? 'AD' :
+               t === 'Content Creator / Influencer' ? 'CC' : t;
+      pillEl.className = 'slot-typ-pill ' + cls;
+      pillEl.textContent = sh;
+    } else {
+      pillEl.className = 'slot-typ-pill multi';
+      pillEl.textContent = arr.length + '×';
+    }
   }
 
-  function countActive() {
-    return Object.keys(VIDEOS).filter(function (id) { return !VIDEOS[id].archived; }).length;
-  }
-  function countArchived() {
-    return Object.keys(VIDEOS).filter(function (id) { return !!VIDEOS[id].archived; }).length;
-  }
-
-  function videoTypClass(typ) {
-    if (typ === 'Personal Brand') return 'pb';
-    if (typ === 'Brand Account') return 'ba';
-    if (typ === 'Ads') return 'ads';
-    return '';
-  }
-  function videoTypShort(typ) {
-    if (typ === 'Personal Brand') return 'PB';
-    if (typ === 'Brand Account') return 'BA';
-    if (typ === 'Ads') return 'AD';
-    return '—';
-  }
-
+  // ── Video-Card-Render ─────────────────────────────────────
   function renderVideoCard(videoId, isArchived) {
     var data = VIDEOS[videoId] || {};
     var wrap = isArchived ? archiveWrapEl : videosWrapEl;
-    var card = el('div', 'block video-card' + (isArchived ? ' is-archived' : ''), wrap);
+    var card = el('div', 'block slot-card' + (isArchived ? ' is-archived' : ''), wrap);
     card.dataset.id = videoId;
     card.dataset.archived = isArchived ? '1' : '0';
 
-    var head = el('div', 'video-card-head', card);
+    var head = el('div', 'slot-card-head', card);
     if (isArchived) {
-      var mark = el('span', 'video-card-archive-mark', head);
+      var mark = el('span', 'slot-card-archive-mark', head);
       mark.textContent = '✓';
     }
-    // Title als inline-Input direkt im Header
-    var titleInput = el('input', 'video-card-title-input', head);
+    var titleInput = el('input', 'slot-card-title-input', head);
     titleInput.type = 'text';
     titleInput.placeholder = 'Neues Video';
     titleInput.value = data.title || '';
@@ -504,36 +620,27 @@ body { font-family: 'Montserrat', sans-serif; background: var(--bg); color: var(
         updateProgress();
       }, 350);
     });
-    var typPill = el('span', 'video-typ-pill ' + videoTypClass(data.videoTyp), head);
-    typPill.textContent = videoTypShort(data.videoTyp);
-    var actions = el('div', 'video-actions', head);
+    var typPill = el('span', 'slot-typ-pill', head);
+    updateVideoPill(typPill, data.videoTyp);
+    var actions = el('div', 'slot-actions', head);
 
     if (isArchived) {
-      var unarchBtn = el('button', 'video-action-btn', actions);
-      unarchBtn.type = 'button';
-      unarchBtn.title = 'Wiederherstellen';
-      unarchBtn.textContent = '↩';
+      var unarchBtn = el('button', 'slot-action-btn', actions);
+      unarchBtn.type = 'button'; unarchBtn.title = 'Wiederherstellen'; unarchBtn.textContent = '↩';
       unarchBtn.onclick = function (e) { e.stopPropagation(); unarchiveVideo(videoId); };
     } else {
-      var archBtn = el('button', 'video-action-btn archive-btn', actions);
-      archBtn.type = 'button';
-      archBtn.title = 'Archivieren (fertig)';
-      archBtn.textContent = '📦';
+      var archBtn = el('button', 'slot-action-btn archive-btn', actions);
+      archBtn.type = 'button'; archBtn.title = 'Archivieren (fertig)'; archBtn.textContent = '📦';
       archBtn.onclick = function (e) { e.stopPropagation(); archiveVideo(videoId); };
     }
-    var dupBtn = el('button', 'video-action-btn', actions);
-    dupBtn.type = 'button';
-    dupBtn.title = 'Duplizieren';
-    dupBtn.textContent = '⧉';
+    var dupBtn = el('button', 'slot-action-btn', actions);
+    dupBtn.type = 'button'; dupBtn.title = 'Duplizieren'; dupBtn.textContent = '⧉';
     dupBtn.onclick = function (e) { e.stopPropagation(); duplicateVideo(videoId); };
-    var delBtn = el('button', 'video-action-btn', actions);
-    delBtn.type = 'button';
-    delBtn.title = 'Löschen';
-    delBtn.textContent = '🗑';
+    var delBtn = el('button', 'slot-action-btn', actions);
+    delBtn.type = 'button'; delBtn.title = 'Löschen'; delBtn.textContent = '🗑';
     delBtn.onclick = function (e) { e.stopPropagation(); deleteVideo(videoId); };
 
     VIDEO_REFS[videoId] = {};
-    // Title-Ref für remote-sync
     VIDEO_REFS[videoId]['title'] = {
       input: titleInput,
       applyValue: function (v) {
@@ -543,13 +650,32 @@ body { font-family: 'Montserrat', sans-serif; background: var(--bg); color: var(
       },
       isFocused: function () { return document.activeElement === titleInput; },
     };
-    VIDEO_FIELDS.forEach(function (it) {
-      renderVideoField(videoId, it, card, function () {
-        var d = VIDEOS[videoId] || {};
-        typPill.className = 'video-typ-pill ' + videoTypClass(d.videoTyp);
-        typPill.textContent = videoTypShort(d.videoTyp);
-      });
+
+    VIDEO_FIELDS.forEach(function (f) {
+      renderField(f, card,
+        VIDEOS[videoId],
+        VIDEO_REFS[videoId],
+        function (k) { persistVideoField(videoId, k); },
+        function () {
+          if (f && f.k === 'videoTyp') {
+            updateVideoPill(typPill, VIDEOS[videoId].videoTyp);
+          }
+        }
+      );
     });
+  }
+
+  function updateVideoPill(pillEl, typ) {
+    var cls = typ === 'Personal Brand' ? 'pb' :
+              typ === 'Brand Account' ? 'ba' :
+              typ === 'Ads' ? 'ads' :
+              typ === 'Content Creator / Influencer' ? 'cc' : '';
+    var sh = typ === 'Personal Brand' ? 'PB' :
+             typ === 'Brand Account' ? 'BA' :
+             typ === 'Ads' ? 'AD' :
+             typ === 'Content Creator / Influencer' ? 'CC' : '—';
+    pillEl.className = 'slot-typ-pill ' + cls;
+    pillEl.textContent = sh;
   }
 
   function removeVideoCardFromDOM(id) {
@@ -559,120 +685,78 @@ body { font-family: 'Montserrat', sans-serif; background: var(--bg); color: var(
     if (c2) c2.remove();
     delete VIDEO_REFS[id];
   }
+  function removeStrategyCardFromDOM(id) {
+    var c = strategyWrapEl && strategyWrapEl.querySelector('[data-id="' + id + '"]');
+    if (c) c.remove();
+    delete STRATEGY_REFS[id];
+  }
 
-  function archiveVideo(id) {
-    if (!VIDEOS[id]) return;
-    VIDEOS[id].archived = Date.now();
+  // ── CRUD Strategy ─────────────────────────────────────────
+  function genId(prefix) {
+    return (prefix || 'x') + '_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 7);
+  }
+  function makeEmptyStrategy(name) {
+    var obj = { name: name || '', _order: Object.keys(STRATEGIES).length };
+    STRATEGY_FIELDS.forEach(function (f) { obj[f.k] = ''; });
+    return obj;
+  }
+  function addStrategy() {
+    var id = genId('s');
+    STRATEGIES[id] = makeEmptyStrategy('');
+    var emptyEl = strategyWrapEl.querySelector('.empty-slots');
+    if (emptyEl) clearChildren(strategyWrapEl);
+    renderStrategyCard(id);
+    persistStrategy(id);
+    updateStrategyCount();
+    updateProgress();
+    showTab('strategy');
+    var newCard = strategyWrapEl.lastElementChild;
+    if (newCard) newCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    // Focus title for immediate naming
+    var titleIn = newCard && newCard.querySelector('.slot-card-title-input');
+    if (titleIn) setTimeout(function () { titleIn.focus(); }, 350);
+  }
+  function duplicateStrategy(srcId) {
+    var src = STRATEGIES[srcId];
+    if (!src) return;
+    var id = genId('s');
+    var copy = { name: (src.name || 'Strategie') + ' (Kopie)', _order: Object.keys(STRATEGIES).length };
+    STRATEGY_FIELDS.forEach(function (f) { copy[f.k] = src[f.k] || ''; });
+    STRATEGIES[id] = copy;
+    var emptyEl = strategyWrapEl.querySelector('.empty-slots');
+    if (emptyEl) clearChildren(strategyWrapEl);
+    renderStrategyCard(id);
+    persistStrategy(id);
+    updateStrategyCount();
+    updateProgress();
+    var newCard = strategyWrapEl.lastElementChild;
+    if (newCard) newCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+  function deleteStrategy(id) {
+    if (!confirm('Diese Strategie löschen?')) return;
+    delete STRATEGIES[id];
+    removeStrategyCardFromDOM(id);
     if (_R && _D) {
-      _D.ref('rooms/' + _R + '/content/videos/' + id + '/archived').set(VIDEOS[id].archived).catch(function () {});
+      _D.ref('rooms/' + _R + '/content/strategies/' + id).remove().catch(function () {});
     }
-    removeVideoCardFromDOM(id);
-    var emptyArch = archiveWrapEl.querySelector('.empty-videos');
-    if (emptyArch) clearChildren(archiveWrapEl);
-    renderVideoCard(id, true);
-    if (countActive() === 0) renderEmptyVideos();
-    updateVideoCount();
-    updateArchiveCount();
-    showSaved();
+    if (Object.keys(STRATEGIES).length === 0) renderEmptyStrategy();
+    updateStrategyCount();
+    updateProgress();
+  }
+  function updateStrategyCount() {
+    var n = Object.keys(STRATEGIES).length;
+    if (strategyCountEl) strategyCountEl.textContent = n + (n === 1 ? ' Strategie' : ' Strategien');
+    if (tabBtns['strategy']) tabBtns['strategy'].pct.textContent = String(n);
   }
 
-  function unarchiveVideo(id) {
-    if (!VIDEOS[id]) return;
-    delete VIDEOS[id].archived;
-    if (_R && _D) {
-      _D.ref('rooms/' + _R + '/content/videos/' + id + '/archived').remove().catch(function () {});
-    }
-    removeVideoCardFromDOM(id);
-    var emptyVids = videosWrapEl.querySelector('.empty-videos');
-    if (emptyVids) clearChildren(videosWrapEl);
-    renderVideoCard(id, false);
-    if (countArchived() === 0) renderEmptyArchive();
-    updateVideoCount();
-    updateArchiveCount();
-    showSaved();
+  // ── CRUD Video ─────────────────────────────────────────────
+  function makeEmptyVideo() {
+    return { title: '', videoTyp: '', hook: '', idee: '', link: '', status: 'Idee', _order: Object.keys(VIDEOS).length };
   }
-
-  function renderVideoField(videoId, it, parent, onEdit) {
-    var f = el('div', 'field', parent);
-    var lab = el('label', 'field-label', f); lab.textContent = it.label;
-    var inputEl;
-
-    if (it.type === 'text') {
-      inputEl = el('input', 'field-input', f);
-      inputEl.type = 'text';
-      inputEl.placeholder = it.ph || '';
-    } else if (it.type === 'textarea') {
-      inputEl = el('textarea', 'field-textarea', f);
-      inputEl.placeholder = it.ph || '';
-    } else if (it.type === 'radio') {
-      var grp = el('div', 'field-radio-group', f);
-      it.options.forEach(function (opt) {
-        var lbl2 = el('label', 'field-radio', grp);
-        var inp = el('input', null, lbl2);
-        inp.type = 'radio'; inp.name = 'v_' + videoId + '_' + it.k; inp.value = opt;
-        var sp = el('span', null, lbl2); sp.textContent = opt;
-        lbl2.addEventListener('click', function (e) {
-          if (e.target !== inp) e.preventDefault();
-          if (!VIDEOS[videoId]) VIDEOS[videoId] = {};
-          VIDEOS[videoId][it.k] = opt;
-          grp.querySelectorAll('.field-radio').forEach(function (l) {
-            l.classList.toggle('is-on', l.querySelector('input').value === opt);
-          });
-          persistVideoField(videoId, it.k);
-          if (onEdit) onEdit();
-          updateProgress();
-        });
-      });
-      VIDEO_REFS[videoId][it.k] = {
-        applyValue: function (v) {
-          if (!VIDEOS[videoId]) VIDEOS[videoId] = {};
-          VIDEOS[videoId][it.k] = v || '';
-          grp.querySelectorAll('.field-radio').forEach(function (l) {
-            l.classList.toggle('is-on', l.querySelector('input').value === v);
-          });
-        },
-        isFocused: function () { return false; },
-      };
-      if (VIDEOS[videoId] && VIDEOS[videoId][it.k]) {
-        VIDEO_REFS[videoId][it.k].applyValue(VIDEOS[videoId][it.k]);
-      }
-      return;
-    }
-    if (inputEl) {
-      if (VIDEOS[videoId] && VIDEOS[videoId][it.k]) inputEl.value = VIDEOS[videoId][it.k];
-      var deb;
-      inputEl.addEventListener('input', function () {
-        if (!VIDEOS[videoId]) VIDEOS[videoId] = {};
-        VIDEOS[videoId][it.k] = inputEl.value;
-        if (onEdit) onEdit();
-        clearTimeout(deb);
-        deb = setTimeout(function () {
-          persistVideoField(videoId, it.k);
-          updateProgress();
-        }, 350);
-      });
-      VIDEO_REFS[videoId][it.k] = {
-        input: inputEl,
-        applyValue: function (v) {
-          if (!VIDEOS[videoId]) VIDEOS[videoId] = {};
-          VIDEOS[videoId][it.k] = v || '';
-          inputEl.value = v || '';
-        },
-        isFocused: function () { return document.activeElement === inputEl; },
-      };
-    }
-  }
-
-  // ── Video CRUD ────────────────────────────────────────────
-  function genId() {
-    return 'v_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 7);
-  }
-
   function addVideo() {
-    var id = genId();
-    var order = Object.keys(VIDEOS).length;
-    VIDEOS[id] = { _order: order, title: '', videoTyp: '', hook: '', idee: '', status: 'Idee' };
-    var emptyEl = videosWrapEl.querySelector('.empty-videos');
+    var id = genId('v');
+    VIDEOS[id] = makeEmptyVideo();
+    var emptyEl = videosWrapEl.querySelector('.empty-slots');
     if (emptyEl) clearChildren(videosWrapEl);
     renderVideoCard(id, false);
     persistVideo(id);
@@ -681,24 +765,23 @@ body { font-family: 'Montserrat', sans-serif; background: var(--bg); color: var(
     showTab('videos');
     var newCard = videosWrapEl.lastElementChild;
     if (newCard) newCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    var titleIn = newCard && newCard.querySelector('.slot-card-title-input');
+    if (titleIn) setTimeout(function () { titleIn.focus(); }, 350);
   }
-
   function duplicateVideo(srcId) {
     var src = VIDEOS[srcId];
     if (!src) return;
-    var id = genId();
-    var order = Object.keys(VIDEOS).length;
-    // Duplikat landet IMMER in 'Videos' (nicht im Archiv) — auch wenn aus
-    // Archiv kopiert: Idee soll wieder bearbeitet werden
+    var id = genId('v');
     VIDEOS[id] = {
-      _order: order,
+      _order: Object.keys(VIDEOS).length,
       title: (src.title || '') + ' (Kopie)',
       videoTyp: src.videoTyp || '',
       hook: src.hook || '',
       idee: src.idee || '',
+      link: src.link || '',
       status: 'Idee',
     };
-    var emptyEl = videosWrapEl.querySelector('.empty-videos');
+    var emptyEl = videosWrapEl.querySelector('.empty-slots');
     if (emptyEl) clearChildren(videosWrapEl);
     renderVideoCard(id, false);
     persistVideo(id);
@@ -709,7 +792,6 @@ body { font-family: 'Montserrat', sans-serif; background: var(--bg); color: var(
     var newCard = videosWrapEl.lastElementChild;
     if (newCard) newCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
-
   function deleteVideo(id) {
     if (!confirm('Dieses Video löschen?')) return;
     delete VIDEOS[id];
@@ -717,56 +799,60 @@ body { font-family: 'Montserrat', sans-serif; background: var(--bg); color: var(
     if (_R && _D) {
       _D.ref('rooms/' + _R + '/content/videos/' + id).remove().catch(function () {});
     }
-    if (countActive() === 0) renderEmptyVideos();
-    if (countArchived() === 0) renderEmptyArchive();
+    if (countActiveVideos() === 0) renderEmptyVideos();
+    if (countArchivedVideos() === 0) renderEmptyArchive();
     updateVideoCount();
     updateArchiveCount();
     updateProgress();
   }
-
+  function archiveVideo(id) {
+    if (!VIDEOS[id]) return;
+    VIDEOS[id].archived = Date.now();
+    if (_R && _D) {
+      _D.ref('rooms/' + _R + '/content/videos/' + id + '/archived').set(VIDEOS[id].archived).catch(function () {});
+    }
+    removeVideoCardFromDOM(id);
+    var emptyArch = archiveWrapEl.querySelector('.empty-slots');
+    if (emptyArch) clearChildren(archiveWrapEl);
+    renderVideoCard(id, true);
+    if (countActiveVideos() === 0) renderEmptyVideos();
+    updateVideoCount();
+    updateArchiveCount();
+    showSaved();
+  }
+  function unarchiveVideo(id) {
+    if (!VIDEOS[id]) return;
+    delete VIDEOS[id].archived;
+    if (_R && _D) {
+      _D.ref('rooms/' + _R + '/content/videos/' + id + '/archived').remove().catch(function () {});
+    }
+    removeVideoCardFromDOM(id);
+    var emptyVids = videosWrapEl.querySelector('.empty-slots');
+    if (emptyVids) clearChildren(videosWrapEl);
+    renderVideoCard(id, false);
+    if (countArchivedVideos() === 0) renderEmptyArchive();
+    updateVideoCount();
+    updateArchiveCount();
+    showSaved();
+  }
   function updateVideoCount() {
-    var n = countActive();
+    var n = countActiveVideos();
     if (videosCountEl) videosCountEl.textContent = n + (n === 1 ? ' Video' : ' Videos');
     if (tabBtns['videos']) tabBtns['videos'].pct.textContent = String(n);
   }
   function updateArchiveCount() {
-    var n = countArchived();
+    var n = countArchivedVideos();
     if (archiveCountEl) archiveCountEl.textContent = n + (n === 1 ? ' Archiv' : ' Archiv');
     if (tabBtns['archive']) tabBtns['archive'].pct.textContent = String(n);
   }
 
-  // ── Tab switching ──────────────────────────────────────────
-  function showTab(id) {
-    Object.keys(tabBtns).forEach(function (k) {
-      tabBtns[k].btn.classList.toggle('active', k === id);
-    });
-    sectionsEl.querySelectorAll('.section').forEach(function (s) {
-      s.classList.toggle('active', s.dataset.section === id);
-    });
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }
-
   // ── Progress ───────────────────────────────────────────────
-  function isFilled(v) { return typeof v === 'string' && v.trim().length > 0; }
   function updateProgress() {
-    var stratFilled = 0;
-    SCHEMA.forEach(function (s) {
-      var sFilled = 0, sTotal = 0;
-      s.blocks.forEach(function (b) {
-        b.items.forEach(function (it) {
-          sTotal++;
-          if (isFilled(STATE[s.id][it.k])) sFilled++;
-        });
-      });
-      var sPct = Math.round((sFilled / sTotal) * 100);
-      TAB_PCT[s.id] = sPct;
-      if (tabBtns[s.id]) tabBtns[s.id].pct.textContent = sPct + '%';
-      stratFilled += sFilled;
-    });
-    var stratPct = STRATEGY_FIELDS ? (stratFilled / STRATEGY_FIELDS) : 0;
-    var nVideos = Object.keys(VIDEOS).length;
-    var videoPct = Math.min(nVideos / 5, 1);
-    var pct = Math.round((stratPct * 0.5 + videoPct * 0.5) * 100);
+    var nStrat = Object.keys(STRATEGIES).length;
+    var stratPct = Math.min(nStrat / 1, 1); // 1 Strategie = volles Strategie-Drittel
+    var nVid = countActiveVideos() + countArchivedVideos();
+    var vidPct = Math.min(nVid / 5, 1);
+    var pct = Math.round((stratPct * 0.4 + vidPct * 0.6) * 100);
     progFill.style.width = pct + '%';
     progCount.textContent = pct + '%';
     if (_R && _D) {
@@ -781,81 +867,97 @@ body { font-family: 'Montserrat', sans-serif; background: var(--bg); color: var(
     clearTimeout(savedTag._t);
     savedTag._t = setTimeout(function () { savedTag.classList.remove('show'); }, 1400);
   }
-
-  function persistStrategy(section, key) {
+  function persistStrategy(id) {
     if (!_R || !_D) { showSaved(); return; }
-    var val = STATE[section][key] || '';
-    _D.ref('rooms/' + _R + '/content/' + section + '/' + key)
-      .set(val)
-      .then(function () { showSaved(); })
+    var v = STRATEGIES[id]; if (!v) return;
+    _D.ref('rooms/' + _R + '/content/strategies/' + id)
+      .set(v).then(function () { showSaved(); })
       .catch(function (e) { connTag.textContent = '⚠ ' + (e.code || e.message); });
   }
-
+  function persistStrategyField(id, key) {
+    if (!_R || !_D) { showSaved(); return; }
+    var v = STRATEGIES[id]; if (!v) return;
+    _D.ref('rooms/' + _R + '/content/strategies/' + id + '/' + key)
+      .set(v[key] || '').then(function () { showSaved(); })
+      .catch(function (e) { connTag.textContent = '⚠ ' + (e.code || e.message); });
+  }
   function persistVideo(id) {
     if (!_R || !_D) { showSaved(); return; }
-    var v = VIDEOS[id];
-    if (!v) return;
+    var v = VIDEOS[id]; if (!v) return;
     _D.ref('rooms/' + _R + '/content/videos/' + id)
-      .set(v)
-      .then(function () { showSaved(); })
+      .set(v).then(function () { showSaved(); })
       .catch(function (e) { connTag.textContent = '⚠ ' + (e.code || e.message); });
   }
-
   function persistVideoField(id, key) {
     if (!_R || !_D) { showSaved(); return; }
-    var v = VIDEOS[id];
-    if (!v) return;
+    var v = VIDEOS[id]; if (!v) return;
     _D.ref('rooms/' + _R + '/content/videos/' + id + '/' + key)
-      .set(v[key] || '')
-      .then(function () { showSaved(); })
+      .set(v[key] || '').then(function () { showSaved(); })
       .catch(function (e) { connTag.textContent = '⚠ ' + (e.code || e.message); });
   }
 
   // ── Apply remote state ────────────────────────────────────
-  function applyRemoteStrategy(data) {
-    if (!data || typeof data !== 'object') return;
-    SCHEMA.forEach(function (s) {
-      var sData = data[s.id] || {};
-      s.blocks.forEach(function (b) {
-        b.items.forEach(function (it) {
-          var ref = FIELD_REFS[s.id] && FIELD_REFS[s.id][it.k];
+  function applyRemoteStrategies(data) {
+    var newIds = data ? Object.keys(data) : [];
+    var oldIds = Object.keys(STRATEGIES);
+    oldIds.forEach(function (id) {
+      if (newIds.indexOf(id) < 0) {
+        delete STRATEGIES[id];
+        removeStrategyCardFromDOM(id);
+      }
+    });
+    newIds.forEach(function (id) {
+      var v = data[id] || {};
+      if (!STRATEGIES[id]) {
+        STRATEGIES[id] = v;
+        var emptyEl = strategyWrapEl.querySelector('.empty-slots');
+        if (emptyEl) clearChildren(strategyWrapEl);
+        renderStrategyCard(id);
+      } else {
+        STRATEGIES[id] = STRATEGIES[id] || {};
+        Object.keys(STRATEGY_REFS[id] || {}).forEach(function (k) {
+          var ref = STRATEGY_REFS[id][k];
           if (!ref) return;
           if (ref.isFocused && ref.isFocused()) {
-            STATE[s.id][it.k] = ref.input ? ref.input.value : STATE[s.id][it.k];
+            STRATEGIES[id][k] = ref.input ? ref.input.value : STRATEGIES[id][k];
             return;
           }
-          ref.applyValue(sData[it.k] || '');
+          ref.applyValue(v[k] || '');
         });
-      });
+        // Pill update
+        var card = strategyWrapEl.querySelector('[data-id="' + id + '"]');
+        if (card) {
+          var pillEl = card.querySelector('.slot-typ-pill');
+          if (pillEl) updateStrategyPill(pillEl, v.accountTyp);
+        }
+      }
     });
+    if (Object.keys(STRATEGIES).length === 0) renderEmptyStrategy();
+    updateStrategyCount();
     updateProgress();
   }
 
   function applyRemoteVideos(data) {
     var newIds = data ? Object.keys(data) : [];
     var oldIds = Object.keys(VIDEOS);
-    // Removed
     oldIds.forEach(function (id) {
       if (newIds.indexOf(id) < 0) {
         delete VIDEOS[id];
         removeVideoCardFromDOM(id);
       }
     });
-    // Added or updated
     newIds.forEach(function (id) {
       var v = data[id] || {};
       var nowArchived = !!v.archived;
       if (!VIDEOS[id]) {
-        // Neu — in passenden Tab rendern
         VIDEOS[id] = v;
         var targetWrap = nowArchived ? archiveWrapEl : videosWrapEl;
-        var emptyEl = targetWrap.querySelector('.empty-videos');
+        var emptyEl = targetWrap.querySelector('.empty-slots');
         if (emptyEl) clearChildren(targetWrap);
         renderVideoCard(id, nowArchived);
       } else {
         var wasArchived = !!VIDEOS[id].archived;
         VIDEOS[id] = VIDEOS[id] || {};
-        // Alle registered VIDEO_REFS-Felder syncen (inkl. title das im Header sitzt)
         Object.keys(VIDEO_REFS[id] || {}).forEach(function (k) {
           var ref = VIDEO_REFS[id][k];
           if (!ref) return;
@@ -867,59 +969,75 @@ body { font-family: 'Montserrat', sans-serif; background: var(--bg); color: var(
         });
         VIDEOS[id].archived = v.archived;
         if (wasArchived !== nowArchived) {
-          // Archiv-Status hat sich geändert (z.B. anderes Device hat archiviert)
-          // → Card in den anderen Tab verschieben (= neu rendern)
           removeVideoCardFromDOM(id);
           var targetWrap2 = nowArchived ? archiveWrapEl : videosWrapEl;
-          var emptyEl2 = targetWrap2.querySelector('.empty-videos');
+          var emptyEl2 = targetWrap2.querySelector('.empty-slots');
           if (emptyEl2) clearChildren(targetWrap2);
           renderVideoCard(id, nowArchived);
         } else {
-          // Pill-Update (title läuft schon über applyValue oben)
           var card = (wasArchived ? archiveWrapEl : videosWrapEl).querySelector('[data-id="' + id + '"]');
           if (card) {
-            var pillEl = card.querySelector('.video-typ-pill');
-            if (pillEl) {
-              pillEl.className = 'video-typ-pill ' + videoTypClass(v.videoTyp);
-              pillEl.textContent = videoTypShort(v.videoTyp);
-            }
+            var pillEl = card.querySelector('.slot-typ-pill');
+            if (pillEl) updateVideoPill(pillEl, v.videoTyp);
           }
         }
       }
     });
-    if (countActive() === 0) renderEmptyVideos();
-    if (countArchived() === 0) renderEmptyArchive();
+    if (countActiveVideos() === 0) renderEmptyVideos();
+    if (countArchivedVideos() === 0) renderEmptyArchive();
     updateVideoCount();
     updateArchiveCount();
     updateProgress();
   }
 
-  // ── Migration: alte Daten aus social/content holen ───────
-  function migrateFromSocial() {
+  // ── Migration: alte Daten holen ───────────────────────────
+  // 1. Wenn content/strategies leer aber content/strategy hat Daten →
+  //    altes Single-Strategy als ersten Slot mit Name 'Hauptstrategie'.
+  // 2. Wenn content/strategy leer aber social/content hat Daten →
+  //    alte social-Daten zuerst nach content/strategy, dann nach Slot.
+  function migrate() {
     if (!_R || !_D) return Promise.resolve();
-    return _D.ref('rooms/' + _R + '/content/strategy').once('value').then(function (snap) {
-      if (snap.exists() && snap.val()) return;
-      return _D.ref('rooms/' + _R + '/social/content').once('value').then(function (oldSnap) {
-        var oldData = oldSnap.val();
-        if (!oldData || typeof oldData !== 'object') return;
-        return _D.ref('rooms/' + _R + '/content/strategy').set(oldData);
+    var base = _D.ref('rooms/' + _R);
+    return base.child('content/strategies').once('value').then(function (snap) {
+      if (snap.exists() && snap.val()) return; // schon da
+      // Versuche aus content/strategy zu lesen
+      return base.child('content/strategy').once('value').then(function (s2) {
+        var legacy = s2.val();
+        var lift = function (legacyData) {
+          if (!legacyData || typeof legacyData !== 'object') return Promise.resolve();
+          var id = genId('s');
+          var slot = makeEmptyStrategy('Hauptstrategie');
+          STRATEGY_FIELDS.forEach(function (f) {
+            if (legacyData[f.k] != null) slot[f.k] = legacyData[f.k];
+          });
+          return base.child('content/strategies/' + id).set(slot);
+        };
+        if (legacy) return lift(legacy);
+        // Sonst: alte social/content
+        return base.child('social/content').once('value').then(function (s3) {
+          var oldSoc = s3.val();
+          if (oldSoc) return lift(oldSoc);
+        });
       });
-    }).catch(function () { /* migration failure ist OK */ });
+    }).catch(function () {});
   }
 
   // ── Init ───────────────────────────────────────────────────
+  updateStrategyCount();
+  updateVideoCount();
+  updateArchiveCount();
   updateProgress();
 
   if (_R && _D) {
     connTag.textContent = '· verbunden';
-    migrateFromSocial().then(function () {
+    migrate().then(function () {
       _D.ref('rooms/' + _R + '/content').once('value').then(function (snap) {
         var v = snap.val() || {};
-        applyRemoteStrategy(v);
+        applyRemoteStrategies(v.strategies || null);
         applyRemoteVideos(v.videos || null);
         _D.ref('rooms/' + _R + '/content').on('value', function (s) {
           var v2 = s.val() || {};
-          applyRemoteStrategy(v2);
+          applyRemoteStrategies(v2.strategies || null);
           applyRemoteVideos(v2.videos || null);
         });
       }).catch(function (e) { connTag.textContent = '⚠ ' + (e.code || e.message); });
