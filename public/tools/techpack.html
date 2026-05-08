@@ -140,7 +140,7 @@ main{max-width:1240px;margin:0 auto;padding:24px;min-width:0;width:100%;box-sizi
 .modal-types button{padding:14px 10px;border-radius:10px;background:#fafafa;border:1px solid var(--bd);font-size:11px;font-weight:800;color:var(--t);text-align:center;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:6px;line-height:1.3;}
 .modal-types button:hover{background:#f1f1f1;border-color:var(--td);}
 .modal-types button .em{font-size:22px;}
-.modal-actions{display:flex;gap:8px;justify-content:flex-end;}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;position:sticky;bottom:-22px;background:#fff;padding:12px 0 0 0;margin:8px -22px -22px -22px;padding:12px 22px 14px 22px;border-top:1px solid var(--bd);}
 .modal-cancel{background:#f5f5f5;color:var(--td);border:0;padding:8px 16px;border-radius:8px;font-size:11px;font-weight:800;}
 
 /* MOCKUP PICKER */
@@ -607,12 +607,20 @@ function openNewPackModal(){
     };
     sp.appendChild(b);
   });
-  $('newPackOk').onclick = function(){
+  function submit(){
     var name = ($('newPackName').value || '').trim();
     if (!name){ toast('Bitte Name eingeben'); $('newPackName').focus(); return; }
     var all = $('newPackAllPages').checked;
     closeAllModals();
     createPack(name, selected, all);
+  }
+  $('newPackOk').onclick = submit;
+  // Enter im Name-Feld bestaetigt direkt — kein Klick auf Anlegen noetig.
+  $('newPackName').onkeydown = function(e){
+    if (e.key === 'Enter' || e.keyCode === 13){
+      e.preventDefault();
+      submit();
+    }
   };
   $('newPackCancel').onclick = closeAllModals;
   $('newPackModal').hidden = false;
