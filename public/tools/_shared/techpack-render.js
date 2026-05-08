@@ -551,7 +551,7 @@
       var top = el('div', {
         style: {
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
           gap: '14px',
           marginBottom: '12px',
         },
@@ -632,7 +632,7 @@
       var grid = el('div', {
         style: {
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
           gap: '12px',
           flex: '1',
         },
@@ -771,7 +771,7 @@
       var grid = el('div', {
         style: {
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
           gap: '8px',
           padding: '12px',
         },
@@ -856,7 +856,7 @@
       var grid = el('div', {
         style: {
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
           gap: '14px',
           flex: '1',
         },
@@ -1006,7 +1006,7 @@
       var grid = el('div', {
         style: {
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
           gap: '12px',
           flex: '1',
         },
@@ -1043,7 +1043,7 @@
       var grid = el('div', {
         style: {
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
           gap: '12px',
           flex: '1',
         },
@@ -1075,7 +1075,7 @@
       var grid = el('div', {
         style: {
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
           gap: '14px',
           flex: '1',
         },
