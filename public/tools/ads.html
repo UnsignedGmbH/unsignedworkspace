@@ -429,9 +429,9 @@ function renderChips(kind){
 function renderAllChips(){renderChips('mood');renderChips('mock');renderChips('sketch');renderChips('col');}
 function createFolder(kind){
   var m=_kindMeta(kind);
-  var name=window.prompt(kind==='col'?'Name der neuen Kollektion:':'Name des neuen '+m.label+'s:','');
-  if(name===null)return;
-  name=(name||'').trim();if(!name)name='Unbenannt';
+  // Default-Name ohne window.prompt (manche iOS-PWA-Modi blocken prompts).
+  // User kann ueber ⋮ → Umbenennen sofort den Namen setzen.
+  var name='Neu '+(m.list.length+1);
   var item;
   if(kind==='mood'){var cats={};MB_CATS.forEach(function(c){cats[c]=[];});item={id:_newId('m'),name:name,cats:cats};moods.push(item);activeMood=moods.length-1;}
   else if(kind==='mock'){item={id:_newId('mk'),name:name,testing:[],improve:[],final:[]};mocks.push(item);activeMock=mocks.length-1;}
