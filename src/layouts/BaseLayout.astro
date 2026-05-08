@@ -264,39 +264,73 @@ const { title = "Unsigned Workspace" } = Astro.props;
       } catch (e) {}
 
       // ── Diagnose-Pille (klein, oben rechts) ─────────────────────────
-      // Zeigt live: Auth · DB · letzte Aktivität. Zum schnellen Debuggen
-      // damit du auf Handy/PC sofort siehst wo's hakt — ohne DevTools.
-      // Tap aufs Pill = Force-Reload mit Cache-Wipe (Notfall-Button).
+      // A · D · R Status — Tap = Cache-Reset, Long-Press = Detail-Panel
+      // A: Auth   D: Database-Connection   R: Read-Test (team-once)
       (function () {
         if (window.UW_DIAG_DISABLED) return;
-        var pill;
+        var pill, panel;
         function ensure() {
           if (pill) return pill;
           pill = document.createElement("div");
           pill.id = "uw-diag-pill";
           pill.style.cssText =
             "position:fixed;top:6px;right:6px;z-index:9990;background:rgba(0,0,0,0.75);color:#fff;font:700 9px/1 Montserrat,system-ui,sans-serif;padding:5px 8px;border-radius:8px;display:flex;gap:6px;align-items:center;cursor:pointer;backdrop-filter:blur(6px);user-select:none;";
-          pill.title = "Tap = Cache-Reset & Reload";
-          pill.innerHTML = '<span id="uw-d-a">A?</span><span style="opacity:0.4">·</span><span id="uw-d-d">D?</span>';
-          pill.onclick = function () {
-            if (!confirm("App-Cache leeren und neu starten?")) return;
-            try { if (window.firebase) window.firebase.auth().signOut().catch(function () {}); } catch (e) {}
-            try { Object.keys(localStorage).forEach(function (k) { if (k.indexOf("uw.") === 0) localStorage.removeItem(k); }); } catch (e) {}
-            try { Object.keys(sessionStorage).forEach(function (k) { if (k.indexOf("uw.") === 0) sessionStorage.removeItem(k); }); } catch (e) {}
-            if (window.indexedDB && indexedDB.databases) {
-              indexedDB.databases().then(function (dbs) {
-                Promise.all((dbs || []).map(function (db) {
-                  return new Promise(function (r) {
-                    try { var rq = indexedDB.deleteDatabase(db.name); rq.onsuccess = rq.onerror = rq.onblocked = function () { r(); }; }
-                    catch (e) { r(); }
-                  });
-                })).then(function () { location.replace("/"); });
-              }).catch(function () { location.replace("/"); });
-            } else { location.replace("/"); }
+          pill.title = "Tap = Detail / Long-Press = Cache-Reset";
+          pill.innerHTML = '<span id="uw-d-a">A?</span><span style="opacity:0.4">·</span><span id="uw-d-d">D?</span><span style="opacity:0.4">·</span><span id="uw-d-r">R?</span>';
+          var pressTimer = null;
+          pill.onpointerdown = function () {
+            pressTimer = setTimeout(function () {
+              pressTimer = null;
+              if (!confirm("App-Cache komplett zurücksetzen und neu starten?")) return;
+              doReset();
+            }, 700);
+          };
+          pill.onpointerup = pill.onpointercancel = pill.onpointerleave = function () {
+            if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; togglePanel(); }
           };
           if (document.body) document.body.appendChild(pill);
           else document.addEventListener("DOMContentLoaded", function () { document.body.appendChild(pill); });
           return pill;
+        }
+        function ensurePanel() {
+          if (panel) return panel;
+          panel = document.createElement("div");
+          panel.id = "uw-diag-panel";
+          panel.style.cssText =
+            "position:fixed;top:32px;right:6px;z-index:9991;background:#0e0e0e;color:#fff;font:600 11px/1.4 Montserrat,system-ui,sans-serif;padding:12px 14px;border-radius:10px;max-width:320px;display:none;box-shadow:0 8px 32px rgba(0,0,0,0.4);";
+          panel.innerHTML =
+            '<div style="font-weight:900;margin-bottom:6px">Diagnose</div>' +
+            '<div id="uw-d-detail" style="white-space:pre-wrap;color:#ddd;font:500 10px/1.5 monospace"></div>' +
+            '<button id="uw-d-retest" style="margin-top:8px;background:#185fa5;color:#fff;border:0;border-radius:6px;padding:6px 10px;font:700 10px Montserrat;cursor:pointer">Read erneut testen</button>' +
+            '<button id="uw-d-reset" style="margin-top:8px;margin-left:6px;background:#c13030;color:#fff;border:0;border-radius:6px;padding:6px 10px;font:700 10px Montserrat;cursor:pointer">Cache reset</button>';
+          if (document.body) document.body.appendChild(panel);
+          else document.addEventListener("DOMContentLoaded", function () { document.body.appendChild(panel); });
+          panel.querySelector("#uw-d-retest").onclick = function () { runReadTest(); };
+          panel.querySelector("#uw-d-reset").onclick = function () {
+            if (!confirm("App-Cache komplett zurücksetzen und neu starten?")) return;
+            doReset();
+          };
+          return panel;
+        }
+        function togglePanel() {
+          ensurePanel();
+          panel.style.display = panel.style.display === "block" ? "none" : "block";
+          updateDetail();
+        }
+        function doReset() {
+          try { if (window.firebase) window.firebase.auth().signOut().catch(function () {}); } catch (e) {}
+          try { Object.keys(localStorage).forEach(function (k) { if (k.indexOf("uw.") === 0) localStorage.removeItem(k); }); } catch (e) {}
+          try { Object.keys(sessionStorage).forEach(function (k) { if (k.indexOf("uw.") === 0) sessionStorage.removeItem(k); }); } catch (e) {}
+          if (window.indexedDB && indexedDB.databases) {
+            indexedDB.databases().then(function (dbs) {
+              Promise.all((dbs || []).map(function (db) {
+                return new Promise(function (r) {
+                  try { var rq = indexedDB.deleteDatabase(db.name); rq.onsuccess = rq.onerror = rq.onblocked = function () { r(); }; }
+                  catch (e) { r(); }
+                });
+              })).then(function () { location.replace("/"); });
+            }).catch(function () { location.replace("/"); });
+          } else { location.replace("/"); }
         }
         function setBg(state) {
           var p = ensure();
@@ -305,39 +339,93 @@ const { title = "Unsigned Workspace" } = Astro.props;
           else if (state === "err")  p.style.background = "rgba(193,48,48,0.85)";
           else                       p.style.background = "rgba(0,0,0,0.75)";
         }
-        function setAuth(label) {
-          ensure(); var el = document.getElementById("uw-d-a"); if (el) el.textContent = label;
+        function setLabel(id, label) {
+          ensure(); var el = document.getElementById(id); if (el) el.textContent = label;
         }
-        function setDb(label) {
-          ensure(); var el = document.getElementById("uw-d-d"); if (el) el.textContent = label;
+
+        var state = { auth: "?", uid: null, db: "?", read: "?", readErr: null, readCount: null, lastTokenAge: null };
+
+        function updateDetail() {
+          if (!panel) return;
+          var d = document.getElementById("uw-d-detail");
+          if (!d) return;
+          d.textContent =
+            "Auth:   " + state.auth + (state.uid ? " (" + state.uid.slice(0, 12) + "…)" : "") + "\n" +
+            "DB-WS:  " + state.db + "\n" +
+            "Read:   " + state.read + (state.readCount != null ? " (" + state.readCount + " entries)" : "") + (state.readErr ? "\n        ERR: " + state.readErr : "") + "\n" +
+            "Token:  " + (state.lastTokenAge != null ? "alter " + state.lastTokenAge + "s" : "—") + "\n" +
+            "URL:    " + location.pathname + "\n" +
+            "Time:   " + new Date().toLocaleTimeString();
+        }
+
+        function recomputeBg() {
+          if (state.auth === "✓" && state.db === "✓" && state.read === "✓") setBg("ok");
+          else if (state.read === "❌" || (state.auth === "—" && state.db !== "✓")) setBg("err");
+          else setBg("warn");
         }
 
         // Auth-State watchen
         function watchAuth() {
           if (!window.firebase || !window.firebase.auth) return setTimeout(watchAuth, 200);
           window.firebase.auth().onAuthStateChanged(function (u) {
-            if (u) { setAuth("A✓"); }
-            else   { setAuth("A—"); }
+            state.auth = u ? "✓" : "—";
+            state.uid = u ? u.uid : null;
+            setLabel("uw-d-a", "A" + state.auth);
+            recomputeBg();
+            updateDetail();
+            // Bei Login Read-Test starten
+            if (u) {
+              setTimeout(runReadTest, 1500);
+              // Token-Alter prüfen
+              u.getIdTokenResult().then(function (r) {
+                if (r && r.issuedAtTime) {
+                  state.lastTokenAge = Math.round((Date.now() - new Date(r.issuedAtTime).getTime()) / 1000);
+                  updateDetail();
+                }
+              }).catch(function () {});
+            }
           });
         }
         watchAuth();
 
         // DB-State watchen
-        var dbConnected = false;
         function watchDb() {
           if (!window.firebase || !window.firebase.database) return setTimeout(watchDb, 200);
           window.firebase.database().ref(".info/connected").on("value", function (s) {
-            dbConnected = s.val() === true;
-            if (dbConnected) { setDb("D✓"); setBg("ok"); }
-            else             { setDb("D—"); setBg("warn"); }
+            state.db = s.val() === true ? "✓" : "—";
+            setLabel("uw-d-d", "D" + state.db);
+            recomputeBg();
+            updateDetail();
           });
         }
         watchDb();
 
-        // Status nach 15s ohne DB-Verbindung → rot
-        setTimeout(function () {
-          if (!dbConnected) setBg("err");
-        }, 15000);
+        // Echter Read-Test: einmalig 'team' lesen, zeigen ob's klappt
+        function runReadTest() {
+          if (!window.firebase || !window.firebase.database) return;
+          state.read = "…";
+          state.readErr = null;
+          state.readCount = null;
+          setLabel("uw-d-r", "R…");
+          recomputeBg();
+          updateDetail();
+          window.firebase.database().ref("team").once("value")
+            .then(function (s) {
+              state.read = "✓";
+              state.readCount = Object.keys(s.val() || {}).length;
+              setLabel("uw-d-r", "R✓");
+              recomputeBg();
+              updateDetail();
+            })
+            .catch(function (err) {
+              state.read = "❌";
+              state.readErr = (err && (err.code || err.message)) || "unknown";
+              setLabel("uw-d-r", "R!");
+              recomputeBg();
+              updateDetail();
+              console.error("[diag] read test failed:", err);
+            });
+        }
       })();
     </script>
   </head>
