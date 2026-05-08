@@ -132,14 +132,14 @@ body{font-family:'Montserrat',sans-serif;background:var(--bg);color:var(--text);
   .modal{padding:18px 16px;}
 }
 
-/* ── OUTER TABS (Checkliste / Moodboard / Archiv) ──────────── */
-.hdr-tabs{display:flex;gap:6px;padding:0 24px 12px;background:#fff;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:99;flex-wrap:wrap;}
+/* ── OUTER TABS (Checkliste / Moodboard / Archiv) — im Header ─── */
+.hdr-tabs{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;}
 .htab{padding:9px 18px;border-radius:9px;border:1.5px solid var(--border);background:var(--bg2);font-family:inherit;font-size:11px;font-weight:800;color:var(--text-dim);cursor:pointer;text-transform:uppercase;letter-spacing:0.06em;transition:all 0.15s;-webkit-tap-highlight-color:transparent;}
 .htab:hover{color:var(--red);border-color:var(--border-red);}
 .htab.on{background:var(--red);border-color:var(--red);color:#fff;}
 .osec{display:none;}
 .osec.on{display:block;}
-@media (max-width:600px){.hdr-tabs{padding:0 12px 8px;gap:4px;}.htab{padding:7px 12px;font-size:10px;}}
+@media (max-width:600px){.hdr-tabs{gap:4px;}.htab{padding:7px 12px;font-size:10px;}}
 
 /* ── MOODBOARD (Shooting-Tab 2) ──────────────────────────────── */
 .mb-main{max-width:980px;margin:0 auto;padding:22px 24px 0;}
@@ -258,18 +258,17 @@ if(_R && _D) {
       <span class="progress-count" id="progressCount">0 / 0</span>
     </div>
   </div>
-  <div class="tabs-wrap" id="tabsWrap">
-    <button class="tab-add" id="tabAdd">+</button>
-  </div>
+  <nav class="hdr-tabs" id="hdrTabs">
+    <button class="htab on" type="button" data-osec="cl">📋 Checkliste</button>
+    <button class="htab" type="button" data-osec="mb">🎨 Moodboard</button>
+    <button class="htab" type="button" data-osec="ar">📦 Archiv</button>
+  </nav>
 </div>
 
-<nav class="hdr-tabs" id="hdrTabs">
-  <button class="htab on" type="button" data-osec="cl">📋 Checkliste</button>
-  <button class="htab" type="button" data-osec="mb">🎨 Moodboard</button>
-  <button class="htab" type="button" data-osec="ar">📦 Archiv</button>
-</nav>
-
 <div class="osec on" id="osec-cl">
+<div class="tabs-wrap" id="tabsWrap" style="padding:14px 24px 10px;background:#fff;border-bottom:1px solid var(--border);">
+  <button class="tab-add" id="tabAdd">+</button>
+</div>
 <div class="main">
   <div class="product-hero">
     <div class="product-info">
