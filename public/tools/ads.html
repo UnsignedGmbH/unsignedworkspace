@@ -1,0 +1,863 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Unsigned — Ads</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,700;1,900&family=Dancing+Script:wght@700&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+<script src="/tools/_shared/img-utils.js"></script>
+<script>
+var _ROOM=new URLSearchParams(location.search).get('room'),_DB=null;
+try{firebase.initializeApp({apiKey:"AIzaSyDJqdh3apGM4fcsjRYI7vZ4VrT1_A6L92U",authDomain:"unsignedworkspace.firebaseapp.com",databaseURL:"https://unsignedworkspace-default-rtdb.europe-west1.firebasedatabase.app",projectId:"unsignedworkspace"});_DB=firebase.database();}catch(e){try{_DB=firebase.database();}catch(e2){}}
+// When embedded in workspace iframe, hide the standalone share button
+// (the workspace provides the share controls).
+document.addEventListener('DOMContentLoaded',function(){
+  if(window.self!==window.top){
+    var st=document.createElement('style');
+    st.textContent='#shareBtn{display:none !important;}';
+    document.head.appendChild(st);
+  }
+});
+</script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{--a:#C13030;--bg:#f4f3f0;--cd:#ffffff;--cd2:#f9f9f9;--bd:rgba(0,0,0,.09);--t:#111;--td:#555;--tdd:#aaa;--g:#1D9E75;--y:#D67A1A;--b:#185FA5;}
+body{font-family:'Montserrat',sans-serif;background:var(--bg);color:var(--t);min-height:100vh;}
+
+/* HEADER */
+.hdr{position:sticky;top:0;z-index:100;background:rgba(255,255,255,.95);backdrop-filter:blur(20px);border-bottom:.5px solid var(--bd);padding:0 24px;display:flex;align-items:center;height:54px;gap:16px;box-shadow:0 1px 8px rgba(0,0,0,0.04);}
+.hdr-logo{font-size:15px;font-weight:900;font-style:italic;color:var(--a);}
+.hdr-logo span{font-family:'Dancing Script',cursive;font-size:12px;color:var(--tdd);display:block;line-height:1;font-style:normal;}
+.hdr-tabs{display:flex;gap:4px;margin-left:20px;}
+.htab{padding:6px 14px;border-radius:20px;border:.5px solid transparent;font-family:'Montserrat',sans-serif;font-size:10px;font-weight:700;cursor:pointer;background:none;color:var(--tdd);transition:all .2s;letter-spacing:.04em;text-transform:uppercase;}
+.htab.on{background:var(--a);border-color:var(--a);color:#fff;}
+.hdr-live{margin-left:auto;display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700;color:var(--g);}
+.live-dot{width:7px;height:7px;border-radius:50%;background:var(--g);animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* SECTIONS */
+.sec{display:none;padding:24px;max-width:1200px;margin:0 auto;}
+.sec.on{display:block;}
+
+/* MOODBOARD */
+.mb-tabs{display:flex;gap:6px;margin-bottom:20px;overflow-x:auto;scrollbar-width:none;}
+.mb-tabs::-webkit-scrollbar{display:none;}
+.mbt{flex-shrink:0;padding:7px 16px;border-radius:20px;border:1px solid var(--bd);background:none;font-family:'Montserrat',sans-serif;font-size:11px;font-weight:700;color:var(--tdd);cursor:pointer;transition:all .2s;}
+.mbt.on{background:var(--a);border-color:var(--a);color:#fff;}
+.mbt .c{font-size:10px;background:rgba(0,0,0,.06);border-radius:10px;padding:1px 6px;margin-left:4px;}
+.mbt.on .c{background:rgba(255,255,255,.25);}
+.mb-upload{border:1.5px dashed var(--bd);border-radius:14px;padding:24px;margin-bottom:20px;display:flex;align-items:center;justify-content:center;gap:16px;flex-wrap:wrap;transition:all .2s;cursor:pointer;}
+.mb-upload:hover,.mb-upload.drag{border-color:var(--a);background:rgba(193,48,48,.04);}
+.ub{display:flex;align-items:center;gap:6px;background:var(--a);color:#fff;border:none;border-radius:8px;padding:9px 16px;font-family:'Montserrat',sans-serif;font-size:11px;font-weight:700;cursor:pointer;}
+.ui{flex:1;min-width:200px;background:var(--cd2);border:.5px solid var(--bd);border-radius:8px;padding:9px 12px;font-family:'Montserrat',sans-serif;font-size:11px;color:var(--t);outline:none;}
+.ui::placeholder{color:var(--tdd);}
+.ua{background:var(--cd2);border:.5px solid var(--bd);border-radius:8px;padding:9px 14px;font-family:'Montserrat',sans-serif;font-size:11px;font-weight:700;color:var(--t);cursor:pointer;white-space:nowrap;}
+.mb-grid{columns:3 220px;gap:10px;}
+.mb-item{break-inside:avoid;margin-bottom:10px;position:relative;border-radius:10px;overflow:hidden;background:var(--cd2);cursor:pointer;}
+.mb-item img{width:100%;display:block;border-radius:10px;transition:transform .3s;}
+.mb-item:hover img{transform:scale(1.03);}
+.mb-ov{position:absolute;inset:0;background:linear-gradient(180deg,transparent 30%,rgba(0,0,0,.85) 100%);opacity:0;transition:opacity .2s;border-radius:10px;display:flex;align-items:flex-end;padding:8px;pointer-events:none;}
+.mb-item:hover .mb-ov{opacity:1;}
+.mb-del{position:absolute;top:6px;right:6px;background:rgba(193,48,48,.85);border:none;border-radius:6px;width:26px;height:26px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#fff;font-size:13px;pointer-events:all;opacity:0;transition:opacity .2s;}
+.mb-item:hover .mb-del{opacity:1;}
+.mb-dl{position:absolute;top:6px;right:38px;background:rgba(0,0,0,.6);border:none;border-radius:6px;width:26px;height:26px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#fff;font-size:13px;pointer-events:all;opacity:0;transition:opacity .2s;}
+.mb-item:hover .mb-dl{opacity:1;}
+.mb-dl:hover{background:rgba(0,0,0,.85);}
+.mb-note{flex:1;font-size:10px;color:rgba(255,255,255,.9);outline:none;background:none;border:none;font-family:'Montserrat',sans-serif;font-weight:600;pointer-events:all;}
+.mb-note::placeholder{color:rgba(255,255,255,.4);}
+.mb-empty{text-align:center;padding:50px 20px;color:var(--tdd);font-size:13px;font-weight:600;column-span:all;-webkit-column-span:all;width:100%;}
+
+/* KANBAN */
+.kb{display:flex;gap:12px;overflow-x:auto;padding-bottom:12px;min-height:400px;}
+.kb-col{flex:1;min-width:260px;background:var(--cd);border:.5px solid var(--bd);border-radius:14px;padding:14px;display:flex;flex-direction:column;}
+.kb-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;padding-bottom:10px;border-bottom:.5px solid var(--bd);}
+.kb-title{font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;}
+.kb-cnt{font-size:10px;font-weight:700;background:rgba(0,0,0,.05);border-radius:10px;padding:2px 8px;color:var(--td);}
+.kb-cards{flex:1;display:flex;flex-direction:column;gap:8px;min-height:100px;}
+.kb-cards.over{background:rgba(193,48,48,.06);border-radius:10px;}
+.kb-card{background:var(--cd2);border:.5px solid var(--bd);border-radius:10px;padding:10px;cursor:grab;transition:all .15s;position:relative;}
+.kb-card:hover{border-color:rgba(193,48,48,.3);}
+.kb-card.dragging{opacity:.4;transform:scale(.95);}
+.kb-card img{width:100%;border-radius:8px;margin-bottom:8px;display:block;}
+.kb-card-title{font-size:12px;font-weight:700;color:var(--t);outline:none;margin-bottom:4px;}
+.kb-card-note{font-size:11px;color:var(--tdd);outline:none;}
+.kb-card-note:empty::before{content:attr(data-ph);color:var(--tdd);}
+.kb-card-acts{display:flex;gap:6px;margin-top:8px;align-items:center;}
+.kb-card-del{background:none;border:none;color:var(--tdd);cursor:pointer;font-size:12px;padding:2px 4px;transition:color .15s;}
+.kb-card-del:hover{color:var(--a);}
+.kb-card-link{font-size:9px;font-weight:700;color:var(--b);background:rgba(59,130,246,.1);border-radius:4px;padding:2px 6px;white-space:nowrap;cursor:pointer;border:none;}
+.kb-add{width:100%;background:none;border:1.5px dashed var(--bd);border-radius:8px;padding:10px;font-family:'Montserrat',sans-serif;font-size:11px;font-weight:700;color:var(--tdd);cursor:pointer;margin-top:8px;transition:all .15s;}
+.kb-add:hover{border-color:var(--a);color:var(--a);}
+
+/* LINKED BADGE */
+.link-badge{display:flex;align-items:center;gap:4px;margin-top:6px;padding:4px 8px;background:rgba(59,130,246,.08);border-radius:6px;border:.5px solid rgba(59,130,246,.2);}
+.link-badge img{width:24px;height:24px;border-radius:4px;object-fit:cover;}
+.link-badge span{font-size:9px;font-weight:700;color:var(--b);}
+
+/* PRODUCT CARDS */
+.pc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;}
+.pc{background:var(--cd);border:.5px solid var(--bd);border-radius:14px;overflow:hidden;transition:border-color .2s;}
+.pc:hover{border-color:rgba(193,48,48,.3);}
+.pc-img{width:100%;aspect-ratio:1;object-fit:cover;cursor:pointer;background:var(--cd2);}
+.pc-img-placeholder{width:100%;aspect-ratio:1;display:flex;align-items:center;justify-content:center;background:var(--cd2);cursor:pointer;font-size:32px;color:var(--tdd);}
+.pc-body{padding:14px;}
+.pc-name{font-size:13px;font-weight:800;color:var(--t);outline:none;margin-bottom:6px;}
+.pc-name:empty::before{content:'Produktname...';color:var(--tdd);}
+.pc-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;}
+.pc-label{font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--tdd);}
+.pc-status{font-size:10px;font-weight:700;padding:3px 10px;border-radius:12px;border:none;font-family:'Montserrat',sans-serif;cursor:pointer;outline:none;-webkit-appearance:none;}
+.pc-status option{background:#222;color:#fff;}
+.pc-date{font-size:11px;font-weight:600;background:var(--cd2);border:.5px solid var(--bd);border-radius:6px;padding:6px 10px;color:var(--t);font-family:'Montserrat',sans-serif;outline:none;width:100%;}
+.pc-del{background:none;border:none;color:var(--tdd);cursor:pointer;font-size:12px;padding:4px;margin-left:auto;transition:color .15s;}
+.pc-del:hover{color:var(--a);}
+.pc-add{background:none;border:1.5px dashed var(--bd);border-radius:14px;padding:40px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;color:var(--tdd);font-family:'Montserrat',sans-serif;font-size:12px;font-weight:700;gap:8px;transition:all .15s;min-height:200px;}
+.pc-add:hover{border-color:var(--a);color:var(--a);}
+
+/* LIGHTBOX */
+.lb{display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.97);backdrop-filter:blur(16px);align-items:center;justify-content:center;flex-direction:column;padding:50px 12px 16px;}
+.lb.open{display:flex;}
+.lb img{max-width:94vw;max-height:82vh;border-radius:10px;object-fit:contain;cursor:zoom-in;transition:transform .35s;box-shadow:0 20px 80px rgba(0,0,0,.8);user-select:none;}
+.lb img.zoomed{max-width:none;max-height:none;width:94vw;transform:scale(2);cursor:zoom-out;}
+.lb-close{position:fixed;top:16px;right:20px;background:rgba(255,255,255,.08);border:.5px solid rgba(255,255,255,.15);border-radius:8px;color:rgba(255,255,255,.7);font-size:18px;cursor:pointer;width:36px;height:36px;display:flex;align-items:center;justify-content:center;}
+.lb-close:hover{background:rgba(255,255,255,.2);color:#fff;}
+.lb-bottom{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;justify-content:center;}
+.lb-btn{background:rgba(255,255,255,.08);border:.5px solid rgba(255,255,255,.15);border-radius:8px;padding:7px 14px;color:rgba(255,255,255,.8);cursor:pointer;font-family:'Montserrat',sans-serif;font-size:11px;font-weight:700;text-decoration:none;display:flex;align-items:center;gap:5px;}
+button.lb-btn{outline:none;}
+.lb-btn:hover{background:rgba(255,255,255,.15);color:#fff;}
+.lb-nav{position:fixed;top:50%;transform:translateY(-50%);background:rgba(0,0,0,.5);border:.5px solid rgba(255,255,255,.15);border-radius:50%;width:42px;height:42px;color:#fff;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(8px);}
+.lb-nav:hover{background:rgba(255,255,255,.2);}
+.lb-nav.prev{left:16px;}
+.lb-nav.next{right:16px;}
+
+/* LINK MODAL */
+.modal-bg{display:none;position:fixed;inset:0;z-index:8000;background:rgba(0,0,0,.7);align-items:center;justify-content:center;}
+.modal-bg.open{display:flex;}
+.modal{background:var(--cd);border:.5px solid var(--bd);border-radius:16px;padding:24px;width:90%;max-width:400px;max-height:70vh;overflow-y:auto;}
+.modal h3{font-size:14px;font-weight:800;margin-bottom:14px;}
+.modal-item{display:flex;gap:10px;align-items:center;padding:8px;border-radius:8px;cursor:pointer;transition:background .15s;border:.5px solid transparent;}
+.modal-item:hover{background:var(--cd2);border-color:var(--bd);}
+.modal-item img{width:40px;height:40px;border-radius:6px;object-fit:cover;}
+.modal-item span{font-size:12px;font-weight:700;}
+
+/* TOAST */
+#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#111;border:.5px solid rgba(255,255,255,.1);color:#fff;padding:10px 20px;border-radius:10px;font-size:12px;font-weight:700;z-index:99999;opacity:0;transition:opacity .3s;pointer-events:none;}
+#toast.show{opacity:1;}
+
+/* MOBILE (<= 600px) — kompakteres Layout, scrollbare Tabs, weniger Padding */
+@media (max-width:600px){
+  .hdr{padding:0 10px;gap:6px;height:46px;}
+  .hdr-logo{font-size:12px;line-height:1;}
+  .hdr-logo span{display:none;}
+  .hdr-tabs{margin-left:4px;gap:2px;overflow-x:auto;-webkit-overflow-scrolling:touch;flex:1 1 auto;min-width:0;scrollbar-width:none;}
+  .hdr-tabs::-webkit-scrollbar{display:none;}
+  .htab{padding:5px 9px;font-size:9px;flex-shrink:0;white-space:nowrap;}
+  .hdr-live{font-size:9px;flex-shrink:0;gap:4px;}
+  .live-dot{width:6px;height:6px;}
+  .sec{padding:14px;}
+  .folder-chips{margin-bottom:14px;gap:4px;}
+  .fchip{padding:5px 10px 5px 12px;font-size:10px;}
+  .fchip-menu-btn{padding-left:2px;font-size:11px;}
+  .mb-upload{padding:14px;gap:10px;flex-direction:column;}
+  .mb-upload .ui{min-width:0;width:100%;}
+  .mb-grid{columns:2 130px;gap:6px;}
+  .mb-tabs{gap:4px;margin-bottom:14px;}
+  .mbt{padding:5px 10px;font-size:10px;}
+  .kb{gap:8px;}
+  .kb-col{min-width:240px;padding:10px;}
+  .pc-grid{grid-template-columns:1fr;gap:10px;}
+  .pc{border-radius:12px;}
+  .pc-body{padding:12px;}
+  /* Lightbox-Buttons groesser und mehr Tap-Area */
+  .lb-btn{padding:10px 16px;font-size:12px;}
+  .lb-nav{width:38px;height:38px;font-size:16px;}
+  .lb-close{width:32px;height:32px;font-size:16px;top:12px;right:12px;}
+  .modal{padding:18px;}
+}
+
+/* FOLDER CHIPS (multi-folder selector) */
+.folder-chips{display:flex;gap:6px;margin-bottom:18px;flex-wrap:wrap;align-items:center;}
+.fchip{display:inline-flex;align-items:center;gap:4px;padding:6px 12px 6px 14px;border-radius:20px;border:1px solid var(--bd);background:var(--cd);font-family:'Montserrat',sans-serif;font-size:11px;font-weight:700;color:var(--td);cursor:pointer;transition:all .15s;}
+.fchip:hover{border-color:rgba(193,48,48,.3);}
+.fchip.on{background:var(--a);border-color:var(--a);color:#fff;}
+.fchip-name{padding:0;background:transparent;border:0;color:inherit;font:inherit;cursor:pointer;outline:none;}
+.fchip-menu-btn{background:none;border:0;color:inherit;cursor:pointer;padding:0 2px 0 4px;opacity:.6;font-size:13px;line-height:1;}
+.fchip-menu-btn:hover{opacity:1;}
+.fchip-add{border-style:dashed;color:var(--tdd);background:none;}
+.fchip-add:hover{border-color:var(--a);color:var(--a);}
+.fchip-menu{position:fixed;z-index:9000;background:var(--cd);border:.5px solid var(--bd);border-radius:10px;padding:4px;box-shadow:0 8px 24px rgba(0,0,0,.12);min-width:140px;}
+.fchip-menu button{display:block;width:100%;padding:8px 14px;border:0;background:none;text-align:left;font-family:'Montserrat',sans-serif;font-size:11px;font-weight:700;color:var(--t);cursor:pointer;border-radius:6px;}
+.fchip-menu button:hover{background:var(--cd2);}
+.fchip-menu button.danger{color:var(--a);}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div class="hdr-logo">Ads <span>BrandWork</span></div>
+  <div class="hdr-tabs">
+    <button class="htab on" onclick="switchSec('mood')">Moodboard</button>
+    <button class="htab" onclick="switchSec('mock')">1:1</button>
+    <button class="htab" onclick="switchSec('sketch')">9:16</button>
+  </div>
+  <button id="shareBtn" onclick="shareBoard()" style="margin-left:auto;background:var(--a);color:#fff;border:none;border-radius:8px;padding:7px 16px;font-family:'Montserrat',sans-serif;font-size:11px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px;">🔗 Teilen</button>
+  <div class="hdr-live" id="liveStatus" style="display:none;margin-left:8px;"><div class="live-dot"></div>Live</div>
+</div>
+
+<!-- Share Modal -->
+<div class="modal-bg" id="shareModal">
+  <div class="modal" style="text-align:center;">
+    <h3 style="margin-bottom:8px;">Board teilen</h3>
+    <p style="font-size:12px;color:var(--tdd);margin-bottom:16px;">Jeder mit diesem Link kann das Board sehen und bearbeiten.</p>
+    <input id="shareUrl" type="text" readonly style="width:100%;background:var(--cd2);border:.5px solid var(--bd);border-radius:8px;padding:11px 14px;font-family:'Montserrat',sans-serif;font-size:12px;color:var(--t);outline:none;margin-bottom:12px;text-align:center;">
+    <div style="display:flex;gap:8px;">
+      <button onclick="copyShareUrl()" style="flex:1;background:var(--a);color:#fff;border:none;border-radius:8px;padding:10px;font-family:'Montserrat',sans-serif;font-size:12px;font-weight:700;cursor:pointer;">📋 Link kopieren</button>
+      <button onclick="document.getElementById('shareModal').classList.remove('open')" style="flex:1;background:var(--cd2);color:var(--t);border:.5px solid var(--bd);border-radius:8px;padding:10px;font-family:'Montserrat',sans-serif;font-size:12px;font-weight:700;cursor:pointer;">Schließen</button>
+    </div>
+  </div>
+</div>
+
+<!-- 1. MOODBOARD -->
+<div class="sec on" id="sec-mood">
+  <div class="folder-chips" id="moodChips"></div>
+  <div class="mb-tabs" id="mbTabs"></div>
+  <div class="mb-upload" id="uploadArea">
+    <label class="ub"><input type="file" id="fileInput" accept="image/*" multiple style="display:none">↑ Hochladen</label>
+    <input class="ui" id="urlInput" placeholder="Bild-URL einfügen oder Bild hierher ziehen..." type="text">
+    <button class="ua" onclick="addFromUrl()">+ Add</button>
+  </div>
+  <div class="mb-grid" id="mbGrid"></div>
+</div>
+
+<!-- 2. 1:1 (vorher Mock Ups) -->
+<div class="sec" id="sec-mock">
+  <div class="folder-chips" id="mockChips"></div>
+  <div class="kb" id="kbMock">
+    <div class="kb-col" data-stage="testing">
+      <div class="kb-hd"><span class="kb-title" style="color:var(--y);">⚡ Testing</span><span class="kb-cnt" id="mc-testing">0</span></div>
+      <div class="kb-cards" id="mock-testing"></div>
+      <button class="kb-add" onclick="addKbCard('mock','testing')">+ Ad hinzufügen</button>
+    </div>
+    <div class="kb-col" data-stage="improve">
+      <div class="kb-hd"><span class="kb-title" style="color:var(--b);">🔧 Verbessern</span><span class="kb-cnt" id="mc-improve">0</span></div>
+      <div class="kb-cards" id="mock-improve"></div>
+      <button class="kb-add" onclick="addKbCard('mock','improve')">+ Ad hinzufügen</button>
+    </div>
+    <div class="kb-col" data-stage="final">
+      <div class="kb-hd"><span class="kb-title" style="color:var(--g);">✓ Final</span><span class="kb-cnt" id="mc-final">0</span></div>
+      <div class="kb-cards" id="mock-final"></div>
+      <button class="kb-add" onclick="addKbCard('mock','final')">+ Ad hinzufügen</button>
+    </div>
+  </div>
+</div>
+
+<!-- 3. 9:16 (vorher Sketches) -->
+<div class="sec" id="sec-sketch">
+  <div class="folder-chips" id="sketchChips"></div>
+  <div class="kb" id="kbSketch">
+    <div class="kb-col" data-stage="testing">
+      <div class="kb-hd"><span class="kb-title" style="color:var(--y);">⚡ Testing</span><span class="kb-cnt" id="sc-testing">0</span></div>
+      <div class="kb-cards" id="sketch-testing"></div>
+      <button class="kb-add" onclick="addKbCard('sketch','testing')">+ Ad hinzufügen</button>
+    </div>
+    <div class="kb-col" data-stage="improve">
+      <div class="kb-hd"><span class="kb-title" style="color:var(--b);">🔧 Verbessern</span><span class="kb-cnt" id="sc-improve">0</span></div>
+      <div class="kb-cards" id="sketch-improve"></div>
+      <button class="kb-add" onclick="addKbCard('sketch','improve')">+ Ad hinzufügen</button>
+    </div>
+    <div class="kb-col" data-stage="final">
+      <div class="kb-hd"><span class="kb-title" style="color:var(--g);">✓ Final</span><span class="kb-cnt" id="sc-final">0</span></div>
+      <div class="kb-cards" id="sketch-final"></div>
+      <button class="kb-add" onclick="addKbCard('sketch','final')">+ Ad hinzufügen</button>
+    </div>
+  </div>
+</div>
+
+<div class="lb" id="lb"><button class="lb-close" onclick="closeLb()">✕</button><img id="lbImg" src="" onclick="this.classList.toggle('zoomed')"><div class="lb-bottom"><button class="lb-btn" id="lbDownload" onclick="downloadFromLb()">⬇ Download</button><a class="lb-btn" id="lbUrl" href="#" target="_blank" style="display:none;">🔗 Original</a></div><button class="lb-nav prev" onclick="lbNav(-1)">‹</button><button class="lb-nav next" onclick="lbNav(1)">›</button></div>
+
+<div class="modal-bg" id="linkModal"><div class="modal"><h3>Mock Up verknüpfen</h3><div id="linkList"></div><button class="ua" style="margin-top:12px;width:100%;text-align:center;" onclick="document.getElementById('linkModal').classList.remove('open')">Abbrechen</button></div></div>
+
+<div id="toast"></div>
+
+<script>
+var curSec='mood',curMbCat='beispiel';
+var MB_CATS=['beispiel','stil','thema'];
+var MB_LABELS={beispiel:'💡 Beispiel',stil:'🖌 Stil',thema:'🎯 Thema'};
+
+// ── Multi-Folder-Datenmodell ──
+// moods/mocks/sketches/cols sind Listen von Foldern, jeder mit name + Inhalt.
+// activeMood/Mock/Sketch/Col speichern welcher Folder gerade angezeigt wird.
+// mbData/mockCards/sketchCards/products sind LIVE-ALIASES auf den aktiven Folder
+// — alter Code (renderMb, renderKb, ...) funktioniert dadurch unverändert weiter.
+var moods=[];      // [{id, name, cats:{farbe:[],schnitt:[],...}}]
+var mocks=[];      // [{id, name, testing:[], improve:[], final:[]}]
+var sketches=[];   // [{id, name, testing:[], improve:[], final:[]}]
+var cols=[];       // [{id, name, products:[]}]
+var activeMood=0,activeMock=0,activeSketch=0,activeCol=0;
+var mbData={};MB_CATS.forEach(function(c){mbData[c]=[];});
+var mockCards={testing:[],improve:[],final:[]};
+var sketchCards={testing:[],improve:[],final:[]};
+var products=[];
+var lbImgs=[],lbIdx=-1;
+var saveTO=null,dragCard=null,dragBoard=null;
+
+function _newId(p){return p+'-'+Date.now().toString(36)+Math.random().toString(36).slice(2,5);}
+
+// ── Download-Helper ──
+// Erlaubt jedem hochgeladenen Bild (data:URL oder externe URL) lokal zu speichern.
+// Fallback bei CORS-Block: oeffnet in neuem Tab, User kann dort rechts-klick speichern.
+function _safeName(s){
+  return (s||'').toString().toLowerCase()
+    .replace(/[^a-z0-9äöüß]+/g,'-')
+    .replace(/^-+|-+$/g,'').slice(0,40)||'unbenannt';
+}
+function _suggestName(img){
+  if(!img)return 'unsigned-image';
+  var parts=['unsigned'];
+  if(curSec==='mood'){
+    var folder=(moods[activeMood]||{}).name||'mood';
+    parts.push(_safeName(folder),_safeName(curMbCat),_safeName(img.note||''));
+  } else if(curSec==='mock'){
+    var f=(mocks[activeMock]||{}).name||'mock';
+    parts.push('mock',_safeName(f),_safeName(img.title||''));
+  } else if(curSec==='sketch'){
+    var f2=(sketches[activeSketch]||{}).name||'sketch';
+    parts.push('sketch',_safeName(f2),_safeName(img.title||''));
+  } else if(curSec==='plan'){
+    var f3=(cols[activeCol]||{}).name||'kollektion';
+    parts.push(_safeName(f3),_safeName(img.name||''));
+  } else {
+    parts.push(_safeName(img.note||img.title||img.name||'image'));
+  }
+  return parts.filter(function(p){return p&&p!=='unbenannt';}).join('-')||'unsigned-image';
+}
+// downloadImage() lebt in /tools/_shared/img-utils.js — wird global zugewiesen.
+
+// Lazy-Migration aus alter flacher Struktur (mb/mock/sketch/products) in die
+// neue Folder-Struktur. Wird einmalig beim ersten Lesen gefahren wenn die
+// neuen Felder noch nicht existieren. Verlustfrei -- alte Felder bleiben in
+// Firebase erhalten (fbSave schreibt sie weiter als Fallback).
+function migrateLegacy(d){
+  if(!Array.isArray(d.moods)){
+    var defCats={};MB_CATS.forEach(function(c){defCats[c]=(d.mb&&Array.isArray(d.mb[c]))?d.mb[c]:[];});
+    d.moods=[{id:'m-default',name:'Standard',cats:defCats}];
+  }
+  if(!Array.isArray(d.mocks)){
+    d.mocks=[{
+      id:'mk-default',name:'Standard',
+      testing:(d.mock&&d.mock.testing)||[],
+      improve:(d.mock&&d.mock.improve)||[],
+      final:(d.mock&&d.mock.final)||[]
+    }];
+  }
+  if(!Array.isArray(d.sketches)){
+    d.sketches=[{
+      id:'sk-default',name:'Standard',
+      testing:(d.sketch&&d.sketch.testing)||[],
+      improve:(d.sketch&&d.sketch.improve)||[],
+      final:(d.sketch&&d.sketch.final)||[]
+    }];
+  }
+  if(!Array.isArray(d.cols)){
+    d.cols=[{id:'c-default',name:'Standard',products:Array.isArray(d.products)?d.products:[]}];
+  }
+  return d;
+}
+
+// Stellt sicher dass mindestens ein Folder pro Typ existiert und richtet die
+// Aliase mbData/mockCards/sketchCards/products auf den aktiven Folder aus.
+function syncCurFolders(){
+  if(!moods.length)moods.push({id:_newId('m'),name:'Standard',cats:(function(){var o={};MB_CATS.forEach(function(c){o[c]=[];});return o;})()});
+  if(!mocks.length)mocks.push({id:_newId('mk'),name:'Standard',testing:[],improve:[],final:[]});
+  if(!sketches.length)sketches.push({id:_newId('sk'),name:'Standard',testing:[],improve:[],final:[]});
+  if(!cols.length)cols.push({id:_newId('c'),name:'Standard',products:[]});
+  if(activeMood>=moods.length)activeMood=moods.length-1;
+  if(activeMock>=mocks.length)activeMock=mocks.length-1;
+  if(activeSketch>=sketches.length)activeSketch=sketches.length-1;
+  if(activeCol>=cols.length)activeCol=cols.length-1;
+  if(activeMood<0)activeMood=0;if(activeMock<0)activeMock=0;if(activeSketch<0)activeSketch=0;if(activeCol<0)activeCol=0;
+  // Aliases — by reference, so mutations flow back into the folder objects.
+  var m=moods[activeMood];if(!m.cats)m.cats={};MB_CATS.forEach(function(c){if(!Array.isArray(m.cats[c]))m.cats[c]=[];});mbData=m.cats;
+  var mk=mocks[activeMock];['testing','improve','final'].forEach(function(s){if(!Array.isArray(mk[s]))mk[s]=[];});mockCards=mk;
+  var sk=sketches[activeSketch];['testing','improve','final'].forEach(function(s){if(!Array.isArray(sk[s]))sk[s]=[];});sketchCards=sk;
+  var c=cols[activeCol];if(!Array.isArray(c.products))c.products=[];products=c.products;
+}
+
+function switchSec(s){
+  curSec=s;
+  document.querySelectorAll('.htab').forEach(function(b,i){b.classList.toggle('on',['mood','mock','sketch','plan'][i]===s);});
+  document.querySelectorAll('.sec').forEach(function(el){el.classList.remove('on');});
+  document.getElementById('sec-'+s).classList.add('on');
+  renderAllChips();
+  if(s==='mood')renderMb();
+  if(s==='mock')renderKb('mock');
+  if(s==='sketch')renderKb('sketch');
+  if(s==='plan')renderProducts();
+}
+
+// ═══════════ FOLDER CHIPS (Multi-Folder Management) ═══════════
+function _kindMeta(kind){
+  if(kind==='mood')return{host:'moodChips',list:moods,active:activeMood,setActive:function(i){activeMood=i;},label:'Moodboard'};
+  if(kind==='mock')return{host:'mockChips',list:mocks,active:activeMock,setActive:function(i){activeMock=i;},label:'Mockup-Ordner'};
+  if(kind==='sketch')return{host:'sketchChips',list:sketches,active:activeSketch,setActive:function(i){activeSketch=i;},label:'Sketch-Ordner'};
+  if(kind==='col')return{host:'colChips',list:cols,active:activeCol,setActive:function(i){activeCol=i;},label:'Kollektion'};
+}
+function _rerenderActive(){
+  if(curSec==='mood')renderMb();
+  else if(curSec==='mock')renderKb('mock');
+  else if(curSec==='sketch')renderKb('sketch');
+  else if(curSec==='plan')renderProducts();
+}
+function renderChips(kind){
+  var m=_kindMeta(kind);var el=document.getElementById(m.host);if(!el)return;
+  while(el.firstChild)el.removeChild(el.firstChild);
+  m.list.forEach(function(item,i){
+    var chip=document.createElement('div');chip.className='fchip'+(i===m.active?' on':'');
+    var n=document.createElement('span');n.className='fchip-name';n.textContent=item.name||'(unbenannt)';
+    n.onclick=function(){if(i===m.active)return;m.setActive(i);syncCurFolders();renderAllChips();_rerenderActive();};
+    chip.appendChild(n);
+    var mb=document.createElement('button');mb.className='fchip-menu-btn';mb.textContent='⋮';mb.title='Optionen';
+    mb.onclick=function(e){e.stopPropagation();openChipMenu(kind,i,chip);};
+    chip.appendChild(mb);
+    el.appendChild(chip);
+  });
+  var add=document.createElement('button');add.className='fchip fchip-add';add.textContent='+ Neu';
+  add.onclick=function(){createFolder(kind);};
+  el.appendChild(add);
+}
+function renderAllChips(){renderChips('mood');renderChips('mock');renderChips('sketch');renderChips('col');}
+function createFolder(kind){
+  var m=_kindMeta(kind);
+  var name=window.prompt(kind==='col'?'Name der neuen Kollektion:':'Name des neuen '+m.label+'s:','');
+  if(name===null)return;
+  name=(name||'').trim();if(!name)name='Unbenannt';
+  var item;
+  if(kind==='mood'){var cats={};MB_CATS.forEach(function(c){cats[c]=[];});item={id:_newId('m'),name:name,cats:cats};moods.push(item);activeMood=moods.length-1;}
+  else if(kind==='mock'){item={id:_newId('mk'),name:name,testing:[],improve:[],final:[]};mocks.push(item);activeMock=mocks.length-1;}
+  else if(kind==='sketch'){item={id:_newId('sk'),name:name,testing:[],improve:[],final:[]};sketches.push(item);activeSketch=sketches.length-1;}
+  else if(kind==='col'){item={id:_newId('c'),name:name,products:[]};cols.push(item);activeCol=cols.length-1;}
+  syncCurFolders();renderAllChips();_rerenderActive();fbSave();toast(m.label+' erstellt ✓');
+}
+function _closeChipMenu(){var ex=document.getElementById('_chipMenu');if(ex)ex.remove();}
+function openChipMenu(kind,idx,anchor){
+  _closeChipMenu();
+  var m=_kindMeta(kind);
+  var rect=anchor.getBoundingClientRect();
+  var menu=document.createElement('div');menu.className='fchip-menu';menu.id='_chipMenu';
+  menu.style.left=rect.left+'px';menu.style.top=(rect.bottom+4)+'px';
+  var rn=document.createElement('button');rn.textContent='Umbenennen';
+  rn.onclick=function(e){e.stopPropagation();renameFolder(kind,idx);_closeChipMenu();};menu.appendChild(rn);
+  if(m.list.length>1){
+    var del=document.createElement('button');del.className='danger';del.textContent='Löschen';
+    del.onclick=function(e){e.stopPropagation();deleteFolder(kind,idx);_closeChipMenu();};menu.appendChild(del);
+  }
+  document.body.appendChild(menu);
+  // Schließt sich beim nächsten Klick außerhalb
+  setTimeout(function(){
+    document.addEventListener('click',function _h(ev){
+      if(!menu.contains(ev.target)){_closeChipMenu();document.removeEventListener('click',_h,true);}
+    },true);
+  },10);
+}
+function renameFolder(kind,idx){
+  var m=_kindMeta(kind);var item=m.list[idx];
+  var newName=window.prompt('Neuer Name:',item.name||'');
+  if(newName===null)return;
+  item.name=(newName||'').trim()||'Unbenannt';
+  renderAllChips();fbSave();toast('Umbenannt ✓');
+}
+function deleteFolder(kind,idx){
+  var m=_kindMeta(kind);
+  if(m.list.length<=1){toast('Mindestens ein '+m.label+' muss bleiben');return;}
+  var item=m.list[idx];
+  if(!window.confirm('"'+(item.name||m.label)+'" wirklich löschen?\nAlle enthaltenen Daten gehen verloren.'))return;
+  m.list.splice(idx,1);
+  // Active-Index anpassen
+  var cur=m.active;
+  var newActive=(idx<=cur)?Math.max(0,cur-1):cur;
+  if(kind==='mood')activeMood=newActive;
+  else if(kind==='mock')activeMock=newActive;
+  else if(kind==='sketch')activeSketch=newActive;
+  else if(kind==='col')activeCol=newActive;
+  syncCurFolders();renderAllChips();_rerenderActive();fbSave();toast('Gelöscht ✓');
+}
+
+// ═══════════ MOODBOARD ═══════════
+function renderMbTabs(){
+  var el=document.getElementById('mbTabs');el.innerHTML='';
+  MB_CATS.forEach(function(c){
+    var b=document.createElement('button');b.className='mbt'+(c===curMbCat?' on':'');
+    b.innerHTML=MB_LABELS[c]+'<span class="c">'+(mbData[c]||[]).length+'</span>';
+    b.onclick=function(){curMbCat=c;renderMb();};el.appendChild(b);
+  });
+}
+function renderMb(){renderMbTabs();renderMbGrid();}
+function renderMbGrid(){
+  var grid=document.getElementById('mbGrid'),imgs=mbData[curMbCat]||[];
+  if(!imgs.length){grid.innerHTML='<div class="mb-empty">🖼 Bilder hochladen oder per URL hinzufügen</div>';return;}
+  grid.innerHTML='';
+  imgs.forEach(function(img,idx){
+    var d=document.createElement('div');d.className='mb-item';
+    var i=document.createElement('img');i.src=img.src;i.loading='lazy';
+    i.onclick=function(){lbImgs=imgs;lbIdx=idx;openLb();};
+    var del=document.createElement('button');del.className='mb-del';del.textContent='✕';del.title='Löschen';
+    del.onclick=function(e){e.stopPropagation();mbData[curMbCat].splice(idx,1);renderMb();fbSave();};
+    var dl=document.createElement('button');dl.className='mb-dl';dl.textContent='⬇';dl.title='Download';
+    dl.onclick=function(e){e.stopPropagation();downloadImage(img.src,_suggestName(img));};
+    var ov=document.createElement('div');ov.className='mb-ov';
+    var n=document.createElement('input');n.className='mb-note';n.placeholder='Notiz...';n.type='text';n.value=img.note||'';
+    n.onclick=function(e){e.stopPropagation();};
+    n.onchange=function(){img.note=n.value;fbSave();};
+    ov.appendChild(n);d.appendChild(i);d.appendChild(dl);d.appendChild(del);d.appendChild(ov);grid.appendChild(d);
+  });
+}
+
+// Upload
+document.getElementById('fileInput').onchange=function(e){Array.from(e.target.files).forEach(function(f){compress(f,function(s){addMbImg(s);});});e.target.value='';};
+var ua=document.getElementById('uploadArea');
+var mbSec=document.getElementById('sec-mood');
+
+function handleImgDrop(e){
+  e.preventDefault();ua.classList.remove('drag');
+  var h=e.dataTransfer.getData('text/html');
+  if(h){var m=h.match(/src=["']([^"']+pinimg[^"']+)["']/i)||h.match(/src=["'](https?:\/\/[^"']+\.(jpg|jpeg|png|webp)[^"']*)["']/i);if(m){addMbImgUrl(m[1]);return;}}
+  var files=e.dataTransfer.files;if(files.length){Array.from(files).forEach(function(f){if(f.type.startsWith('image/'))compress(f,function(s){addMbImg(s);});});return;}
+  var url=e.dataTransfer.getData('text/uri-list')||e.dataTransfer.getData('text/plain');
+  if(url&&url.startsWith('http'))addMbImgUrl(url);
+}
+
+[ua, mbSec].forEach(function(zone){
+  zone.addEventListener('dragover',function(e){e.preventDefault();e.stopPropagation();ua.classList.add('drag');});
+  zone.addEventListener('dragleave',function(e){if(!zone.contains(e.relatedTarget))ua.classList.remove('drag');});
+  zone.addEventListener('drop',handleImgDrop);
+});
+document.addEventListener('paste',function(e){if(curSec!=='mood')return;var it=e.clipboardData.items;for(var i=0;i<it.length;i++){if(it[i].type.startsWith('image/')){compress(it[i].getAsFile(),function(s){addMbImg(s);});return;}if(it[i].type==='text/plain'){it[i].getAsString(function(t){t=t.trim();if(t.startsWith('http'))addMbImgUrl(t);});}}});
+document.getElementById('urlInput').onkeydown=function(e){if(e.key==='Enter')addFromUrl();};
+function addFromUrl(){var u=document.getElementById('urlInput').value.trim();if(u){addMbImgUrl(u);document.getElementById('urlInput').value='';}}
+function addMbImgUrl(url){
+  if(url.includes('pinimg.com')){
+    var sizes=['originals','1200x','736x'];var vs=[];
+    sizes.forEach(function(s){vs.push(url.replace(/\/(\d+x|originals)\//,'/'+s+'/'));});vs.push(url);
+    (function tryN(i){if(i>=vs.length){addMbImg(url,url);return;}var t=new Image();t.onload=function(){addMbImg(vs[i],url);};t.onerror=function(){tryN(i+1);};t.src=vs[i];})(0);
+  } else { addMbImg(url,url); }
+}
+function addMbImg(src,url){
+  if(!mbData[curMbCat])mbData[curMbCat]=[];
+  mbData[curMbCat].push({id:Date.now().toString(36),src:src,note:'',url:url||'',ts:Date.now()});
+  renderMb();fbSave();toast('Bild hinzugefügt ✓');
+}
+// compress() lebt in /tools/_shared/img-utils.js — wird global zugewiesen.
+
+// ═══════════ KANBAN ═══════════
+function renderKb(board){
+  var data=board==='mock'?mockCards:sketchCards;
+  var prefix=board==='mock'?'mock':'sketch';
+  var cntPfx=board==='mock'?'mc':'sc';
+  ['testing','improve','final'].forEach(function(stage){
+    var cont=document.getElementById(prefix+'-'+stage);cont.innerHTML='';
+    document.getElementById(cntPfx+'-'+stage).textContent=(data[stage]||[]).length;
+    (data[stage]||[]).forEach(function(card,idx){
+      var el=document.createElement('div');el.className='kb-card';el.draggable=true;el.dataset.id=card.id;el.dataset.board=board;el.dataset.stage=stage;el.dataset.idx=idx;
+      el.addEventListener('dragstart',function(e){dragCard=card;dragBoard=board;el.classList.add('dragging');e.dataTransfer.effectAllowed='move';});
+      el.addEventListener('dragend',function(){el.classList.remove('dragging');dragCard=null;});
+      if(card.img){var img=document.createElement('img');img.src=card.img;img.onclick=function(){lbImgs=[card];lbIdx=0;openLb();};el.appendChild(img);}
+      else{var ph=document.createElement('label');ph.style.cssText='display:block;background:var(--cd);border:.5px dashed var(--bd);border-radius:8px;padding:20px;text-align:center;cursor:pointer;font-size:11px;color:var(--tdd);margin-bottom:8px;';
+        ph.textContent='+ Bild hinzufügen';var inp=document.createElement('input');inp.type='file';inp.accept='image/*';inp.style.display='none';
+        inp.onchange=function(e){compress(e.target.files[0],function(s){card.img=s;renderKb(board);fbSave();});};ph.appendChild(inp);el.appendChild(ph);}
+      var t=document.createElement('div');t.className='kb-card-title';t.contentEditable='true';t.spellcheck=false;t.textContent=card.title||'';
+      if(!card.title)t.dataset.ph='Titel...';
+      t.addEventListener('blur',function(){card.title=t.textContent.trim();fbSave();});
+      var n=document.createElement('div');n.className='kb-card-note';n.contentEditable='true';n.spellcheck=false;n.dataset.ph='Notiz...';n.textContent=card.note||'';
+      n.addEventListener('blur',function(){card.note=n.textContent.trim();fbSave();});
+      var acts=document.createElement('div');acts.className='kb-card-acts';
+      var del=document.createElement('button');del.className='kb-card-del';del.textContent='✕ Löschen';
+      del.onclick=function(){data[stage].splice(idx,1);renderKb(board);fbSave();toast('Entfernt');};
+      acts.appendChild(del);
+      // Download nur wenn Bild vorhanden
+      if(card.img){
+        var dl=document.createElement('button');dl.className='kb-card-del';dl.textContent='⬇';dl.title='Download';
+        dl.onclick=function(e){e.stopPropagation();downloadImage(card.img,_suggestName(card));};
+        acts.appendChild(dl);
+      }
+      // Link button for sketches in final stage
+      if(board==='sketch'&&stage==='final'){
+        var lnk=document.createElement('button');lnk.className='kb-card-link';lnk.textContent=card.linkedMock?'🔗 Verknüpft':'🔗 Mock Up verknüpfen';
+        lnk.onclick=function(){showLinkModal(card,board);};acts.appendChild(lnk);
+      }
+      el.appendChild(t);el.appendChild(n);el.appendChild(acts);
+      // Show linked mockup
+      if(card.linkedMock){
+        var lb=document.createElement('div');lb.className='link-badge';
+        var allMocks=[].concat(mockCards.testing,mockCards.improve,mockCards.final);
+        var linked=allMocks.find(function(m){return m.id===card.linkedMock;});
+        if(linked){
+          if(linked.img){var li=document.createElement('img');li.src=linked.img;lb.appendChild(li);}
+          var ls=document.createElement('span');ls.textContent=linked.title||'Mock Up';lb.appendChild(ls);
+        }
+        el.appendChild(lb);
+      }
+      cont.appendChild(el);
+    });
+    // Drop zones
+    cont.addEventListener('dragover',function(e){e.preventDefault();cont.classList.add('over');});
+    cont.addEventListener('dragleave',function(){cont.classList.remove('over');});
+    cont.addEventListener('drop',function(e){
+      e.preventDefault();cont.classList.remove('over');
+      if(!dragCard||dragBoard!==board)return;
+      var src=board==='mock'?mockCards:sketchCards;
+      ['testing','improve','final'].forEach(function(s){src[s]=src[s].filter(function(c){return c.id!==dragCard.id;});});
+      if(!src[stage])src[stage]=[];
+      src[stage].push(dragCard);
+      renderKb(board);fbSave();toast('Verschoben → '+{testing:'Testing',improve:'Verbessern',final:'Final'}[stage]);
+    });
+  });
+}
+function addKbCard(board,stage){
+  var data=board==='mock'?mockCards:sketchCards;
+  if(!data[stage])data[stage]=[];
+  data[stage].push({id:Date.now().toString(36)+Math.random().toString(36).slice(2,4),title:'',note:'',img:'',linkedMock:''});
+  renderKb(board);fbSave();
+}
+function showLinkModal(card,board){
+  var list=document.getElementById('linkList');list.innerHTML='';
+  var allMocks=[].concat(mockCards.testing||[],mockCards.improve||[],mockCards.final||[]);
+  if(!allMocks.length){list.innerHTML='<div style="padding:12px;color:var(--tdd);font-size:12px;">Noch keine Mock Ups vorhanden</div>';document.getElementById('linkModal').classList.add('open');return;}
+  allMocks.forEach(function(m){
+    var d=document.createElement('div');d.className='modal-item';
+    if(m.img){var i=document.createElement('img');i.src=m.img;d.appendChild(i);}
+    var s=document.createElement('span');s.textContent=m.title||'Mock Up';d.appendChild(s);
+    d.onclick=function(){card.linkedMock=m.id;document.getElementById('linkModal').classList.remove('open');renderKb(board);fbSave();toast('Verknüpft ✓');};
+    list.appendChild(d);
+  });
+  document.getElementById('linkModal').classList.add('open');
+}
+
+// ═══════════ PRODUCTS ═══════════
+function renderProducts(){
+  var grid=document.getElementById('pcGrid');grid.innerHTML='';
+  products.forEach(function(p,idx){
+    var card=document.createElement('div');card.className='pc';
+    if(p.img){var img=document.createElement('img');img.className='pc-img';img.src=p.img;img.onclick=function(){lbImgs=[p];lbIdx=0;openLb();};card.appendChild(img);}
+    else{var ph=document.createElement('label');ph.className='pc-img-placeholder';ph.textContent='📷';var inp=document.createElement('input');inp.type='file';inp.accept='image/*';inp.style.display='none';
+      inp.onchange=function(e){compress(e.target.files[0],function(s){p.img=s;renderProducts();fbSave();});};ph.appendChild(inp);card.appendChild(ph);}
+    var body=document.createElement('div');body.className='pc-body';
+    var name=document.createElement('div');name.className='pc-name';name.contentEditable='true';name.spellcheck=false;name.textContent=p.name||'';
+    name.addEventListener('blur',function(){p.name=name.textContent.trim();fbSave();});
+    var row1=document.createElement('div');row1.className='pc-row';
+    var lbl1=document.createElement('span');lbl1.className='pc-label';lbl1.textContent='Status';
+    var sel=document.createElement('select');sel.className='pc-status';
+    [{v:'idee',l:'💡 Idee',c:'var(--tdd)'},{v:'design',l:'🎨 In Design',c:'var(--y)'},{v:'sample',l:'🧵 Sample',c:'var(--b)'},{v:'done',l:'✓ Final',c:'var(--g)'}].forEach(function(o){
+      var opt=document.createElement('option');opt.value=o.v;opt.textContent=o.l;if(p.status===o.v)opt.selected=true;sel.appendChild(opt);
+    });
+    sel.style.cssText='color:'+{idee:'var(--tdd)',design:'var(--y)',sample:'var(--b)',done:'var(--g)'}[p.status||'idee']+';background:var(--cd2);';
+    sel.onchange=function(){p.status=sel.value;sel.style.color={idee:'var(--tdd)',design:'var(--y)',sample:'var(--b)',done:'var(--g)'}[sel.value];fbSave();};
+    var del=document.createElement('button');del.className='pc-del';del.textContent='✕';del.title='Löschen';
+    del.onclick=function(){products.splice(idx,1);renderProducts();fbSave();toast('Produkt entfernt');};
+    // Download-Button nur sichtbar wenn Bild da ist
+    var dl=null;
+    if(p.img){
+      dl=document.createElement('button');dl.className='pc-del';dl.textContent='⬇';dl.title='Download';
+      dl.style.marginLeft='0';
+      dl.onclick=function(e){e.stopPropagation();downloadImage(p.img,_suggestName(p));};
+    }
+    row1.appendChild(lbl1);row1.appendChild(sel);
+    if(dl)row1.appendChild(dl);
+    row1.appendChild(del);
+    var row2=document.createElement('div');row2.className='pc-row';row2.style.flexDirection='column';row2.style.alignItems='stretch';row2.style.gap='4px';
+    var lbl2=document.createElement('span');lbl2.className='pc-label';lbl2.textContent='Deadline';
+    var date=document.createElement('input');date.className='pc-date';date.type='date';date.value=p.deadline||'';
+    date.onchange=function(){p.deadline=date.value;fbSave();};
+    row2.appendChild(lbl2);row2.appendChild(date);
+    body.appendChild(name);body.appendChild(row1);body.appendChild(row2);card.appendChild(body);grid.appendChild(card);
+  });
+  // Add button
+  var add=document.createElement('div');add.className='pc-add';add.innerHTML='<span style="font-size:24px;">+</span>Produkt hinzufügen';
+  add.onclick=function(){products.push({id:Date.now().toString(36),name:'',img:'',status:'idee',deadline:''});renderProducts();fbSave();};
+  grid.appendChild(add);
+}
+
+// ═══════════ LIGHTBOX ═══════════
+function openLb(){var img=lbImgs[lbIdx];if(!img)return;document.getElementById('lbImg').src=img.src||img.img;document.getElementById('lbImg').classList.remove('zoomed');var u=document.getElementById('lbUrl');var url=img.url||(img.src&&img.src.startsWith('http')?img.src:'');if(url&&!url.startsWith('data:')){u.href=url;u.style.display='flex';u.onclick=function(e){e.preventDefault();window.open(url,'_blank');};}else{u.style.display='none';}document.getElementById('lb').classList.add('open');}
+function downloadFromLb(){var img=lbImgs[lbIdx];if(!img)return;var src=img.src||img.img;downloadImage(src,_suggestName(img));}
+function closeLb(){document.getElementById('lb').classList.remove('open');document.getElementById('lbImg').classList.remove('zoomed');}
+function lbNav(d){lbIdx=(lbIdx+d+lbImgs.length)%lbImgs.length;openLb();}
+document.getElementById('lb').onclick=function(e){if(e.target===this)closeLb();};
+document.addEventListener('keydown',function(e){if(e.key==='Escape')closeLb();if(document.getElementById('lb').classList.contains('open')){if(e.key==='ArrowRight')lbNav(1);if(e.key==='ArrowLeft')lbNav(-1);}});
+
+// ═══════════ FIREBASE ═══════════
+// localStorage MUSS per-Room gescopt sein. Vorher war es ein globaler Key 'uw_design',
+// der zwischen verschiedenen Kunden geteilt wurde -> Cross-Customer-Data-Leak:
+// Owner laedt Bilder bei Kunde A hoch, oeffnet Kunde B, sieht A's Bilder im Cache,
+// macht eine Aenderung -> A's Bilder landen in B's Firebase-Daten.
+// Der alte 'uw_design' Key wird absichtlich NICHT geloescht (Forensik), nur ignoriert.
+function _lsKey(){return _ROOM?'uw_ads_'+_ROOM:null;}
+// Setzt alle Folder-Listen auf leer und richtet die Aliase neu aus.
+// syncCurFolders() initialisiert dann automatisch je einen "Standard"-Folder.
+function _clearDesignState(){
+  moods=[];mocks=[];sketches=[];cols=[];
+  activeMood=0;activeMock=0;activeSketch=0;activeCol=0;
+  syncCurFolders();
+}
+
+function fbSave(){
+  // Neue Folder-Strukturen + Legacy-Felder als Rückwärtskompatibilität.
+  // Legacy-Felder spiegeln den AKTIVEN Folder, damit alter Code (falls noch
+  // irgendwo) sinnvolle Daten sieht.
+  var curMood=moods[activeMood]||{cats:{}};
+  var curMock=mocks[activeMock]||{testing:[],improve:[],final:[]};
+  var curSketch=sketches[activeSketch]||{testing:[],improve:[],final:[]};
+  var curCol=cols[activeCol]||{products:[]};
+  var data={
+    moods:moods,mocks:mocks,sketches:sketches,cols:cols,
+    // Legacy-Fallback
+    mb:curMood.cats||{},
+    mock:{testing:curMock.testing||[],improve:curMock.improve||[],final:curMock.final||[]},
+    sketch:{testing:curSketch.testing||[],improve:curSketch.improve||[],final:curSketch.final||[]},
+    products:curCol.products||[]
+  };
+  // Per-Room localStorage-Backup
+  var k=_lsKey();
+  if(k){try{localStorage.setItem(k,JSON.stringify(data));}catch(e){}}
+  // Firebase
+  if(_DB&&_ROOM){
+    clearTimeout(saveTO);
+    saveTO=setTimeout(function(){
+      _DB.ref('rooms/'+_ROOM+'/ads').set(data);
+      // Progress: Items über ALLE Folders zählen (5%/Item, gecappt 100)
+      var total=0;
+      moods.forEach(function(m){if(m&&m.cats)Object.keys(m.cats).forEach(function(c){if(Array.isArray(m.cats[c]))total+=m.cats[c].length;});});
+      mocks.forEach(function(mk){if(mk)total+=(mk.testing||[]).length+(mk.improve||[]).length+(mk.final||[]).length;});
+      sketches.forEach(function(sk){if(sk)total+=(sk.testing||[]).length+(sk.improve||[]).length+(sk.final||[]).length;});
+      cols.forEach(function(c){if(c)total+=(c.products||[]).length;});
+      window.parent.postMessage({type:'dsPct',pct:Math.min(100,total*3)},'*');
+    },300);
+  }
+  toast('Gespeichert ✓');
+}
+function fbLoad(){
+  // Per-Room localStorage als Initial-Cache (Instant-UI). Firebase überschreibt
+  // gleich. Globaler 'uw_design'-Key (alte Version) wird absichtlich ignoriert.
+  var k=_lsKey();
+  if(k){
+    try{
+      var local=JSON.parse(localStorage.getItem(k));
+      if(local){
+        // Migration aus Legacy-Cache falls neue Felder fehlen
+        local=migrateLegacy(local);
+        moods=local.moods||[];mocks=local.mocks||[];sketches=local.sketches||[];cols=local.cols||[];
+        syncCurFolders();
+        renderAllChips();
+        if(curSec==='mood')renderMb();
+        if(curSec==='mock')renderKb('mock');
+        if(curSec==='sketch')renderKb('sketch');
+        if(curSec==='plan')renderProducts();
+      } else {
+        syncCurFolders();renderAllChips();
+      }
+    }catch(e){syncCurFolders();renderAllChips();}
+  } else {
+    // Standalone-Sandbox ohne Room-URL: leer initialisieren.
+    _clearDesignState();renderAllChips();
+  }
+  // Then sync with Firebase if room exists
+  if(!_DB||!_ROOM)return;
+  // pendingRender: true wenn ein Listener gefeuert hat, der Render aber wegen
+  // aktiven Eingabefeldes übersprungen wurde. Wird auf focusout geflushed.
+  var pendingRender=false;
+  function isEditing(){
+    var ae=document.activeElement;
+    return !!(ae&&(ae.contentEditable==='true'||ae.tagName==='INPUT'||ae.tagName==='SELECT'||ae.tagName==='TEXTAREA'));
+  }
+  function applyRender(){
+    renderAllChips();
+    if(curSec==='mood')renderMb();
+    else if(curSec==='mock')renderKb('mock');
+    else if(curSec==='sketch')renderKb('sketch');
+    else if(curSec==='plan')renderProducts();
+    pendingRender=false;
+  }
+  function applyRenderIfIdle(){
+    if(isEditing()){pendingRender=true;return;}
+    applyRender();
+  }
+  _DB.ref('rooms/'+_ROOM+'/ads').on('value',function(snap){
+    var d=snap.val();
+    // State IMMER aus Firebase ableiten -- auch bei null. Lazy-Migration aus
+    // Legacy-Feldern wenn neue Folder-Struktur fehlt. Aliase auf aktiven Folder
+    // werden durch syncCurFolders() neu gesetzt.
+    if(d){
+      d=migrateLegacy(d);
+      moods=d.moods||[];mocks=d.mocks||[];sketches=d.sketches||[];cols=d.cols||[];
+      syncCurFolders();
+    } else {
+      _clearDesignState();
+    }
+    applyRenderIfIdle();
+    document.getElementById('liveStatus').style.display='flex';
+  });
+  // Beim Verlassen eines Eingabefelds: pending Render einlösen.
+  // setTimeout damit ein neuer Focus zuerst greifen kann (z.B. Tab zum naechsten Feld).
+  document.addEventListener('focusout',function(){
+    setTimeout(function(){
+      if(pendingRender&&!isEditing())applyRender();
+    },120);
+  });
+  // Safety-Net: Tab-Visibility-Wechsel triggert ebenfalls Sync-Catchup.
+  document.addEventListener('visibilitychange',function(){
+    if(document.visibilityState==='visible'&&pendingRender&&!isEditing())applyRender();
+  });
+}
+
+function shareBoard(){
+  if(_ROOM){
+    // Already has a room - show the link
+    showShareLink(_ROOM);
+    return;
+  }
+  // Create a new room ID
+  var roomId = Date.now().toString(36) + Math.random().toString(36).slice(2,6);
+  _ROOM = roomId;
+  // Save current data to Firebase
+  var data = {mb:mbData, mock:mockCards, sketch:sketchCards, products:products};
+  _DB.ref('rooms/'+roomId+'/ads').set(data);
+  // Update URL without reload
+  var newUrl = window.location.pathname + '?room=' + roomId;
+  window.history.replaceState(null, '', newUrl);
+  // Start live listener
+  fbLoad();
+  showShareLink(roomId);
+  // Change share button to show "Live"
+  document.getElementById('liveStatus').style.display = 'flex';
+  toast('Board ist jetzt live ✓');
+}
+
+function showShareLink(roomId){
+  var url = window.location.origin + window.location.pathname + '?room=' + roomId;
+  document.getElementById('shareUrl').value = url;
+  document.getElementById('shareModal').classList.add('open');
+}
+
+function copyShareUrl(){
+  var input = document.getElementById('shareUrl');
+  input.select();
+  navigator.clipboard.writeText(input.value).then(function(){
+    toast('Link kopiert ✓');
+  }).catch(function(){
+    document.execCommand('copy');
+    toast('Link kopiert ✓');
+  });
+}
+
+function toast(m){var e=document.getElementById('toast');e.textContent=m;e.classList.add('show');setTimeout(function(){e.classList.remove('show');},2000);}
+
+// INIT
+renderMb();renderProducts();
+fbLoad();
+if(_ROOM){
+  document.getElementById('liveStatus').style.display='flex';
+  document.getElementById('shareBtn').innerHTML='🔗 Link teilen';
+}
+</script>
+</body>
+</html>
