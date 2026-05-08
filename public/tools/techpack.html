@@ -164,9 +164,28 @@ main{max-width:1240px;margin:0 auto;padding:24px;}
   .hdr{padding:0 12px;height:48px;gap:8px;}
   .hdr-title input{font-size:12px;}
   .btn{padding:7px 10px;font-size:10px;}
-  /* Pack-Card: kompakter auf Handy */
   .pack-grid{grid-template-columns:1fr;gap:10px;}
   .pack-card{padding:14px;min-height:140px;}
+}
+
+/* ── RESPONSIVE TECHPACK-PAGE-LAYOUT ──────────────────────────────────
+   Klassen statt Inline-JS-checks. CSS @media greift garantiert auf
+   tatsaechliche Viewport-Breite (nicht auf JS-Evaluation-Zeit). */
+.tp-page{width:100%;max-width:1080px;margin:0 auto;background:#fff;padding:32px 32px 50px;box-sizing:border-box;font-family:'Montserrat',sans-serif;color:#111;position:relative;display:flex;flex-direction:column;gap:12px;border:0.5px solid rgba(0,0,0,0.1);border-radius:8px;box-shadow:0 4px 18px rgba(0,0,0,0.04);overflow:hidden;}
+.tp-row{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:12px;}
+.tp-row.tp-row-tight{margin-bottom:0;gap:10px;}
+.tp-quadrant{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-bottom:12px;}
+.tp-quadrant > div{display:flex;flex-direction:column;gap:10px;min-width:0;}
+.tp-grid-2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;}
+.tp-field{flex:1 1 160px;min-width:0;display:flex;flex-direction:column;border:2px solid #111;border-radius:6px;overflow:hidden;background:#fff;}
+.tp-bigbox{flex:1 1 auto;display:flex;flex-direction:column;border:2px solid #111;border-radius:8px;overflow:hidden;background:#fff;margin-bottom:12px;}
+
+@media (max-width:780px){
+  .tp-page{padding:10px;border-radius:6px;}
+  .tp-quadrant,.tp-grid-2{display:block;}
+  .tp-quadrant > div{margin-bottom:10px;}
+  .tp-row{flex-direction:column;gap:8px;}
+  .tp-field{flex:none;width:100%;}
 }
 </style>
 </head>

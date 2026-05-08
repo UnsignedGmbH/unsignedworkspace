@@ -223,21 +223,10 @@
   // Field box: header (black bar with white text) + value area (input or text).
   function fieldBox(o) {
     var isMobile = (typeof window !== 'undefined') && window.innerWidth < 600;
-    var box = el('div', {
-      style: {
-        border: BORDER,
-        borderRadius: '6px',
-        overflow: 'hidden',
-        // flex 1 1 180px: basis 180px = "Wenn-mehr-Platz-da-grow, sonst-shrink-bis-180".
-        // Im flex-wrap:wrap row: passt die Box nicht in Restplatz, wrappt sie zur
-        // naechsten Zeile (statt horizontal zu overflow).
-        flex: o.flex || '1 1 180px',
-        minWidth: '0',
-        display: 'flex',
-        flexDirection: 'column',
-        background: '#fff',
-      },
-    });
+    // Layout via CSS-Klasse 'tp-field' (in techpack.html mit @media-Regeln).
+    // Hier nur visuelle/funktionale Inline-Styles.
+    var box = el('div', { cls: 'tp-field' });
+    if (o.flex) box.style.flex = o.flex;
     box.appendChild(el('div', {
       text: o.label + ':',
       style: {
@@ -317,36 +306,17 @@
 
   function row(items, opts) {
     opts = opts || {};
-    // flex-wrap:wrap macht dass Items automatisch in die naechste Zeile rutschen
-    // wenn sie nicht in eine Zeile passen — egal wie schmal der Container ist.
-    // Kein viewport-Check noetig, funktioniert ueberall (Mobile, Iframe, Desktop).
-    return el('div', {
-      style: {
-        display: 'flex',
-        flexWrap: 'wrap',
-        gap: (opts.gap || 12) + 'px',
-        marginBottom: (opts.mb != null ? opts.mb : 12) + 'px',
-      },
-      children: items,
-    });
+    // Layout via CSS-Klasse 'tp-row' — @media schaltet auf column auf Handy.
+    var cls = 'tp-row' + ((opts.mb === 0) ? ' tp-row-tight' : '');
+    var d = el('div', { cls: cls });
+    if (items) items.forEach(function (it) { if (it) d.appendChild(it); });
+    return d;
   }
 
   function bigBox(title, body, o) {
     o = o || {};
-    var box = el('div', {
-      style: {
-        border: BORDER,
-        borderRadius: '8px',
-        overflow: 'hidden',
-        background: '#fff',
-        display: 'flex',
-        flexDirection: 'column',
-        // flex 1 1 auto: basis content-size — verhindert collapse-zu-0 in column-flex.
-        flex: o.flex || '1 1 auto',
-        marginBottom: (o.mb != null ? o.mb : 12) + 'px',
-        minHeight: (o.minH || 0) + 'px',
-      },
-    });
+    var box = el('div', { cls: 'tp-bigbox' });
+    if (o.minH) box.style.minHeight = o.minH + 'px';
     if (title) {
       box.appendChild(el('div', {
         text: title,
@@ -505,28 +475,9 @@
   }
 
   function pageRoot(builder) {
-    // Editor-Mode: Content-driven height (auf Handy fluide). PDF-Mode überschreibt
-    // nachträglich fixed 1200×1200 via direktem style-Override in techpack-pdf.js.
-    var isMobile = (typeof window !== 'undefined') && window.innerWidth < 600;
-    var wrap = el('div', {
-      style: {
-        width: '100%',
-        maxWidth: '1080px',
-        margin: '0 auto',
-        background: '#fff',
-        padding: isMobile ? '14px 14px 40px' : '32px 32px 50px',
-        boxSizing: 'border-box',
-        fontFamily: FONT,
-        color: '#111',
-        position: 'relative',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '12px',
-        border: '0.5px solid rgba(0,0,0,0.1)',
-        borderRadius: '8px',
-        boxShadow: '0 4px 18px rgba(0,0,0,0.04)',
-      },
-    });
+    // Layout via CSS-Klasse 'tp-page' — siehe techpack.html.
+    // PDF-Mode setzt nachtraeglich fixed 1200x1200 via style-Override.
+    var wrap = el('div', { cls: 'tp-page' });
     builder(wrap);
     // Echtes Unsigned-Logo (extrahiert aus den Originalvorlagen).
     var footer = el('div', {
@@ -553,17 +504,10 @@
 
   TYPES.TP_START = function (page, opts) {
     return pageRoot(function (wrap) {
-      // Top-Section: 2-Spalten-Quadrant matching TP LONGSLEEVE neu.pdf
-      var top = el('div', {
-        style: {
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))',
-          gap: '14px',
-          marginBottom: '12px',
-        },
-      });
+      // Top-Section: 2-Spalten-Quadrant via CSS-Klasse (kollabiert auf Handy zu Block)
+      var top = el('div', { cls: 'tp-quadrant' });
       // Linker Quadrant: BRAND / STYLE / COLLECTION DROP + SAMPLE SIZE / QTY
-      var left = el('div', { style: { display: 'flex', flexDirection: 'column', gap: '10px' } });
+      var left = el('div');
       left.appendChild(row([
         fieldBox({ label: 'Brand',           path: 'fields/brand',     page: page, opts: opts, big: true, upper: true, placeholder: 'UNSIGNED' }),
         fieldBox({ label: 'Style',           path: 'fields/style',     page: page, opts: opts, big: true, upper: true, placeholder: 'TSHIRT' }),
@@ -575,7 +519,7 @@
       ], { gap: 10, mb: 0 }));
       top.appendChild(left);
       // Rechter Quadrant: COLOR / PANTONE + SURFACE / QUALITY
-      var right = el('div', { style: { display: 'flex', flexDirection: 'column', gap: '10px' } });
+      var right = el('div');
       right.appendChild(row([
         fieldBox({ label: 'Color',        path: 'fields/color',   page: page, opts: opts, big: true, upper: true, placeholder: 'WHITE' }),
         fieldBox({ label: 'Pantone Code', path: 'fields/pantone', page: page, opts: opts, big: true, upper: true, placeholder: '11-0601 TCX' }),
@@ -636,12 +580,7 @@
         ],
       }));
       var grid = el('div', {
-        style: {
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))',
-          gap: '12px',
-          flex: '1',
-        },
+        cls: 'tp-grid-2',
         children: [
           bigBox('Print Layout', [imageSlot({
             src: (page.images || {}).print, slot: 'print', label: 'Print Layout', opts: opts, height: 320,
@@ -775,9 +714,8 @@
     var checks = (page.fields && page.fields.wash) || {};
     return pageRoot(function (wrap) {
       var grid = el('div', {
+        cls: 'tp-grid-2',
         style: {
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))',
           gap: '8px',
           padding: '12px',
         },
@@ -860,13 +798,8 @@
     var mockSrc = (typeof opts.getMockup === 'function') ? opts.getMockup(page) : null;
     return pageRoot(function (wrap) {
       var grid = el('div', {
-        style: {
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))',
-          gap: '14px',
-          flex: '1',
-        },
-      });
+        cls: 'tp-grid-2',
+        });
 
       // ---- Left: mockup + (editor only) Style-Picker ----
       var mockChildren = [];
@@ -1010,12 +943,7 @@
     var imgs = page.images || {};
     return pageRoot(function (wrap) {
       var grid = el('div', {
-        style: {
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))',
-          gap: '12px',
-          flex: '1',
-        },
+        cls: 'tp-grid-2',
         children: [
           bigBox('Hangtag', [imageSlot({ src: imgs.hangtag, slot: 'hangtag', label: 'Hangtag', opts: opts, height: 200 })], { center: true }),
           bigBox('Care Label', [imageSlot({ src: imgs.care, slot: 'care', label: 'Care Label', opts: opts, height: 200 })], { center: true }),
@@ -1047,12 +975,7 @@
     var imgs = page.images || {};
     return pageRoot(function (wrap) {
       var grid = el('div', {
-        style: {
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))',
-          gap: '12px',
-          flex: '1',
-        },
+        cls: 'tp-grid-2',
         children: [
           bigBox('Print Look', [imageSlot({ src: imgs.print_look, slot: 'print_look', label: 'Print Look', opts: opts, height: 460 })], { center: true }),
           bigBox('Fit Look',   [imageSlot({ src: imgs.fit_look,   slot: 'fit_look',   label: 'Fit Look',   opts: opts, height: 460 })], { center: true }),
@@ -1079,13 +1002,8 @@
     var sb = (page.fields && page.fields.sizeBreakdown) || {};
     return pageRoot(function (wrap) {
       var grid = el('div', {
-        style: {
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))',
-          gap: '14px',
-          flex: '1',
-        },
-      });
+        cls: 'tp-grid-2',
+        });
 
       // Size breakdown grid
       var col = el('div', { style: { display: 'flex', flexDirection: 'column', gap: '6px' } });
