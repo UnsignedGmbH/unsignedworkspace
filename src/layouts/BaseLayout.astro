@@ -262,6 +262,76 @@ const { title = "Unsigned Workspace" } = Astro.props;
           );
         }
       } catch (e) {}
+
+      // ── iOS PWA / Mobile-Browser Resilience ─────────────────────────
+      // iOS schließt PWAs aggressiv und Firebase-WebSockets können beim
+      // Reopen "tot" sein → JS läuft, Auth fired, aber RTDB-Subscriptions
+      // liefern nie Daten. Hier sind drei Schutzschichten dagegen.
+      (function () {
+        // 1) bfcache-Restore: Page kommt aus Browser-Memory zurück (ohne
+        //    Reload) → WebSocket ist garantiert stale → harter Reload.
+        window.addEventListener("pageshow", function (e) {
+          if (e.persisted) {
+            console.warn("[boot] page from bfcache → reload for fresh state");
+            location.reload();
+          }
+        });
+
+        // 2) App war länger im Hintergrund → beim Sichtbar-Werden Firebase
+        //    zwangs-reconnect via goOffline+goOnline. Idempotent wenn alles
+        //    läuft, repariert tote WebSockets wenn nicht.
+        var hiddenAt = null;
+        document.addEventListener("visibilitychange", function () {
+          if (document.visibilityState === "hidden") {
+            hiddenAt = Date.now();
+          } else if (document.visibilityState === "visible" && hiddenAt) {
+            var awayMs = Date.now() - hiddenAt;
+            hiddenAt = null;
+            if (awayMs > 20000 && window.firebase && window.firebase.database) {
+              try {
+                window.firebase.database().goOffline();
+                setTimeout(function () {
+                  try { window.firebase.database().goOnline(); } catch (e) {}
+                }, 250);
+              } catch (e) {
+                console.warn("[fb] reconnect after background failed:", e);
+              }
+            }
+          }
+        });
+
+        // 3) Hard Boot-Watchdog: Falls Firebase-Connection nach 12s vom
+        //    Initial-Load nicht steht, einmaliger Force-Reload (mit
+        //    sessionStorage-Counter gegen Endlos-Loop bei echtem Outage).
+        var BOOT_TIMEOUT_MS = 12000;
+        var WATCHDOG_KEY = "uw.boot_watchdog_count";
+        var bootStart = Date.now();
+        var connectedOnce = false;
+        function trackConnection() {
+          if (!window.firebase || !window.firebase.database) {
+            return setTimeout(trackConnection, 100);
+          }
+          window.firebase.database().ref(".info/connected").on("value", function (s) {
+            if (s.val() === true) {
+              connectedOnce = true;
+              try { sessionStorage.setItem(WATCHDOG_KEY, "0"); } catch (e) {}
+            }
+          });
+        }
+        trackConnection();
+        setTimeout(function () {
+          if (connectedOnce) return;
+          var c = 0;
+          try { c = parseInt(sessionStorage.getItem(WATCHDOG_KEY) || "0", 10); } catch (e) {}
+          if (c >= 2) {
+            console.warn("[boot] watchdog: tried " + c + "× already, giving up");
+            return;
+          }
+          try { sessionStorage.setItem(WATCHDOG_KEY, String(c + 1)); } catch (e) {}
+          console.warn("[boot] Firebase nicht verbunden nach " + BOOT_TIMEOUT_MS + "ms → reload");
+          location.reload();
+        }, BOOT_TIMEOUT_MS);
+      })();
     </script>
   </head>
   <body>
