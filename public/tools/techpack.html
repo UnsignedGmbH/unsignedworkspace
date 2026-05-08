@@ -959,7 +959,23 @@ function _doRenderPageCanvas(){
     return;
   }
   clearEl(canvas);
-  canvas.appendChild(window.tpRender.page(page, buildRenderOpts(pid, page)));
+  try {
+    var rendered = window.tpRender.page(page, buildRenderOpts(pid, page));
+    if (!rendered) throw new Error('renderer returned no element');
+    canvas.appendChild(rendered);
+  } catch (e) {
+    console.error('[techpack] render failed', e);
+    var errBox = el('div');
+    errBox.style.cssText = 'background:#fff;border:2px solid #C13030;border-radius:8px;padding:18px;color:#C13030;font-family:Montserrat,sans-serif;';
+    errBox.appendChild(el('div', null, '⚠️ Render-Fehler beim Anzeigen dieser Seite'));
+    var msg = el('div', null, (e && e.message) ? e.message : String(e));
+    msg.style.cssText = 'font-size:11px;margin-top:8px;font-family:monospace;color:#666;word-break:break-all;';
+    errBox.appendChild(msg);
+    var pageInfo = el('div', null, 'Page-Type: ' + (page && page.type) + ' · Pack: ' + STATE.activePackId);
+    pageInfo.style.cssText = 'font-size:10px;margin-top:6px;color:#999;';
+    errBox.appendChild(pageInfo);
+    canvas.appendChild(errBox);
+  }
 }
 
 /* Render-Opts mit Live-Save-Callbacks für den Editor */
