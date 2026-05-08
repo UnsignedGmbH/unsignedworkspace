@@ -400,7 +400,35 @@ const { title = "Unsigned Workspace" } = Astro.props;
         }
         watchDb();
 
-        // Echter Read-Test: einmalig 'team' lesen, zeigen ob's klappt
+        // Read-Test mit Timeout + Auto-Recovery für Zombie-WebSockets.
+        // iOS Safari hält Firebase-WS manchmal "verbunden" obwohl Datenkanal
+        // tot ist (kein Error, keine Daten). Wenn Read >6s hängt → WS
+        // recyceln via goOffline+goOnline. Wenn DAS auch nicht hilft (5s)
+        // → location.reload als letzter Ausweg (max 2 pro 5 Min).
+        var ZOMBIE_KEY = "uw.zombie_recovery_attempts";
+        var RECOVER_WINDOW_MS = 5 * 60 * 1000;
+        var MAX_RECOVERIES = 2;
+        function recoveryAttempts() {
+          try {
+            var raw = sessionStorage.getItem(ZOMBIE_KEY);
+            if (!raw) return [];
+            var arr = JSON.parse(raw);
+            if (!Array.isArray(arr)) return [];
+            var cut = Date.now() - RECOVER_WINDOW_MS;
+            return arr.filter(function (t) { return t > cut; });
+          } catch (e) { return []; }
+        }
+        function recordRecovery() {
+          try {
+            var arr = recoveryAttempts();
+            arr.push(Date.now());
+            sessionStorage.setItem(ZOMBIE_KEY, JSON.stringify(arr));
+          } catch (e) {}
+        }
+        function clearRecoveries() {
+          try { sessionStorage.removeItem(ZOMBIE_KEY); } catch (e) {}
+        }
+
         function runReadTest() {
           if (!window.firebase || !window.firebase.database) return;
           state.read = "…";
@@ -409,22 +437,94 @@ const { title = "Unsigned Workspace" } = Astro.props;
           setLabel("uw-d-r", "R…");
           recomputeBg();
           updateDetail();
-          window.firebase.database().ref("team").once("value")
-            .then(function (s) {
+          probeOnce(6000, function (ok, err, count) {
+            if (ok) {
               state.read = "✓";
-              state.readCount = Object.keys(s.val() || {}).length;
+              state.readCount = count;
+              state.readErr = null;
               setLabel("uw-d-r", "R✓");
               recomputeBg();
               updateDetail();
+              clearRecoveries(); // erfolgreicher read → counter weg
+              return;
+            }
+            // Read failed/timeout → ZOMBIE-RECOVERY versuchen
+            state.read = err === "timeout" ? "⏱" : "❌";
+            state.readErr = err || "unknown";
+            setLabel("uw-d-r", "R" + state.read);
+            recomputeBg();
+            updateDetail();
+            console.warn("[zombie] read failed:", err, "→ trying soft-reconnect");
+            attemptSoftReconnect();
+          });
+        }
+
+        function probeOnce(timeoutMs, cb) {
+          var settled = false;
+          var to = setTimeout(function () {
+            if (settled) return;
+            settled = true;
+            cb(false, "timeout", null);
+          }, timeoutMs);
+          window.firebase.database().ref("team").once("value")
+            .then(function (s) {
+              if (settled) return;
+              settled = true;
+              clearTimeout(to);
+              cb(true, null, Object.keys(s.val() || {}).length);
             })
             .catch(function (err) {
-              state.read = "❌";
-              state.readErr = (err && (err.code || err.message)) || "unknown";
-              setLabel("uw-d-r", "R!");
-              recomputeBg();
-              updateDetail();
-              console.error("[diag] read test failed:", err);
+              if (settled) return;
+              settled = true;
+              clearTimeout(to);
+              cb(false, (err && (err.code || err.message)) || "error", null);
             });
+        }
+
+        function attemptSoftReconnect() {
+          try {
+            console.warn("[zombie] goOffline+goOnline cycle");
+            window.firebase.database().goOffline();
+            setTimeout(function () {
+              try { window.firebase.database().goOnline(); } catch (e) {}
+              // Re-Probe nach Soft-Reconnect
+              setTimeout(function () {
+                probeOnce(5000, function (ok, err, count) {
+                  if (ok) {
+                    state.read = "✓";
+                    state.readCount = count;
+                    state.readErr = null;
+                    setLabel("uw-d-r", "R✓");
+                    recomputeBg();
+                    updateDetail();
+                    clearRecoveries();
+                    console.warn("[zombie] soft-reconnect erfolgreich");
+                    return;
+                  }
+                  // Soft-Reconnect hat NICHT geholfen → Hard-Reload
+                  console.warn("[zombie] soft-reconnect failed, escalating to reload");
+                  attemptHardReload();
+                });
+              }, 600);
+            }, 250);
+          } catch (e) {
+            console.warn("[zombie] soft-reconnect threw, escalating:", e);
+            attemptHardReload();
+          }
+        }
+
+        function attemptHardReload() {
+          var attempts = recoveryAttempts();
+          if (attempts.length >= MAX_RECOVERIES) {
+            console.warn("[zombie] max reloads reached (" + attempts.length + " in 5min), giving up");
+            state.readErr = "zombie WS — reload-Limit erreicht. Tap Pille → Cache reset";
+            updateDetail();
+            setBg("err");
+            return;
+          }
+          recordRecovery();
+          console.warn("[zombie] force reload (attempt " + (attempts.length + 1) + "/" + MAX_RECOVERIES + ")");
+          location.reload();
         }
       })();
     </script>
