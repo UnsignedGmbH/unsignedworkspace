@@ -84,11 +84,20 @@ body { font-family: 'Montserrat', sans-serif; background: var(--bg); color: var(
 .field-radio input { display: none; }
 .field-radio.is-on { background: var(--red); border-color: var(--red); color: #fff; }
 
-/* Sub-Card-Toolbar (Slot-Listen: Strategy + Videos) */
+/* Sub-Card-Toolbar (Slot-Listen: Videos + Archiv) */
 .slot-toolbar { display: flex; gap: 8px; align-items: center; margin-bottom: 14px; }
 .slot-count { font-size: 11px; font-weight: 700; color: var(--text-dim); }
 .btn-add-slot { background: var(--red); color: #fff; border: 0; border-radius: 9px; padding: 9px 14px; font: 800 12px Montserrat; cursor: pointer; -webkit-tap-highlight-color: transparent; transition: background 0.15s; flex-shrink: 0; margin-left: auto; }
 .btn-add-slot:hover { background: var(--red-dark); }
+
+/* Folder-Chips (Strategy-Tabs, ähnlich Design-Moodboard) */
+.folder-chips { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-bottom: 14px; }
+.fchip { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 20px; background: var(--bg2); border: 1.5px solid var(--border); font: 700 11px Montserrat; color: var(--text-dim); cursor: pointer; transition: all 0.15s; -webkit-tap-highlight-color: transparent; max-width: 220px; }
+.fchip:hover { color: var(--red); border-color: var(--border-red); }
+.fchip.on { background: var(--red); border-color: var(--red); color: #fff; }
+.fchip-name { display: inline-block; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fchip-add { background: transparent; border: 1.5px dashed var(--border); color: var(--text-dim); font-weight: 700; flex-shrink: 0; padding: 8px 14px; font-family: inherit; font-size: 11px; }
+.fchip-add:hover { border-color: var(--red); color: var(--red); }
 
 /* Slot-Card (Strategy & Video) */
 .slot-card { position: relative; padding-top: 14px; }
@@ -249,7 +258,8 @@ body { font-family: 'Montserrat', sans-serif; background: var(--bg); color: var(
   var VIDEOS = {};           // id -> { title, videoTyp, hook, idee, link, status, _order, archived? }
   var VIDEO_REFS = {};       // id -> { fieldKey -> { applyValue, isFocused, input } }
 
-  var strategyWrapEl, strategyCountEl;
+  var strategyChipsEl, strategyDetailEl;
+  var activeStrategyId = null;
   var videosWrapEl, videosCountEl;
   var archiveWrapEl, archiveCountEl;
   var tabBtns = {};
@@ -287,7 +297,7 @@ body { font-family: 'Montserrat', sans-serif; background: var(--bg); color: var(
   }
 
   // ── Render Sections (3 Tabs) ──────────────────────────────
-  // Strategy-Section
+  // Strategy-Section (Chip-Tabs: eine Strategie aktiv, andere als Chips zum Switchen)
   (function () {
     var sec = el('section', 'section active', sectionsEl);
     sec.dataset.section = 'strategy';
@@ -296,19 +306,14 @@ body { font-family: 'Montserrat', sans-serif; background: var(--bg); color: var(
     var ic = el('div', 'ic', head); ic.textContent = '🎯';
     var titleWrap = el('div', null, head);
     var h = el('h1', null, titleWrap); h.textContent = 'Strategie';
-    var meta = el('div', 'meta', titleWrap); meta.textContent = 'Mehrere Strategien parallel — z.B. Personal Brand vs Brand Account';
+    var meta = el('div', 'meta', titleWrap); meta.textContent = 'Mehrere Strategien parallel — switch zwischen ihnen via Chips';
 
-    var toolbar = el('div', 'slot-toolbar', sec);
-    strategyCountEl = el('span', 'slot-count', toolbar);
-    strategyCountEl.textContent = '0 Strategien';
-    var addBtn = el('button', 'btn-add-slot', toolbar);
-    addBtn.type = 'button';
-    addBtn.textContent = '+ Neue Strategie';
-    addBtn.onclick = function () { addStrategy(); };
+    strategyChipsEl = el('div', 'folder-chips', sec);
+    strategyDetailEl = el('div', null, sec);
+    strategyDetailEl.id = 'strategy-detail';
 
-    strategyWrapEl = el('div', null, sec);
-    strategyWrapEl.id = 'strategy-wrap';
-    renderEmptyStrategy();
+    renderStrategyChips();
+    renderStrategyDetail();
   })();
 
   // Videos-Section
@@ -355,16 +360,15 @@ body { font-family: 'Montserrat', sans-serif; background: var(--bg); color: var(
     renderEmptyArchive();
   })();
 
-  // ── Empty States ──────────────────────────────────────────
+  // ── Empty State Strategy (gerendert in detail-area, nicht im chip-bar) ──
   function renderEmptyStrategy() {
-    if (!strategyWrapEl) return;
-    if (Object.keys(STRATEGIES).length > 0) return;
-    clearChildren(strategyWrapEl);
-    var em = el('div', 'empty-slots', strategyWrapEl);
+    if (!strategyDetailEl) return;
+    clearChildren(strategyDetailEl);
+    var em = el('div', 'empty-slots', strategyDetailEl);
     em.appendChild(document.createTextNode('Noch keine Strategie.'));
     em.appendChild(document.createElement('br'));
     em.appendChild(document.createTextNode('Klick oben auf '));
-    var s = el('strong', null, em); s.textContent = '+ Neue Strategie';
+    var s = el('strong', null, em); s.textContent = '+ Neu';
     em.appendChild(document.createTextNode(' um deine erste anzulegen.'));
   }
   function renderEmptyVideos() {
@@ -509,21 +513,71 @@ body { font-family: 'Montserrat', sans-serif; background: var(--bg); color: var(
     }
   }
 
-  // ── Strategy-Card-Render ──────────────────────────────────
-  function renderStrategyCard(stratId) {
+  // ── Strategy: Chips-Bar + Detail-Area ─────────────────────
+  function sortedStrategyIds() {
+    return Object.keys(STRATEGIES).sort(function (a, b) {
+      return (STRATEGIES[a]._order || 0) - (STRATEGIES[b]._order || 0);
+    });
+  }
+
+  function renderStrategyChips() {
+    if (!strategyChipsEl) return;
+    clearChildren(strategyChipsEl);
+    sortedStrategyIds().forEach(function (id) {
+      var s = STRATEGIES[id] || {};
+      var chip = el('div', 'fchip' + (id === activeStrategyId ? ' on' : ''), strategyChipsEl);
+      chip.dataset.id = id;
+      var name = el('span', 'fchip-name', chip);
+      name.textContent = (s.name && s.name.trim()) || 'Strategie';
+      chip.addEventListener('click', function () { selectStrategy(id); });
+    });
+    // + Neu Chip — immer am Ende
+    var addChip = el('button', 'fchip fchip-add', strategyChipsEl);
+    addChip.type = 'button';
+    addChip.textContent = '+ Neu';
+    addChip.onclick = function () { addStrategy(); };
+  }
+
+  function selectStrategy(id) {
+    if (!STRATEGIES[id]) return;
+    activeStrategyId = id;
+    // Chip-Active updaten ohne komplettes Re-Render
+    if (strategyChipsEl) {
+      strategyChipsEl.querySelectorAll('.fchip').forEach(function (c) {
+        c.classList.toggle('on', c.dataset.id === id);
+      });
+    }
+    renderStrategyDetail();
+  }
+
+  function renderStrategyDetail() {
+    if (!strategyDetailEl) return;
+    clearChildren(strategyDetailEl);
+    // Refs neu aufbauen — alte sind invalid
+    STRATEGY_REFS = {};
+    if (!activeStrategyId || !STRATEGIES[activeStrategyId]) {
+      renderEmptyStrategy();
+      return;
+    }
+    var stratId = activeStrategyId;
     var data = STRATEGIES[stratId] || {};
-    var card = el('div', 'block slot-card', strategyWrapEl);
+    var card = el('div', 'block slot-card', strategyDetailEl);
     card.dataset.id = stratId;
 
     var head = el('div', 'slot-card-head', card);
     var titleInput = el('input', 'slot-card-title-input', head);
     titleInput.type = 'text';
-    titleInput.placeholder = 'Neue Strategie';
+    titleInput.placeholder = 'Strategie-Name';
     titleInput.value = data.name || '';
     var titleDeb;
     titleInput.addEventListener('input', function () {
       if (!STRATEGIES[stratId]) STRATEGIES[stratId] = {};
       STRATEGIES[stratId].name = titleInput.value;
+      // Chip-Text live mit-updaten
+      if (strategyChipsEl) {
+        var chipName = strategyChipsEl.querySelector('.fchip[data-id="' + stratId + '"] .fchip-name');
+        if (chipName) chipName.textContent = (titleInput.value && titleInput.value.trim()) || 'Strategie';
+      }
       clearTimeout(titleDeb);
       titleDeb = setTimeout(function () {
         persistStrategyField(stratId, 'name');
@@ -540,18 +594,20 @@ body { font-family: 'Montserrat', sans-serif; background: var(--bg); color: var(
     delBtn.onclick = function (e) { e.stopPropagation(); deleteStrategy(stratId); };
 
     STRATEGY_REFS[stratId] = {};
-    // Title-Ref
     STRATEGY_REFS[stratId]['name'] = {
       input: titleInput,
       applyValue: function (v) {
         if (!STRATEGIES[stratId]) STRATEGIES[stratId] = {};
         STRATEGIES[stratId].name = v || '';
         titleInput.value = v || '';
+        if (strategyChipsEl) {
+          var chipName = strategyChipsEl.querySelector('.fchip[data-id="' + stratId + '"] .fchip-name');
+          if (chipName) chipName.textContent = (v && v.trim()) || 'Strategie';
+        }
       },
       isFocused: function () { return document.activeElement === titleInput; },
     };
 
-    // Block-Gruppen rendern
     STRATEGY_BLOCKS.forEach(function (block) {
       var grpEl = el('div', 'slot-group', card);
       var bt = el('div', 'slot-group-title', grpEl); bt.textContent = block.title;
@@ -686,8 +742,11 @@ body { font-family: 'Montserrat', sans-serif; background: var(--bg); color: var(
     delete VIDEO_REFS[id];
   }
   function removeStrategyCardFromDOM(id) {
-    var c = strategyWrapEl && strategyWrapEl.querySelector('[data-id="' + id + '"]');
-    if (c) c.remove();
+    // Wenn das die aktive Strategie war, Detail leeren
+    if (activeStrategyId === id && strategyDetailEl) {
+      var c = strategyDetailEl.querySelector('[data-id="' + id + '"]');
+      if (c) c.remove();
+    }
     delete STRATEGY_REFS[id];
   }
 
@@ -703,18 +762,16 @@ body { font-family: 'Montserrat', sans-serif; background: var(--bg); color: var(
   function addStrategy() {
     var id = genId('s');
     STRATEGIES[id] = makeEmptyStrategy('');
-    var emptyEl = strategyWrapEl.querySelector('.empty-slots');
-    if (emptyEl) clearChildren(strategyWrapEl);
-    renderStrategyCard(id);
+    activeStrategyId = id;
     persistStrategy(id);
+    renderStrategyChips();
+    renderStrategyDetail();
     updateStrategyCount();
     updateProgress();
     showTab('strategy');
-    var newCard = strategyWrapEl.lastElementChild;
-    if (newCard) newCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    // Focus title for immediate naming
-    var titleIn = newCard && newCard.querySelector('.slot-card-title-input');
-    if (titleIn) setTimeout(function () { titleIn.focus(); }, 350);
+    // Focus Name-Input direkt
+    var titleIn = strategyDetailEl.querySelector('.slot-card-title-input');
+    if (titleIn) setTimeout(function () { titleIn.focus(); }, 200);
   }
   function duplicateStrategy(srcId) {
     var src = STRATEGIES[srcId];
@@ -723,23 +780,27 @@ body { font-family: 'Montserrat', sans-serif; background: var(--bg); color: var(
     var copy = { name: (src.name || 'Strategie') + ' (Kopie)', _order: Object.keys(STRATEGIES).length };
     STRATEGY_FIELDS.forEach(function (f) { copy[f.k] = src[f.k] || ''; });
     STRATEGIES[id] = copy;
-    var emptyEl = strategyWrapEl.querySelector('.empty-slots');
-    if (emptyEl) clearChildren(strategyWrapEl);
-    renderStrategyCard(id);
+    activeStrategyId = id;
     persistStrategy(id);
+    renderStrategyChips();
+    renderStrategyDetail();
     updateStrategyCount();
     updateProgress();
-    var newCard = strategyWrapEl.lastElementChild;
-    if (newCard) newCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
   function deleteStrategy(id) {
     if (!confirm('Diese Strategie löschen?')) return;
     delete STRATEGIES[id];
-    removeStrategyCardFromDOM(id);
     if (_R && _D) {
       _D.ref('rooms/' + _R + '/content/strategies/' + id).remove().catch(function () {});
     }
-    if (Object.keys(STRATEGIES).length === 0) renderEmptyStrategy();
+    // Wenn aktive gelöscht: andere wählen, sonst null
+    if (activeStrategyId === id) {
+      var remaining = sortedStrategyIds();
+      activeStrategyId = remaining.length ? remaining[0] : null;
+    }
+    delete STRATEGY_REFS[id];
+    renderStrategyChips();
+    renderStrategyDetail();
     updateStrategyCount();
     updateProgress();
   }
@@ -900,20 +961,31 @@ body { font-family: 'Montserrat', sans-serif; background: var(--bg); color: var(
   function applyRemoteStrategies(data) {
     var newIds = data ? Object.keys(data) : [];
     var oldIds = Object.keys(STRATEGIES);
+    var detailNeedsRerender = false;
+    // Removed
     oldIds.forEach(function (id) {
       if (newIds.indexOf(id) < 0) {
         delete STRATEGIES[id];
-        removeStrategyCardFromDOM(id);
+        delete STRATEGY_REFS[id];
+        if (id === activeStrategyId) {
+          activeStrategyId = null;
+          detailNeedsRerender = true;
+        }
       }
     });
+    // Added or updated
     newIds.forEach(function (id) {
       var v = data[id] || {};
       if (!STRATEGIES[id]) {
+        // Neu: nur Daten setzen, Chip kommt beim Re-Render der Chips. Detail
+        // nur falls noch keine aktive Strategie da ist.
         STRATEGIES[id] = v;
-        var emptyEl = strategyWrapEl.querySelector('.empty-slots');
-        if (emptyEl) clearChildren(strategyWrapEl);
-        renderStrategyCard(id);
-      } else {
+        if (!activeStrategyId) {
+          activeStrategyId = id;
+          detailNeedsRerender = true;
+        }
+      } else if (id === activeStrategyId) {
+        // Aktiv: Felder via REFs syncen (preserves focus)
         STRATEGIES[id] = STRATEGIES[id] || {};
         Object.keys(STRATEGY_REFS[id] || {}).forEach(function (k) {
           var ref = STRATEGY_REFS[id][k];
@@ -924,15 +996,32 @@ body { font-family: 'Montserrat', sans-serif; background: var(--bg); color: var(
           }
           ref.applyValue(v[k] || '');
         });
+        // Auch andere Felder die nicht in REFs sind (z.B. _order)
+        Object.keys(v).forEach(function (k) {
+          if (!STRATEGY_REFS[id] || !STRATEGY_REFS[id][k]) {
+            STRATEGIES[id][k] = v[k];
+          }
+        });
         // Pill update
-        var card = strategyWrapEl.querySelector('[data-id="' + id + '"]');
-        if (card) {
-          var pillEl = card.querySelector('.slot-typ-pill');
-          if (pillEl) updateStrategyPill(pillEl, v.accountTyp);
+        if (strategyDetailEl) {
+          var card = strategyDetailEl.querySelector('[data-id="' + id + '"]');
+          if (card) {
+            var pillEl = card.querySelector('.slot-typ-pill');
+            if (pillEl) updateStrategyPill(pillEl, v.accountTyp);
+          }
         }
+      } else {
+        // Inaktiv: Daten einfach übernehmen, Chip-Text wird beim Re-Render aktualisiert
+        STRATEGIES[id] = v;
       }
     });
-    if (Object.keys(STRATEGIES).length === 0) renderEmptyStrategy();
+    // Wenn aktive verschwunden ist und keine andere gewählt, erste wählen
+    if (!activeStrategyId && Object.keys(STRATEGIES).length > 0) {
+      activeStrategyId = sortedStrategyIds()[0];
+      detailNeedsRerender = true;
+    }
+    renderStrategyChips();
+    if (detailNeedsRerender) renderStrategyDetail();
     updateStrategyCount();
     updateProgress();
   }
