@@ -797,6 +797,12 @@ function renderEditor(){
   var statusPill = el('button', 'status-pill ' + ((pack.meta && pack.meta.status) || 'draft'), stEntry.label);
   statusPill.onclick = function(){ openStatusModal(STATE.activePackId); };
   $('hdrActions').appendChild(statusPill);
+  // "+ Neuer Pack" auch im Editor-Header — direkter Zugriff ohne Zurueck-Navigation.
+  var newBtn = el('button', 'btn');
+  newBtn.textContent = '+ Neues';
+  newBtn.title = 'Neues Techpack anlegen';
+  newBtn.onclick = openNewPackModal;
+  $('hdrActions').appendChild(newBtn);
   var pdfBtn = el('button', 'btn btn-accent', 'PDF Export');
   pdfBtn.onclick = function(){ exportPdf(STATE.activePackId); };
   $('hdrActions').appendChild(pdfBtn);
