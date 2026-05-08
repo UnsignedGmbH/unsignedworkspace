@@ -256,7 +256,8 @@
     if (v == null) v = '';
     var common = {
       width: '100%',
-      flex: '1',
+      // basis 'auto' verhindert Collapse-zu-0 in column-flex Parent (fieldBox).
+      flex: '1 1 auto',
       border: '0',
       outline: '0',
       padding: o.big ? (isMobile ? '10px 10px' : '14px 12px') : (isMobile ? '8px 10px' : '10px 12px'),
