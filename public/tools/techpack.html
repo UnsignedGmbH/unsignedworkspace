@@ -192,7 +192,6 @@ main{max-width:1240px;margin:0 auto;padding:24px;}
 <body>
 
 <header class="hdr">
-  <span class="hdr-logo">unsigned</span>
   <div class="hdr-title" id="hdrTitle">
     <span id="hdrLabel">📐 Techpack</span>
   </div>
@@ -417,11 +416,15 @@ window.addEventListener('beforeunload', trackOff);
     return;
   }
   if (!_DB){ setTimeout(boot, 200); return; }
-  attachPackListListener();
+  // localStorage zuerst — damit der initial-render direkt evtl. den Editor öffnet.
   try {
     var lastPackId = localStorage.getItem(STORAGE_KEY);
     if (lastPackId) STATE.activePackId = lastPackId;
   } catch (e) {}
+  // Initial-Render SOFORT (zeigt Empty-State / Pack-Liste-Skeleton während Firebase lädt)
+  // damit User nie eine leere Fläche sieht. Der Listener-Callback ersetzt das später.
+  try { renderRoute(); } catch (e) { console.error('[techpack] initial render', e); }
+  attachPackListListener();
 })();
 
 /* ════════════════════════════════════════════════════════════════════
@@ -431,7 +434,7 @@ window.addEventListener('beforeunload', trackOff);
 function attachPackListListener(){
   var ref = fbPacks();
   if (!ref) return;
-  trackOn(ref, 'value', function(snap){
+  ref.on('value', function(snap){
     var v = snap.val() || {};
     STATE.packs = v;
     if (STATE.activePackId && !v[STATE.activePackId]){
@@ -440,7 +443,23 @@ function attachPackListListener(){
       try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
     }
     renderRoute();
+  }, function(err){
+    // Firebase-Lese-Fehler (z.B. permission_denied) — sichtbar machen.
+    console.error('[techpack] listener error:', err);
+    toast('Lese-Fehler: ' + (err.code || err.message || 'unbekannt'));
+    var v = $('viewList');
+    if (v) {
+      clearEl(v);
+      var em = el('div', 'empty');
+      em.appendChild(el('div', 'empty-icon', '⚠️'));
+      em.appendChild(el('div', 'empty-h', 'Lese-Fehler'));
+      em.appendChild(el('div', 'empty-p', 'Code: ' + (err.code || 'unknown') + ' — wahrscheinlich noch nicht authentifiziert. Refresh in 5s…'));
+      v.appendChild(em);
+      setTimeout(function(){ window.location.reload(); }, 5000);
+    }
   });
+  // Auch in trackOff registrieren damit pagehide cleanup den Listener entfernt.
+  LISTENERS.push({ ref: ref, evt: 'value', cb: function(){} });
 }
 
 /* ════════════════════════════════════════════════════════════════════
@@ -750,8 +769,9 @@ function renderEditor(){
   clearEl($('hdrActions'));
   var titleHost = $('hdrTitle');
   clearEl(titleHost);
-  var back = el('button', 'btn-icon btn-light', '←');
+  var back = el('button', 'btn', '← Zurück');
   back.title = 'Zurück zur Liste';
+  back.style.cssText = 'padding:8px 14px;font-size:12px;font-weight:800;background:#111;color:#fff;border:0;border-radius:8px;cursor:pointer;flex-shrink:0;';
   back.onclick = closePack;
   titleHost.appendChild(back);
   var titleInput = document.createElement('input');
