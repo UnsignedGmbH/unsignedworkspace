@@ -99,6 +99,9 @@ body { font-family: 'Montserrat', sans-serif; background: var(--bg); color: var(
 .video-actions { display: flex; gap: 4px; flex-shrink: 0; }
 .video-action-btn { background: transparent; border: 1px solid var(--border); border-radius: 7px; padding: 5px 8px; font-size: 13px; cursor: pointer; color: var(--text-dim); transition: all 0.15s; -webkit-tap-highlight-color: transparent; line-height: 1; }
 .video-action-btn:hover { color: var(--red); border-color: var(--border-red); }
+.video-action-btn.archive-btn:hover { color: var(--green); border-color: var(--green); }
+.video-card.is-archived { opacity: 0.85; background: rgba(0,0,0,0.02); }
+.video-card.is-archived .video-card-title::before { content: "✓ "; color: var(--green); font-weight: 900; }
 .empty-videos { text-align: center; padding: 40px 20px; color: var(--text-dimmer); font-size: 12px; font-weight: 600; background: var(--bg2); border: 1.5px dashed var(--border); border-radius: 12px; line-height: 1.6; }
 .empty-videos strong { color: var(--red); font-weight: 800; }
 
@@ -132,7 +135,7 @@ body { font-family: 'Montserrat', sans-serif; background: var(--bg); color: var(
         <span class="bw">BrandWork</span>
         <span class="rm">Content</span>
       </div>
-      <div class="header-eyebrow">Strategie · Videos · Hooks</div>
+      <div class="header-eyebrow">Strategie · Videos · Archiv</div>
     </div>
     <div class="progress-wrap">
       <div class="progress-bar-bg"><div id="progFill" class="progress-bar-fill"></div></div>
@@ -245,10 +248,12 @@ body { font-family: 'Montserrat', sans-serif; background: var(--bg); color: var(
   });
 
   // VIDEOS State
-  var VIDEOS = {};        // id -> { title, videoTyp, hook, idee, status, _order }
+  var VIDEOS = {};        // id -> { title, videoTyp, hook, idee, status, _order, archived? }
   var VIDEO_REFS = {};    // id -> { fieldKey -> { applyValue, isFocused } }
   var videosWrapEl;
   var videosCountEl;
+  var archiveWrapEl;
+  var archiveCountEl;
 
   var tabsEl = document.getElementById('tabs');
   var sectionsEl = document.getElementById('sections');
@@ -280,6 +285,17 @@ body { font-family: 'Montserrat', sans-serif; background: var(--bg); color: var(
     var pct = el('span', 'tab-pct', btn); pct.textContent = '0';
     btn.addEventListener('click', function () { showTab('videos'); });
     tabBtns['videos'] = { btn: btn, pct: pct };
+  })();
+  // Tab Archiv
+  (function () {
+    var btn = el('button', 'tab', tabsEl);
+    btn.type = 'button';
+    btn.dataset.tab = 'archive';
+    var ic = el('span', 'tab-icon', btn); ic.textContent = '📦';
+    var lbl = el('span', null, btn); lbl.textContent = 'Archiv';
+    var pct = el('span', 'tab-pct', btn); pct.textContent = '0';
+    btn.addEventListener('click', function () { showTab('archive'); });
+    tabBtns['archive'] = { btn: btn, pct: pct };
   })();
 
   // ── Strategy Sektion rendern ──────────────────────────────
@@ -388,12 +404,32 @@ body { font-family: 'Montserrat', sans-serif; background: var(--bg); color: var(
 
     videosWrapEl = el('div', null, sec);
     videosWrapEl.id = 'videos-wrap';
-    renderEmptyState();
+    renderEmptyVideos();
   })();
 
-  function renderEmptyState() {
+  // ── Archive-Sektion rendern ───────────────────────────────
+  (function () {
+    var sec = el('section', 'section', sectionsEl);
+    sec.dataset.section = 'archive';
+
+    var head = el('div', 'section-head', sec);
+    var ic = el('div', 'ic', head); ic.textContent = '📦';
+    var titleWrap = el('div', null, head);
+    var h = el('h1', null, titleWrap); h.textContent = 'Archiv';
+    var meta = el('div', 'meta', titleWrap); meta.textContent = 'Fertige Videos — kannst du wiederherstellen';
+
+    var toolbar = el('div', 'videos-toolbar', sec);
+    archiveCountEl = el('span', 'videos-count', toolbar);
+    archiveCountEl.textContent = '0 Archiv';
+
+    archiveWrapEl = el('div', null, sec);
+    archiveWrapEl.id = 'archive-wrap';
+    renderEmptyArchive();
+  })();
+
+  function renderEmptyVideos() {
     if (!videosWrapEl) return;
-    if (Object.keys(VIDEOS).length > 0) return;
+    if (countActive() > 0) return;
     clearChildren(videosWrapEl);
     var em = el('div', 'empty-videos', videosWrapEl);
     em.appendChild(document.createTextNode('Noch keine Videos.'));
@@ -402,6 +438,26 @@ body { font-family: 'Montserrat', sans-serif; background: var(--bg); color: var(
     var s = el('strong', null, em);
     s.textContent = '+ Neues Video';
     em.appendChild(document.createTextNode(' um die erste Idee zu sammeln.'));
+  }
+
+  function renderEmptyArchive() {
+    if (!archiveWrapEl) return;
+    if (countArchived() > 0) return;
+    clearChildren(archiveWrapEl);
+    var em = el('div', 'empty-videos', archiveWrapEl);
+    em.appendChild(document.createTextNode('Noch nichts archiviert.'));
+    em.appendChild(document.createElement('br'));
+    em.appendChild(document.createTextNode('Wenn ein Video fertig ist, klick auf '));
+    var s = el('strong', null, em);
+    s.textContent = '📦';
+    em.appendChild(document.createTextNode(' an der Card um es hier abzulegen.'));
+  }
+
+  function countActive() {
+    return Object.keys(VIDEOS).filter(function (id) { return !VIDEOS[id].archived; }).length;
+  }
+  function countArchived() {
+    return Object.keys(VIDEOS).filter(function (id) { return !!VIDEOS[id].archived; }).length;
   }
 
   function videoTypClass(typ) {
@@ -417,10 +473,12 @@ body { font-family: 'Montserrat', sans-serif; background: var(--bg); color: var(
     return '—';
   }
 
-  function renderVideoCard(videoId) {
+  function renderVideoCard(videoId, isArchived) {
     var data = VIDEOS[videoId] || {};
-    var card = el('div', 'block video-card', videosWrapEl);
+    var wrap = isArchived ? archiveWrapEl : videosWrapEl;
+    var card = el('div', 'block video-card' + (isArchived ? ' is-archived' : ''), wrap);
     card.dataset.id = videoId;
+    card.dataset.archived = isArchived ? '1' : '0';
 
     var head = el('div', 'video-card-head', card);
     var titleEl = el('div', 'video-card-title', head);
@@ -428,6 +486,22 @@ body { font-family: 'Montserrat', sans-serif; background: var(--bg); color: var(
     var typPill = el('span', 'video-typ-pill ' + videoTypClass(data.videoTyp), head);
     typPill.textContent = videoTypShort(data.videoTyp);
     var actions = el('div', 'video-actions', head);
+
+    if (isArchived) {
+      // Wiederherstellen-Button (zurück nach Videos)
+      var unarchBtn = el('button', 'video-action-btn', actions);
+      unarchBtn.type = 'button';
+      unarchBtn.title = 'Wiederherstellen';
+      unarchBtn.textContent = '↩';
+      unarchBtn.onclick = function (e) { e.stopPropagation(); unarchiveVideo(videoId); };
+    } else {
+      // Archivieren-Button (fertig → ins Archiv)
+      var archBtn = el('button', 'video-action-btn archive-btn', actions);
+      archBtn.type = 'button';
+      archBtn.title = 'Archivieren (fertig)';
+      archBtn.textContent = '📦';
+      archBtn.onclick = function (e) { e.stopPropagation(); archiveVideo(videoId); };
+    }
     var dupBtn = el('button', 'video-action-btn', actions);
     dupBtn.type = 'button';
     dupBtn.title = 'Duplizieren';
@@ -448,6 +522,46 @@ body { font-family: 'Montserrat', sans-serif; background: var(--bg); color: var(
         typPill.textContent = videoTypShort(d.videoTyp);
       });
     });
+  }
+
+  function removeVideoCardFromDOM(id) {
+    var c1 = videosWrapEl && videosWrapEl.querySelector('[data-id="' + id + '"]');
+    if (c1) c1.remove();
+    var c2 = archiveWrapEl && archiveWrapEl.querySelector('[data-id="' + id + '"]');
+    if (c2) c2.remove();
+    delete VIDEO_REFS[id];
+  }
+
+  function archiveVideo(id) {
+    if (!VIDEOS[id]) return;
+    VIDEOS[id].archived = Date.now();
+    if (_R && _D) {
+      _D.ref('rooms/' + _R + '/content/videos/' + id + '/archived').set(VIDEOS[id].archived).catch(function () {});
+    }
+    removeVideoCardFromDOM(id);
+    var emptyArch = archiveWrapEl.querySelector('.empty-videos');
+    if (emptyArch) clearChildren(archiveWrapEl);
+    renderVideoCard(id, true);
+    if (countActive() === 0) renderEmptyVideos();
+    updateVideoCount();
+    updateArchiveCount();
+    showSaved();
+  }
+
+  function unarchiveVideo(id) {
+    if (!VIDEOS[id]) return;
+    delete VIDEOS[id].archived;
+    if (_R && _D) {
+      _D.ref('rooms/' + _R + '/content/videos/' + id + '/archived').remove().catch(function () {});
+    }
+    removeVideoCardFromDOM(id);
+    var emptyVids = videosWrapEl.querySelector('.empty-videos');
+    if (emptyVids) clearChildren(videosWrapEl);
+    renderVideoCard(id, false);
+    if (countArchived() === 0) renderEmptyArchive();
+    updateVideoCount();
+    updateArchiveCount();
+    showSaved();
   }
 
   function renderVideoField(videoId, it, parent, onEdit) {
@@ -532,10 +646,11 @@ body { font-family: 'Montserrat', sans-serif; background: var(--bg); color: var(
     VIDEOS[id] = { _order: order, title: '', videoTyp: '', hook: '', idee: '', status: 'Idee' };
     var emptyEl = videosWrapEl.querySelector('.empty-videos');
     if (emptyEl) clearChildren(videosWrapEl);
-    renderVideoCard(id);
+    renderVideoCard(id, false);
     persistVideo(id);
     updateVideoCount();
     updateProgress();
+    showTab('videos');
     var newCard = videosWrapEl.lastElementChild;
     if (newCard) newCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
@@ -545,6 +660,8 @@ body { font-family: 'Montserrat', sans-serif; background: var(--bg); color: var(
     if (!src) return;
     var id = genId();
     var order = Object.keys(VIDEOS).length;
+    // Duplikat landet IMMER in 'Videos' (nicht im Archiv) — auch wenn aus
+    // Archiv kopiert: Idee soll wieder bearbeitet werden
     VIDEOS[id] = {
       _order: order,
       title: (src.title || '') + ' (Kopie)',
@@ -553,10 +670,14 @@ body { font-family: 'Montserrat', sans-serif; background: var(--bg); color: var(
       idee: src.idee || '',
       status: 'Idee',
     };
-    renderVideoCard(id);
+    var emptyEl = videosWrapEl.querySelector('.empty-videos');
+    if (emptyEl) clearChildren(videosWrapEl);
+    renderVideoCard(id, false);
     persistVideo(id);
     updateVideoCount();
+    updateArchiveCount();
     updateProgress();
+    showTab('videos');
     var newCard = videosWrapEl.lastElementChild;
     if (newCard) newCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
@@ -564,21 +685,26 @@ body { font-family: 'Montserrat', sans-serif; background: var(--bg); color: var(
   function deleteVideo(id) {
     if (!confirm('Dieses Video löschen?')) return;
     delete VIDEOS[id];
-    delete VIDEO_REFS[id];
-    var card = videosWrapEl.querySelector('[data-id="' + id + '"]');
-    if (card) card.remove();
+    removeVideoCardFromDOM(id);
     if (_R && _D) {
       _D.ref('rooms/' + _R + '/content/videos/' + id).remove().catch(function () {});
     }
-    if (Object.keys(VIDEOS).length === 0) renderEmptyState();
+    if (countActive() === 0) renderEmptyVideos();
+    if (countArchived() === 0) renderEmptyArchive();
     updateVideoCount();
+    updateArchiveCount();
     updateProgress();
   }
 
   function updateVideoCount() {
-    var n = Object.keys(VIDEOS).length;
+    var n = countActive();
     if (videosCountEl) videosCountEl.textContent = n + (n === 1 ? ' Video' : ' Videos');
     if (tabBtns['videos']) tabBtns['videos'].pct.textContent = String(n);
+  }
+  function updateArchiveCount() {
+    var n = countArchived();
+    if (archiveCountEl) archiveCountEl.textContent = n + (n === 1 ? ' Archiv' : ' Archiv');
+    if (tabBtns['archive']) tabBtns['archive'].pct.textContent = String(n);
   }
 
   // ── Tab switching ──────────────────────────────────────────
@@ -680,22 +806,26 @@ body { font-family: 'Montserrat', sans-serif; background: var(--bg); color: var(
   function applyRemoteVideos(data) {
     var newIds = data ? Object.keys(data) : [];
     var oldIds = Object.keys(VIDEOS);
+    // Removed
     oldIds.forEach(function (id) {
       if (newIds.indexOf(id) < 0) {
         delete VIDEOS[id];
-        delete VIDEO_REFS[id];
-        var card = videosWrapEl.querySelector('[data-id="' + id + '"]');
-        if (card) card.remove();
+        removeVideoCardFromDOM(id);
       }
     });
+    // Added or updated
     newIds.forEach(function (id) {
       var v = data[id] || {};
+      var nowArchived = !!v.archived;
       if (!VIDEOS[id]) {
+        // Neu — in passenden Tab rendern
         VIDEOS[id] = v;
-        var emptyEl = videosWrapEl.querySelector('.empty-videos');
-        if (emptyEl) clearChildren(videosWrapEl);
-        renderVideoCard(id);
+        var targetWrap = nowArchived ? archiveWrapEl : videosWrapEl;
+        var emptyEl = targetWrap.querySelector('.empty-videos');
+        if (emptyEl) clearChildren(targetWrap);
+        renderVideoCard(id, nowArchived);
       } else {
+        var wasArchived = !!VIDEOS[id].archived;
         VIDEOS[id] = VIDEOS[id] || {};
         VIDEO_FIELDS.forEach(function (it) {
           var ref = VIDEO_REFS[id] && VIDEO_REFS[id][it.k];
@@ -706,20 +836,34 @@ body { font-family: 'Montserrat', sans-serif; background: var(--bg); color: var(
           }
           ref.applyValue(v[it.k] || '');
         });
-        var card = videosWrapEl.querySelector('[data-id="' + id + '"]');
-        if (card) {
-          var titleEl = card.querySelector('.video-card-title');
-          if (titleEl) titleEl.textContent = (v.title && v.title.trim()) || 'Neues Video';
-          var pillEl = card.querySelector('.video-typ-pill');
-          if (pillEl) {
-            pillEl.className = 'video-typ-pill ' + videoTypClass(v.videoTyp);
-            pillEl.textContent = videoTypShort(v.videoTyp);
+        VIDEOS[id].archived = v.archived;
+        if (wasArchived !== nowArchived) {
+          // Archiv-Status hat sich geändert (z.B. anderes Device hat archiviert)
+          // → Card in den anderen Tab verschieben (= neu rendern)
+          removeVideoCardFromDOM(id);
+          var targetWrap2 = nowArchived ? archiveWrapEl : videosWrapEl;
+          var emptyEl2 = targetWrap2.querySelector('.empty-videos');
+          if (emptyEl2) clearChildren(targetWrap2);
+          renderVideoCard(id, nowArchived);
+        } else {
+          // Nur Title/Pill update
+          var card = (wasArchived ? archiveWrapEl : videosWrapEl).querySelector('[data-id="' + id + '"]');
+          if (card) {
+            var titleEl = card.querySelector('.video-card-title');
+            if (titleEl) titleEl.textContent = (v.title && v.title.trim()) || 'Neues Video';
+            var pillEl = card.querySelector('.video-typ-pill');
+            if (pillEl) {
+              pillEl.className = 'video-typ-pill ' + videoTypClass(v.videoTyp);
+              pillEl.textContent = videoTypShort(v.videoTyp);
+            }
           }
         }
       }
     });
-    if (Object.keys(VIDEOS).length === 0) renderEmptyState();
+    if (countActive() === 0) renderEmptyVideos();
+    if (countArchived() === 0) renderEmptyArchive();
     updateVideoCount();
+    updateArchiveCount();
     updateProgress();
   }
 
