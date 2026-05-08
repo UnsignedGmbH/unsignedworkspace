@@ -228,7 +228,10 @@
         border: BORDER,
         borderRadius: '6px',
         overflow: 'hidden',
-        flex: o.flex || '1',
+        // flex: '1 1 auto' = grow into extra space, shrink if needed, basis content-size.
+        // Basis 'auto' (statt 0) verhindert dass das Element auf Mobile in einem
+        // column-flex auf 0px kollabiert.
+        flex: o.flex || '1 1 auto',
         minWidth: '0',
         display: 'flex',
         flexDirection: 'column',
@@ -314,10 +317,24 @@
   function row(items, opts) {
     opts = opts || {};
     var isMobile = (typeof window !== 'undefined') && window.innerWidth < 600;
+    // Mobile: pure block flow — items stacken sich automatisch in voller Breite.
+    // Flex auf den Children (z.B. fieldBox flex:1) wird im Block-Parent ignoriert,
+    // also kein collapse-zu-0px durch flex-basis:0 in column-flex.
+    if (isMobile) {
+      var wrap = el('div', {
+        style: { marginBottom: (opts.mb != null ? opts.mb : 12) + 'px' },
+      });
+      items.forEach(function (it, i) {
+        if (it) {
+          if (i > 0) it.style.marginTop = '8px';
+          wrap.appendChild(it);
+        }
+      });
+      return wrap;
+    }
     return el('div', {
       style: {
         display: 'flex',
-        flexDirection: isMobile ? 'column' : 'row',
         gap: (opts.gap || 12) + 'px',
         marginBottom: (opts.mb != null ? opts.mb : 12) + 'px',
         flex: opts.flex || 'none',
@@ -336,7 +353,8 @@
         background: '#fff',
         display: 'flex',
         flexDirection: 'column',
-        flex: o.flex || '1',
+        // flex 1 1 auto: basis content-size — verhindert collapse-zu-0 in column-flex.
+        flex: o.flex || '1 1 auto',
         marginBottom: (o.mb != null ? o.mb : 12) + 'px',
         minHeight: (o.minH || 0) + 'px',
       },
@@ -551,7 +569,7 @@
       var top = el('div', {
         style: {
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))',
           gap: '14px',
           marginBottom: '12px',
         },
@@ -632,7 +650,7 @@
       var grid = el('div', {
         style: {
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))',
           gap: '12px',
           flex: '1',
         },
@@ -771,7 +789,7 @@
       var grid = el('div', {
         style: {
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))',
           gap: '8px',
           padding: '12px',
         },
@@ -856,7 +874,7 @@
       var grid = el('div', {
         style: {
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))',
           gap: '14px',
           flex: '1',
         },
@@ -1006,7 +1024,7 @@
       var grid = el('div', {
         style: {
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))',
           gap: '12px',
           flex: '1',
         },
@@ -1043,7 +1061,7 @@
       var grid = el('div', {
         style: {
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))',
           gap: '12px',
           flex: '1',
         },
@@ -1075,7 +1093,7 @@
       var grid = el('div', {
         style: {
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))',
           gap: '14px',
           flex: '1',
         },
