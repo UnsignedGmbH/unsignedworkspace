@@ -11,21 +11,18 @@ const { title, active, tool } = Astro.props;
 ---
 
 <AppLayout title={title} active={active}>
-  <div class="flex items-center gap-3 mb-3 flex-wrap">
-    <span
-      class="text-[10px] font-bold tracking-[0.12em] uppercase text-ink-mute"
-    >
-      Persönliche Sandbox
-    </span>
-    <span
+  <div class="bg-brand-dim border-[0.5px] border-brand-border rounded-xl px-4 py-3 mb-3 flex items-center gap-3 flex-wrap">
+    <span class="w-8 h-8 rounded-lg bg-brand text-white flex items-center justify-center text-[14px] shrink-0" aria-hidden="true">🧪</span>
+    <div class="flex-1 min-w-0">
+      <div class="text-[12px] font-extrabold text-ink leading-tight">Persönliche Sandbox</div>
+      <div class="text-[11px] text-ink-mute leading-snug">Daten sind nur für dich sichtbar. Für Kunden-Arbeit lieber einen Kunden anlegen.</div>
+    </div>
+    <button
+      type="button"
       id="standaloneRoom"
-      class="text-[11px] font-bold text-ink-soft bg-card border-[0.5px] border-line rounded-full px-3 py-1"
-    >
-      Raum lädt…
-    </span>
-    <p class="text-[11px] text-ink-mute">
-      Daten sind nur für dich sichtbar. Für Kunden-Arbeit lieber einen Kunden anlegen.
-    </p>
+      class="text-[10px] font-bold text-ink-soft bg-card border-[0.5px] border-line rounded-full px-3 py-1 cursor-pointer hover:border-brand-border hover:text-brand transition-colors shrink-0"
+      title="Raum-Code kopieren"
+    >Raum lädt…</button>
   </div>
 
   <div
@@ -104,7 +101,20 @@ const { title, active, tool } = Astro.props;
     window.appUI.onAuth(function (me) {
       var uid = (me && me.uid) || "GUEST-" + Date.now();
       var room = "PERSONAL-" + uid;
-      document.getElementById("standaloneRoom").textContent = "Raum " + room;
+      var roomBtn = document.getElementById("standaloneRoom");
+      // Kompakter Anzeige-String: "🔒 Privat" + die ersten 6 Zeichen der UID.
+      // Wer den vollen Code braucht, kann tippen → kopiert in die Zwischenablage.
+      var shortUid = uid.slice(0, 6).toUpperCase();
+      roomBtn.textContent = "🔒 Privat " + shortUid;
+      roomBtn.title = "Klicken um Raum-Code zu kopieren";
+      roomBtn.onclick = function () {
+        try {
+          navigator.clipboard.writeText(room).then(function () {
+            roomBtn.textContent = "✓ kopiert";
+            setTimeout(function () { roomBtn.textContent = "🔒 Privat " + shortUid; }, 1200);
+          });
+        } catch (e) {}
+      };
       loadIframe(
         "/tools/" + tool + ".html?room=" +
         encodeURIComponent(room) + "&owner=1"
