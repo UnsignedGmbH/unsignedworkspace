@@ -251,8 +251,10 @@ import BrandworkTimeline from "../components/BrandworkTimeline.astro";
         desc: "Personal Brand · Ads · Flows" },
       { id: "shop", file: "shop", label: "Shop", icon: "🛒",
         desc: "Shop-Optimierung & Drop-Planung" },
+      { id: "content", file: "content", label: "Content", icon: "🎬",
+        desc: "Strategie · Hooks · Video-Ideen" },
       { id: "social", file: "social", label: "Social Media", icon: "💬",
-        desc: "Content · Highlights · Captions · WhatsApp" },
+        desc: "Profile · Highlights · Captions · WhatsApp" },
     ];
     var TOOL_BY_FILE = {};
     TOOLS.forEach(function (t) { TOOL_BY_FILE[t.file] = t; });
@@ -263,7 +265,7 @@ import BrandworkTimeline from "../components/BrandworkTimeline.astro";
     }
 
     // ── progress sources ─────────────────────────────────────
-    var lastBiP = null, lastShP = null, lastCrP = null, lastAgP = null, lastDnP = null, lastMkP = null, lastShopP = null, lastSocialP = null;
+    var lastBiP = null, lastShP = null, lastCrP = null, lastAgP = null, lastDnP = null, lastMkP = null, lastShopP = null, lastSocialP = null, lastContentP = null;
 
     var bumpLastActive = ui.throttle(function () {
       if (!customer) return;
@@ -375,6 +377,7 @@ import BrandworkTimeline from "../components/BrandworkTimeline.astro";
     var lastMkPRef    = { read: function(){ return lastMkP; }, write: function(v){ lastMkP = v; } };
     var lastShopPRef    = { read: function(){ return lastShopP; }, write: function(v){ lastShopP = v; } };
     var lastSocialPRef  = { read: function(){ return lastSocialP; }, write: function(v){ lastSocialP = v; } };
+    var lastContentPRef = { read: function(){ return lastContentP; }, write: function(v){ lastContentP = v; } };
     function attachToolPctListeners(room) {
       attachPctListener(room, "sh_pct", lastShPRef, "shP");
       attachPctListener(room, "cr_pct", lastCrPRef, "crP");
@@ -382,6 +385,7 @@ import BrandworkTimeline from "../components/BrandworkTimeline.astro";
       attachPctListener(room, "mk_pct", lastMkPRef, "mkP");
       attachPctListener(room, "shop_pct", lastShopPRef, "shopP");
       attachPctListener(room, "social_pct", lastSocialPRef, "socialP");
+      attachPctListener(room, "content_pct", lastContentPRef, "contentP");
     }
 
     // Live presence indicator + customer profile
@@ -460,6 +464,7 @@ import BrandworkTimeline from "../components/BrandworkTimeline.astro";
         mk: pctOf(c, "mkP"),
         shop: pctOf(c, "shopP"),
         social: pctOf(c, "socialP"),
+        content: pctOf(c, "contentP"),
       };
     }
     // Techpack hat keine zentrale Progress (mehrere Packs pro Customer).
@@ -754,6 +759,9 @@ import BrandworkTimeline from "../components/BrandworkTimeline.astro";
         lastAgP = c.agP == null ? null : clamp(c.agP);
         lastDnP = c.dP == null ? null : clamp(c.dP);
         lastMkP = c.mkP == null ? null : clamp(c.mkP);
+        lastShopP = c.shopP == null ? null : clamp(c.shopP);
+        lastSocialP = c.socialP == null ? null : clamp(c.socialP);
+        lastContentP = c.contentP == null ? null : clamp(c.contentP);
 
         $("topName").textContent = c.name || "Unbenannt";
         $("cName").textContent = c.name || "Unbenannt";

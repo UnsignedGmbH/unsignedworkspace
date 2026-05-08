@@ -289,7 +289,7 @@ body { font-family: 'Montserrat', sans-serif; background: var(--bg); color: var(
         <span class="bw">BrandWork</span>
         <span class="rm">Social Media</span>
       </div>
-      <div class="header-eyebrow">Content · Channels · Captions</div>
+      <div class="header-eyebrow">Profile · Highlights · Captions</div>
     </div>
     <div class="progress-wrap">
       <div class="progress-bar-bg"><div id="progFill" class="progress-bar-fill"></div></div>
@@ -301,7 +301,7 @@ body { font-family: 'Montserrat', sans-serif; background: var(--bg); color: var(
 
 <main class="main">
   <div class="intro">
-    <p>Alles was für Social läuft an einem Ort: <strong>Strategie · Profile · Highlights · Captions · WhatsApp</strong>. Live-synchron mit deinem Team — leer Felder werden nicht gezählt.</p>
+    <p>Profile, Highlights, Captions & WhatsApp — alles Live-synchron mit deinem Team. <strong>Strategie & Video-Ideen</strong> findest du im neuen <strong>Content-Tool</strong>.</p>
   </div>
 
   <div id="sections"></div>
@@ -318,47 +318,9 @@ body { font-family: 'Montserrat', sans-serif; background: var(--bg); color: var(
 <script>
 (function () {
   // ── SCHEMA ────────────────────────────────────────────────
+  // Content wurde in ein eigenes Tool (📂 /content) ausgelagert.
+  // Hier nur noch Profile, Highlights, Channels & Captions.
   var SCHEMA = [
-    {
-      id: 'content', icon: '📝', label: 'Content',
-      sub: 'Strategie · Nische · Hooks',
-      blocks: [
-        {
-          title: 'Contentplan',
-          items: [
-            { k: 'richtung', label: 'Richtung', type: 'text', ph: 'In welche Richtung soll der Content gehen?' },
-            { k: 'nische', label: 'Nische', type: 'text', ph: 'z.B. Streetwear · Y2K · Skate · High-End' },
-            { k: 'ueberthemen', label: 'Überthemen', type: 'list', ph: 'Eine Zeile pro Überthema', hint: '3–5 Themen, die immer wiederkehren' },
-            { k: 'story', label: 'Story', type: 'textarea', ph: 'Welche Story zieht sich durch den ganzen Content?' },
-          ],
-        },
-        {
-          title: 'Account-Typ',
-          items: [
-            { k: 'accountTyp', label: 'Wie willst du es machen?', type: 'radio',
-              options: ['Personal Brand', 'Brand Account', 'Only Ads', 'Alles', 'Manches'] },
-          ],
-        },
-        {
-          title: 'Was wichtig ist',
-          items: [
-            { k: 'variation', label: 'Variation', type: 'list', ph: 'Z.B. von dir, vom Produkt, BTS, Kunden-Story…',
-              hint: 'Mische Formate — keine Monotonie' },
-            { k: 'werblichkeit', label: 'Werblichkeit', type: 'textarea', ph: 'Verhältnis unwerblich vs. werblich. PB eher unwerblich, BA-Werbevideos sind okay.' },
-            { k: 'hooks', label: 'Hook-Sammlung', type: 'list', ph: 'Eine Zeile pro Hook',
-              hint: 'Sammle alles was hängen bleibt' },
-          ],
-        },
-        {
-          title: 'Creator einbauen',
-          items: [
-            { k: 'creator_ugc', label: 'UGC-Creator', type: 'list', ph: '@username · Kontakt · Format' },
-            { k: 'creator_mikro', label: 'Mikro-Influencer (Nische muss passen)', type: 'list', ph: '@username · Reichweite · Nische' },
-            { k: 'creator_inf', label: 'Influencer (Stats checken!)', type: 'list', ph: '@username · Reichweite · Stats-Link' },
-          ],
-        },
-      ],
-    },
     {
       id: 'instagram', icon: '📷', label: 'Instagram',
       sub: 'Slogan · Bio · Highlights',

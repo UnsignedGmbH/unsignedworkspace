@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+<script>
+var _R = new URLSearchParams(location.search).get('room'), _D = null;
+try {
+  if (!firebase.apps.length) firebase.initializeApp({apiKey:"AIzaSyDJqdh3apGM4fcsjRYI7vZ4VrT1_A6L92U",authDomain:"unsignedworkspace.firebaseapp.com",databaseURL:"https://unsignedworkspace-default-rtdb.europe-west1.firebasedatabase.app",projectId:"unsignedworkspace",storageBucket:"unsignedworkspace.firebasestorage.app",messagingSenderId:"144491079509",appId:"1:144491079509:web:c7dcc1c14b8daf404231dc"});
+  _D = firebase.database();
+} catch (e) { try { _D = firebase.database(); } catch (e2) {} }
+</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Unsigned — Content</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&family=Caveat:wght@600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --red: #C13030;
+  --red-dark: #9A2424;
+  --red-dim: rgba(193, 48, 48, 0.08);
+  --bg: #f4f3f0;
+  --bg2: #fff;
+  --bg3: #eee;
+  --border: rgba(0, 0, 0, 0.09);
+  --border-red: rgba(193, 48, 48, 0.35);
+  --text: #111;
+  --text-dim: #555;
+  --text-dimmer: #aaa;
+  --green: #1D9E75;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Montserrat', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; padding-bottom: 120px; }
+.header { background: #fff; border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 100; box-shadow: 0 1px 8px rgba(0, 0, 0, 0.06); }
+.header-top { max-width: 980px; margin: 0 auto; padding: 14px 24px 10px; display: flex; align-items: center; gap: 14px; }
+.brand-wm { display: flex; align-items: baseline; gap: 6px; flex: 1; }
+.brand-wm .bw { font-family: 'Montserrat', sans-serif; font-weight: 900; font-size: 22px; letter-spacing: -0.02em; color: var(--text); font-style: italic; line-height: 1; }
+.brand-wm .rm { font-family: 'Caveat', cursive; font-weight: 700; font-size: 22px; color: var(--red); transform: translateY(2px); line-height: 1; }
+.header-eyebrow { font-size: 9px; font-weight: 700; letter-spacing: 0.22em; text-transform: uppercase; color: var(--text-dim); margin-top: 2px; line-height: 1; }
+.progress-wrap { display: flex; align-items: center; gap: 10px; margin-left: auto; }
+.progress-bar-bg { width: 110px; height: 4px; background: var(--bg3); border-radius: 2px; overflow: hidden; }
+.progress-bar-fill { height: 100%; background: var(--red); border-radius: 2px; transition: width 0.4s ease; width: 0%; }
+.progress-count { font-size: 12px; font-weight: 800; color: var(--red); min-width: 42px; text-align: right; }
+
+.tabs { max-width: 980px; margin: 0 auto; padding: 0 24px 10px; display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; }
+.tabs::-webkit-scrollbar { display: none; }
+.tab { flex-shrink: 0; display: inline-flex; align-items: center; gap: 6px; padding: 8px 13px; border-radius: 9px; border: 1.5px solid var(--border); background: var(--bg2); font-family: inherit; font-size: 11px; font-weight: 700; color: var(--text-dim); cursor: pointer; white-space: nowrap; transition: all 0.15s; -webkit-tap-highlight-color: transparent; position: relative; }
+.tab:hover { color: var(--red); border-color: var(--border-red); }
+.tab.active { background: var(--red); border-color: var(--red); color: #fff; }
+.tab .tab-pct { font-size: 9px; font-weight: 800; opacity: 0.7; background: rgba(0, 0, 0, 0.07); padding: 1px 5px; border-radius: 6px; }
+.tab.active .tab-pct { background: rgba(255, 255, 255, 0.18); opacity: 0.9; }
+.tab-icon { font-size: 12px; }
+
+.main { max-width: 980px; margin: 0 auto; padding: 22px 24px 0; }
+
+.intro { background: var(--red-dim); border: 1px solid var(--border-red); border-radius: 12px; padding: 14px 18px; margin-bottom: 22px; }
+.intro p { font-size: 12px; line-height: 1.55; color: var(--red-dark); font-weight: 600; }
+.intro strong { font-weight: 800; }
+
+.section { display: none; }
+.section.active { display: block; }
+
+.section-head { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+.section-head .ic { width: 36px; height: 36px; border-radius: 9px; background: var(--red-dim); display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+.section-head h1 { font-size: 18px; font-weight: 900; letter-spacing: -0.01em; color: var(--text); }
+.section-head .meta { font-size: 11px; font-weight: 600; color: var(--text-dim); margin-top: 2px; }
+
+.block { background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; padding: 16px 18px; margin-bottom: 14px; }
+.block-title { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text); margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+.block-title::before { content: ""; width: 3px; height: 12px; background: var(--red); border-radius: 2px; }
+
+.field { margin-bottom: 12px; }
+.field:last-child { margin-bottom: 0; }
+.field-label { display: block; font-size: 10px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-dim); margin-bottom: 5px; }
+.field-input, .field-textarea { width: 100%; font-family: inherit; font-size: 13px; font-weight: 500; line-height: 1.5; color: var(--text); background: var(--bg); border: 1.5px solid var(--border); border-radius: 9px; padding: 10px 12px; outline: none; transition: border-color 0.15s, background 0.15s; }
+.field-input:focus, .field-textarea:focus { border-color: var(--border-red); background: #fff; }
+.field-textarea { resize: vertical; min-height: 70px; }
+.field-textarea.tall { min-height: 110px; }
+.field-hint { font-size: 10px; color: var(--text-dimmer); margin-top: 4px; font-style: italic; line-height: 1.4; }
+
+.field-radio-group { display: flex; flex-wrap: wrap; gap: 6px; }
+.field-radio { display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border: 1.5px solid var(--border); border-radius: 8px; background: var(--bg2); cursor: pointer; font-size: 12px; font-weight: 700; color: var(--text-dim); transition: all 0.15s; -webkit-tap-highlight-color: transparent; }
+.field-radio:hover { border-color: var(--border-red); color: var(--red); }
+.field-radio input { display: none; }
+.field-radio.is-on { background: var(--red); border-color: var(--red); color: #fff; }
+
+/* Video-Slots */
+.videos-toolbar { display: flex; gap: 8px; align-items: center; margin-bottom: 14px; }
+.videos-count { font-size: 11px; font-weight: 700; color: var(--text-dim); }
+.btn-add-video { background: var(--red); color: #fff; border: 0; border-radius: 9px; padding: 9px 14px; font: 800 12px Montserrat; cursor: pointer; -webkit-tap-highlight-color: transparent; transition: background 0.15s; flex-shrink: 0; margin-left: auto; }
+.btn-add-video:hover { background: var(--red-dark); }
+.video-card { position: relative; padding-top: 14px; }
+.video-card-head { display: flex; align-items: center; gap: 8px; padding-bottom: 12px; margin-bottom: 12px; border-bottom: 1px solid var(--border); }
+.video-card-title { font-size: 13px; font-weight: 800; color: var(--text); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.video-typ-pill { font-size: 9px; font-weight: 800; padding: 3px 8px; border-radius: 10px; background: var(--bg3); color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.08em; flex-shrink: 0; }
+.video-typ-pill.pb { background: rgba(193,48,48,0.12); color: var(--red); }
+.video-typ-pill.ba { background: rgba(24,95,165,0.12); color: #185fa5; }
+.video-typ-pill.ads { background: rgba(29,158,117,0.12); color: var(--green); }
+.video-actions { display: flex; gap: 4px; flex-shrink: 0; }
+.video-action-btn { background: transparent; border: 1px solid var(--border); border-radius: 7px; padding: 5px 8px; font-size: 13px; cursor: pointer; color: var(--text-dim); transition: all 0.15s; -webkit-tap-highlight-color: transparent; line-height: 1; }
+.video-action-btn:hover { color: var(--red); border-color: var(--border-red); }
+.empty-videos { text-align: center; padding: 40px 20px; color: var(--text-dimmer); font-size: 12px; font-weight: 600; background: var(--bg2); border: 1.5px dashed var(--border); border-radius: 12px; line-height: 1.6; }
+.empty-videos strong { color: var(--red); font-weight: 800; }
+
+.row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+@media (max-width: 640px) {
+  .row-2 { grid-template-columns: 1fr; }
+  .header-top { padding: 12px 16px 8px; }
+  .tabs { padding: 0 16px 10px; }
+  .main { padding: 16px 16px 0; }
+  .brand-wm .bw, .brand-wm .rm { font-size: 18px; }
+  .progress-bar-bg { width: 70px; }
+  .videos-toolbar { flex-wrap: wrap; }
+}
+
+.foot { max-width: 980px; margin: 24px auto 0; padding: 0 24px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.foot-status { font-size: 11px; color: var(--text-dimmer); font-weight: 600; }
+.foot-status .saved { color: var(--green); opacity: 0; transition: opacity 0.3s; }
+.foot-status .saved.show { opacity: 1; }
+.foot-rules { font-size: 10px; color: var(--text-dim); font-weight: 600; font-style: italic; }
+@media (max-width: 640px) {
+  .foot { padding: 0 16px; }
+  .foot-rules { display: none; }
+}
+</style>
+</head>
+<body>
+<header class="header">
+  <div class="header-top">
+    <div>
+      <div class="brand-wm">
+        <span class="bw">BrandWork</span>
+        <span class="rm">Content</span>
+      </div>
+      <div class="header-eyebrow">Strategie · Videos · Hooks</div>
+    </div>
+    <div class="progress-wrap">
+      <div class="progress-bar-bg"><div id="progFill" class="progress-bar-fill"></div></div>
+      <span id="progCount" class="progress-count">0%</span>
+    </div>
+  </div>
+  <nav id="tabs" class="tabs"></nav>
+</header>
+
+<main class="main">
+  <div class="intro">
+    <p><strong>Strategie</strong> setzt die Grundrichtung — <strong>Videos</strong> sind einzelne Ideen die du sammelst und durchziehst. Live-synchron mit deinem Team.</p>
+  </div>
+
+  <div id="sections"></div>
+</main>
+
+<div class="foot">
+  <span class="foot-status">
+    <span id="savedTag" class="saved">✓ Gespeichert</span>
+    <span id="connTag"></span>
+  </span>
+  <span class="foot-rules">Hooks rotieren — eine Idee zweimal posten ist OK, dreimal nicht.</span>
+</div>
+
+<script>
+(function () {
+  // ── SCHEMA ────────────────────────────────────────────────
+  // Strategy-Sektion bleibt 1:1 wie der bisherige Content-Tab in Social.
+  var SCHEMA = [
+    {
+      id: 'strategy', icon: '🎯', label: 'Strategie',
+      sub: 'Plan · Hooks · Creator',
+      blocks: [
+        {
+          title: 'Contentplan',
+          items: [
+            { k: 'richtung', label: 'Richtung', type: 'text', ph: 'In welche Richtung soll der Content gehen?' },
+            { k: 'nische', label: 'Nische', type: 'text', ph: 'z.B. Streetwear · Y2K · Skate · High-End' },
+            { k: 'ueberthemen', label: 'Überthemen', type: 'list', ph: 'Eine Zeile pro Überthema', hint: '3–5 Themen, die immer wiederkehren' },
+            { k: 'story', label: 'Story', type: 'textarea', ph: 'Welche Story zieht sich durch den ganzen Content?' },
+          ],
+        },
+        {
+          title: 'Account-Typ',
+          items: [
+            { k: 'accountTyp', label: 'Wie willst du es machen?', type: 'radio',
+              options: ['Personal Brand', 'Brand Account', 'Only Ads', 'Alles', 'Manches'] },
+          ],
+        },
+        {
+          title: 'Was wichtig ist',
+          items: [
+            { k: 'variation', label: 'Variation', type: 'list', ph: 'Z.B. von dir, vom Produkt, BTS, Kunden-Story…',
+              hint: 'Mische Formate — keine Monotonie' },
+            { k: 'werblichkeit', label: 'Werblichkeit', type: 'textarea', ph: 'Verhältnis unwerblich vs. werblich. PB eher unwerblich, BA-Werbevideos sind okay.' },
+            { k: 'hooks', label: 'Hook-Sammlung', type: 'list', ph: 'Eine Zeile pro Hook',
+              hint: 'Sammle alles was hängen bleibt — pro Video pickst du eine raus' },
+          ],
+        },
+        {
+          title: 'Creator einbauen',
+          items: [
+            { k: 'creator_ugc', label: 'UGC-Creator', type: 'list', ph: '@username · Kontakt · Format' },
+            { k: 'creator_mikro', label: 'Mikro-Influencer (Nische muss passen)', type: 'list', ph: '@username · Reichweite · Nische' },
+            { k: 'creator_inf', label: 'Influencer (Stats checken!)', type: 'list', ph: '@username · Reichweite · Stats-Link' },
+          ],
+        },
+      ],
+    },
+  ];
+
+  // Felder pro Video-Slot
+  var VIDEO_FIELDS = [
+    { k: 'title', label: 'Titel / Thema', type: 'text', ph: 'z.B. Drop-Teaser 1' },
+    { k: 'videoTyp', label: 'Video-Typ', type: 'radio', options: ['Personal Brand', 'Brand Account', 'Ads'] },
+    { k: 'hook', label: 'Hook', type: 'text', ph: 'Die Aufmerksamkeits-Zeile in den ersten 2 Sek' },
+    { k: 'idee', label: 'Idee / Skript', type: 'textarea', ph: 'Was passiert im Video? Welche Szenen? Wie der Aufbau?' },
+    { k: 'status', label: 'Status', type: 'radio', options: ['Idee', 'In Arbeit', 'Gedreht', 'Live'] },
+  ];
+
+  // ── DOM-Helper ────────────────────────────────────────────
+  function el(tag, cls, parent) {
+    var e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (parent) parent.appendChild(e);
+    return e;
+  }
+  function clearChildren(node) {
+    while (node && node.firstChild) node.removeChild(node.firstChild);
+  }
+
+  // Total field count for progress (Strategy fields only — Videos zählen separat)
+  var STRATEGY_FIELDS = 0;
+  SCHEMA.forEach(function (s) {
+    s.blocks.forEach(function (b) {
+      b.items.forEach(function () { STRATEGY_FIELDS++; });
+    });
+  });
+
+  // STATE
+  var STATE = {};       // section -> field -> value (für Strategy)
+  var FIELD_REFS = {};  // section -> field -> { applyValue, isFocused }
+  SCHEMA.forEach(function (s) {
+    STATE[s.id] = {};
+    FIELD_REFS[s.id] = {};
+    s.blocks.forEach(function (b) {
+      b.items.forEach(function (it) { STATE[s.id][it.k] = ''; });
+    });
+  });
+
+  // VIDEOS State
+  var VIDEOS = {};        // id -> { title, videoTyp, hook, idee, status, _order }
+  var VIDEO_REFS = {};    // id -> { fieldKey -> { applyValue, isFocused } }
+  var videosWrapEl;
+  var videosCountEl;
+
+  var tabsEl = document.getElementById('tabs');
+  var sectionsEl = document.getElementById('sections');
+  var progFill = document.getElementById('progFill');
+  var progCount = document.getElementById('progCount');
+  var savedTag = document.getElementById('savedTag');
+  var connTag = document.getElementById('connTag');
+  var TAB_PCT = {};
+
+  // ── Render Tabs ────────────────────────────────────────────
+  var tabBtns = {};
+  SCHEMA.forEach(function (s, idx) {
+    var btn = el('button', 'tab' + (idx === 0 ? ' active' : ''), tabsEl);
+    btn.type = 'button';
+    btn.dataset.tab = s.id;
+    var ic = el('span', 'tab-icon', btn); ic.textContent = s.icon;
+    var lbl = el('span', null, btn); lbl.textContent = s.label;
+    var pct = el('span', 'tab-pct', btn); pct.textContent = '0%';
+    btn.addEventListener('click', function () { showTab(s.id); });
+    tabBtns[s.id] = { btn: btn, pct: pct };
+  });
+  // Tab Videos
+  (function () {
+    var btn = el('button', 'tab', tabsEl);
+    btn.type = 'button';
+    btn.dataset.tab = 'videos';
+    var ic = el('span', 'tab-icon', btn); ic.textContent = '🎬';
+    var lbl = el('span', null, btn); lbl.textContent = 'Videos';
+    var pct = el('span', 'tab-pct', btn); pct.textContent = '0';
+    btn.addEventListener('click', function () { showTab('videos'); });
+    tabBtns['videos'] = { btn: btn, pct: pct };
+  })();
+
+  // ── Strategy Sektion rendern ──────────────────────────────
+  function renderStrategyField(s, b, it, parent) {
+    var f = el('div', 'field', parent);
+    var lab = el('label', 'field-label', f); lab.textContent = it.label;
+    var inputEl;
+
+    if (it.type === 'text') {
+      inputEl = el('input', 'field-input', f);
+      inputEl.type = 'text';
+      inputEl.placeholder = it.ph || '';
+    } else if (it.type === 'list' || it.type === 'textarea') {
+      inputEl = el('textarea', 'field-textarea' + (it.type === 'list' ? ' tall' : ''), f);
+      inputEl.placeholder = it.ph || '';
+    } else if (it.type === 'radio') {
+      var grp = el('div', 'field-radio-group', f);
+      it.options.forEach(function (opt) {
+        var lbl2 = el('label', 'field-radio', grp);
+        var inp = el('input', null, lbl2);
+        inp.type = 'radio'; inp.name = s.id + '_' + it.k; inp.value = opt;
+        var sp = el('span', null, lbl2); sp.textContent = opt;
+        lbl2.addEventListener('click', function (e) {
+          if (e.target !== inp) e.preventDefault();
+          STATE[s.id][it.k] = opt;
+          grp.querySelectorAll('.field-radio').forEach(function (l) {
+            l.classList.toggle('is-on', l.querySelector('input').value === opt);
+          });
+          persistStrategy(s.id, it.k);
+          updateProgress();
+        });
+      });
+      FIELD_REFS[s.id][it.k] = {
+        applyValue: function (v) {
+          STATE[s.id][it.k] = v || '';
+          grp.querySelectorAll('.field-radio').forEach(function (l) {
+            l.classList.toggle('is-on', l.querySelector('input').value === v);
+          });
+        },
+        isFocused: function () { return false; },
+      };
+      if (it.hint) {
+        var hint = el('div', 'field-hint', f); hint.textContent = it.hint;
+      }
+      return;
+    }
+    if (inputEl) {
+      var deb;
+      inputEl.addEventListener('input', function () {
+        STATE[s.id][it.k] = inputEl.value;
+        clearTimeout(deb);
+        deb = setTimeout(function () {
+          persistStrategy(s.id, it.k);
+          updateProgress();
+        }, 350);
+      });
+      FIELD_REFS[s.id][it.k] = {
+        input: inputEl,
+        applyValue: function (v) {
+          STATE[s.id][it.k] = v || '';
+          inputEl.value = v || '';
+        },
+        isFocused: function () { return document.activeElement === inputEl; },
+      };
+    }
+    if (it.hint) {
+      var hint2 = el('div', 'field-hint', f); hint2.textContent = it.hint;
+    }
+  }
+
+  SCHEMA.forEach(function (s, idx) {
+    var sec = el('section', 'section' + (idx === 0 ? ' active' : ''), sectionsEl);
+    sec.dataset.section = s.id;
+
+    var head = el('div', 'section-head', sec);
+    var ic = el('div', 'ic', head); ic.textContent = s.icon;
+    var titleWrap = el('div', null, head);
+    var h = el('h1', null, titleWrap); h.textContent = s.label;
+    var meta = el('div', 'meta', titleWrap); meta.textContent = s.sub;
+
+    s.blocks.forEach(function (b) {
+      var blockEl = el('div', 'block', sec);
+      var bt = el('div', 'block-title', blockEl); bt.textContent = b.title;
+      b.items.forEach(function (it) { renderStrategyField(s, b, it, blockEl); });
+    });
+  });
+
+  // ── Videos-Sektion rendern ────────────────────────────────
+  (function () {
+    var sec = el('section', 'section', sectionsEl);
+    sec.dataset.section = 'videos';
+
+    var head = el('div', 'section-head', sec);
+    var ic = el('div', 'ic', head); ic.textContent = '🎬';
+    var titleWrap = el('div', null, head);
+    var h = el('h1', null, titleWrap); h.textContent = 'Videos';
+    var meta = el('div', 'meta', titleWrap); meta.textContent = 'Einzelne Video-Ideen';
+
+    var toolbar = el('div', 'videos-toolbar', sec);
+    videosCountEl = el('span', 'videos-count', toolbar);
+    videosCountEl.textContent = '0 Videos';
+    var addBtn = el('button', 'btn-add-video', toolbar);
+    addBtn.type = 'button';
+    addBtn.textContent = '+ Neues Video';
+    addBtn.onclick = function () { addVideo(); };
+
+    videosWrapEl = el('div', null, sec);
+    videosWrapEl.id = 'videos-wrap';
+    renderEmptyState();
+  })();
+
+  function renderEmptyState() {
+    if (!videosWrapEl) return;
+    if (Object.keys(VIDEOS).length > 0) return;
+    clearChildren(videosWrapEl);
+    var em = el('div', 'empty-videos', videosWrapEl);
+    em.appendChild(document.createTextNode('Noch keine Videos.'));
+    em.appendChild(document.createElement('br'));
+    em.appendChild(document.createTextNode('Klick oben auf '));
+    var s = el('strong', null, em);
+    s.textContent = '+ Neues Video';
+    em.appendChild(document.createTextNode(' um die erste Idee zu sammeln.'));
+  }
+
+  function videoTypClass(typ) {
+    if (typ === 'Personal Brand') return 'pb';
+    if (typ === 'Brand Account') return 'ba';
+    if (typ === 'Ads') return 'ads';
+    return '';
+  }
+  function videoTypShort(typ) {
+    if (typ === 'Personal Brand') return 'PB';
+    if (typ === 'Brand Account') return 'BA';
+    if (typ === 'Ads') return 'AD';
+    return '—';
+  }
+
+  function renderVideoCard(videoId) {
+    var data = VIDEOS[videoId] || {};
+    var card = el('div', 'block video-card', videosWrapEl);
+    card.dataset.id = videoId;
+
+    var head = el('div', 'video-card-head', card);
+    var titleEl = el('div', 'video-card-title', head);
+    titleEl.textContent = (data.title && data.title.trim()) || 'Neues Video';
+    var typPill = el('span', 'video-typ-pill ' + videoTypClass(data.videoTyp), head);
+    typPill.textContent = videoTypShort(data.videoTyp);
+    var actions = el('div', 'video-actions', head);
+    var dupBtn = el('button', 'video-action-btn', actions);
+    dupBtn.type = 'button';
+    dupBtn.title = 'Duplizieren';
+    dupBtn.textContent = '⧉';
+    dupBtn.onclick = function (e) { e.stopPropagation(); duplicateVideo(videoId); };
+    var delBtn = el('button', 'video-action-btn', actions);
+    delBtn.type = 'button';
+    delBtn.title = 'Löschen';
+    delBtn.textContent = '🗑';
+    delBtn.onclick = function (e) { e.stopPropagation(); deleteVideo(videoId); };
+
+    VIDEO_REFS[videoId] = {};
+    VIDEO_FIELDS.forEach(function (it) {
+      renderVideoField(videoId, it, card, function () {
+        var d = VIDEOS[videoId] || {};
+        titleEl.textContent = (d.title && d.title.trim()) || 'Neues Video';
+        typPill.className = 'video-typ-pill ' + videoTypClass(d.videoTyp);
+        typPill.textContent = videoTypShort(d.videoTyp);
+      });
+    });
+  }
+
+  function renderVideoField(videoId, it, parent, onEdit) {
+    var f = el('div', 'field', parent);
+    var lab = el('label', 'field-label', f); lab.textContent = it.label;
+    var inputEl;
+
+    if (it.type === 'text') {
+      inputEl = el('input', 'field-input', f);
+      inputEl.type = 'text';
+      inputEl.placeholder = it.ph || '';
+    } else if (it.type === 'textarea') {
+      inputEl = el('textarea', 'field-textarea', f);
+      inputEl.placeholder = it.ph || '';
+    } else if (it.type === 'radio') {
+      var grp = el('div', 'field-radio-group', f);
+      it.options.forEach(function (opt) {
+        var lbl2 = el('label', 'field-radio', grp);
+        var inp = el('input', null, lbl2);
+        inp.type = 'radio'; inp.name = 'v_' + videoId + '_' + it.k; inp.value = opt;
+        var sp = el('span', null, lbl2); sp.textContent = opt;
+        lbl2.addEventListener('click', function (e) {
+          if (e.target !== inp) e.preventDefault();
+          if (!VIDEOS[videoId]) VIDEOS[videoId] = {};
+          VIDEOS[videoId][it.k] = opt;
+          grp.querySelectorAll('.field-radio').forEach(function (l) {
+            l.classList.toggle('is-on', l.querySelector('input').value === opt);
+          });
+          persistVideoField(videoId, it.k);
+          if (onEdit) onEdit();
+          updateProgress();
+        });
+      });
+      VIDEO_REFS[videoId][it.k] = {
+        applyValue: function (v) {
+          if (!VIDEOS[videoId]) VIDEOS[videoId] = {};
+          VIDEOS[videoId][it.k] = v || '';
+          grp.querySelectorAll('.field-radio').forEach(function (l) {
+            l.classList.toggle('is-on', l.querySelector('input').value === v);
+          });
+        },
+        isFocused: function () { return false; },
+      };
+      if (VIDEOS[videoId] && VIDEOS[videoId][it.k]) {
+        VIDEO_REFS[videoId][it.k].applyValue(VIDEOS[videoId][it.k]);
+      }
+      return;
+    }
+    if (inputEl) {
+      if (VIDEOS[videoId] && VIDEOS[videoId][it.k]) inputEl.value = VIDEOS[videoId][it.k];
+      var deb;
+      inputEl.addEventListener('input', function () {
+        if (!VIDEOS[videoId]) VIDEOS[videoId] = {};
+        VIDEOS[videoId][it.k] = inputEl.value;
+        if (onEdit) onEdit();
+        clearTimeout(deb);
+        deb = setTimeout(function () {
+          persistVideoField(videoId, it.k);
+          updateProgress();
+        }, 350);
+      });
+      VIDEO_REFS[videoId][it.k] = {
+        input: inputEl,
+        applyValue: function (v) {
+          if (!VIDEOS[videoId]) VIDEOS[videoId] = {};
+          VIDEOS[videoId][it.k] = v || '';
+          inputEl.value = v || '';
+        },
+        isFocused: function () { return document.activeElement === inputEl; },
+      };
+    }
+  }
+
+  // ── Video CRUD ────────────────────────────────────────────
+  function genId() {
+    return 'v_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 7);
+  }
+
+  function addVideo() {
+    var id = genId();
+    var order = Object.keys(VIDEOS).length;
+    VIDEOS[id] = { _order: order, title: '', videoTyp: '', hook: '', idee: '', status: 'Idee' };
+    var emptyEl = videosWrapEl.querySelector('.empty-videos');
+    if (emptyEl) clearChildren(videosWrapEl);
+    renderVideoCard(id);
+    persistVideo(id);
+    updateVideoCount();
+    updateProgress();
+    var newCard = videosWrapEl.lastElementChild;
+    if (newCard) newCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
+  function duplicateVideo(srcId) {
+    var src = VIDEOS[srcId];
+    if (!src) return;
+    var id = genId();
+    var order = Object.keys(VIDEOS).length;
+    VIDEOS[id] = {
+      _order: order,
+      title: (src.title || '') + ' (Kopie)',
+      videoTyp: src.videoTyp || '',
+      hook: src.hook || '',
+      idee: src.idee || '',
+      status: 'Idee',
+    };
+    renderVideoCard(id);
+    persistVideo(id);
+    updateVideoCount();
+    updateProgress();
+    var newCard = videosWrapEl.lastElementChild;
+    if (newCard) newCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
+  function deleteVideo(id) {
+    if (!confirm('Dieses Video löschen?')) return;
+    delete VIDEOS[id];
+    delete VIDEO_REFS[id];
+    var card = videosWrapEl.querySelector('[data-id="' + id + '"]');
+    if (card) card.remove();
+    if (_R && _D) {
+      _D.ref('rooms/' + _R + '/content/videos/' + id).remove().catch(function () {});
+    }
+    if (Object.keys(VIDEOS).length === 0) renderEmptyState();
+    updateVideoCount();
+    updateProgress();
+  }
+
+  function updateVideoCount() {
+    var n = Object.keys(VIDEOS).length;
+    if (videosCountEl) videosCountEl.textContent = n + (n === 1 ? ' Video' : ' Videos');
+    if (tabBtns['videos']) tabBtns['videos'].pct.textContent = String(n);
+  }
+
+  // ── Tab switching ──────────────────────────────────────────
+  function showTab(id) {
+    Object.keys(tabBtns).forEach(function (k) {
+      tabBtns[k].btn.classList.toggle('active', k === id);
+    });
+    sectionsEl.querySelectorAll('.section').forEach(function (s) {
+      s.classList.toggle('active', s.dataset.section === id);
+    });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  // ── Progress ───────────────────────────────────────────────
+  function isFilled(v) { return typeof v === 'string' && v.trim().length > 0; }
+  function updateProgress() {
+    var stratFilled = 0;
+    SCHEMA.forEach(function (s) {
+      var sFilled = 0, sTotal = 0;
+      s.blocks.forEach(function (b) {
+        b.items.forEach(function (it) {
+          sTotal++;
+          if (isFilled(STATE[s.id][it.k])) sFilled++;
+        });
+      });
+      var sPct = Math.round((sFilled / sTotal) * 100);
+      TAB_PCT[s.id] = sPct;
+      if (tabBtns[s.id]) tabBtns[s.id].pct.textContent = sPct + '%';
+      stratFilled += sFilled;
+    });
+    var stratPct = STRATEGY_FIELDS ? (stratFilled / STRATEGY_FIELDS) : 0;
+    var nVideos = Object.keys(VIDEOS).length;
+    var videoPct = Math.min(nVideos / 5, 1);
+    var pct = Math.round((stratPct * 0.5 + videoPct * 0.5) * 100);
+    progFill.style.width = pct + '%';
+    progCount.textContent = pct + '%';
+    if (_R && _D) {
+      try { _D.ref('rooms/' + _R + '/content_pct').set(pct); } catch (e) {}
+    }
+    try { window.parent && window.parent.postMessage({ type: 'contentPct', pct: pct }, '*'); } catch (e) {}
+  }
+
+  // ── Persistence ────────────────────────────────────────────
+  function showSaved() {
+    savedTag.classList.add('show');
+    clearTimeout(savedTag._t);
+    savedTag._t = setTimeout(function () { savedTag.classList.remove('show'); }, 1400);
+  }
+
+  function persistStrategy(section, key) {
+    if (!_R || !_D) { showSaved(); return; }
+    var val = STATE[section][key] || '';
+    _D.ref('rooms/' + _R + '/content/' + section + '/' + key)
+      .set(val)
+      .then(function () { showSaved(); })
+      .catch(function (e) { connTag.textContent = '⚠ ' + (e.code || e.message); });
+  }
+
+  function persistVideo(id) {
+    if (!_R || !_D) { showSaved(); return; }
+    var v = VIDEOS[id];
+    if (!v) return;
+    _D.ref('rooms/' + _R + '/content/videos/' + id)
+      .set(v)
+      .then(function () { showSaved(); })
+      .catch(function (e) { connTag.textContent = '⚠ ' + (e.code || e.message); });
+  }
+
+  function persistVideoField(id, key) {
+    if (!_R || !_D) { showSaved(); return; }
+    var v = VIDEOS[id];
+    if (!v) return;
+    _D.ref('rooms/' + _R + '/content/videos/' + id + '/' + key)
+      .set(v[key] || '')
+      .then(function () { showSaved(); })
+      .catch(function (e) { connTag.textContent = '⚠ ' + (e.code || e.message); });
+  }
+
+  // ── Apply remote state ────────────────────────────────────
+  function applyRemoteStrategy(data) {
+    if (!data || typeof data !== 'object') return;
+    SCHEMA.forEach(function (s) {
+      var sData = data[s.id] || {};
+      s.blocks.forEach(function (b) {
+        b.items.forEach(function (it) {
+          var ref = FIELD_REFS[s.id] && FIELD_REFS[s.id][it.k];
+          if (!ref) return;
+          if (ref.isFocused && ref.isFocused()) {
+            STATE[s.id][it.k] = ref.input ? ref.input.value : STATE[s.id][it.k];
+            return;
+          }
+          ref.applyValue(sData[it.k] || '');
+        });
+      });
+    });
+    updateProgress();
+  }
+
+  function applyRemoteVideos(data) {
+    var newIds = data ? Object.keys(data) : [];
+    var oldIds = Object.keys(VIDEOS);
+    oldIds.forEach(function (id) {
+      if (newIds.indexOf(id) < 0) {
+        delete VIDEOS[id];
+        delete VIDEO_REFS[id];
+        var card = videosWrapEl.querySelector('[data-id="' + id + '"]');
+        if (card) card.remove();
+      }
+    });
+    newIds.forEach(function (id) {
+      var v = data[id] || {};
+      if (!VIDEOS[id]) {
+        VIDEOS[id] = v;
+        var emptyEl = videosWrapEl.querySelector('.empty-videos');
+        if (emptyEl) clearChildren(videosWrapEl);
+        renderVideoCard(id);
+      } else {
+        VIDEOS[id] = VIDEOS[id] || {};
+        VIDEO_FIELDS.forEach(function (it) {
+          var ref = VIDEO_REFS[id] && VIDEO_REFS[id][it.k];
+          if (!ref) return;
+          if (ref.isFocused && ref.isFocused()) {
+            VIDEOS[id][it.k] = ref.input ? ref.input.value : VIDEOS[id][it.k];
+            return;
+          }
+          ref.applyValue(v[it.k] || '');
+        });
+        var card = videosWrapEl.querySelector('[data-id="' + id + '"]');
+        if (card) {
+          var titleEl = card.querySelector('.video-card-title');
+          if (titleEl) titleEl.textContent = (v.title && v.title.trim()) || 'Neues Video';
+          var pillEl = card.querySelector('.video-typ-pill');
+          if (pillEl) {
+            pillEl.className = 'video-typ-pill ' + videoTypClass(v.videoTyp);
+            pillEl.textContent = videoTypShort(v.videoTyp);
+          }
+        }
+      }
+    });
+    if (Object.keys(VIDEOS).length === 0) renderEmptyState();
+    updateVideoCount();
+    updateProgress();
+  }
+
+  // ── Migration: alte Daten aus social/content holen ───────
+  function migrateFromSocial() {
+    if (!_R || !_D) return Promise.resolve();
+    return _D.ref('rooms/' + _R + '/content/strategy').once('value').then(function (snap) {
+      if (snap.exists() && snap.val()) return;
+      return _D.ref('rooms/' + _R + '/social/content').once('value').then(function (oldSnap) {
+        var oldData = oldSnap.val();
+        if (!oldData || typeof oldData !== 'object') return;
+        return _D.ref('rooms/' + _R + '/content/strategy').set(oldData);
+      });
+    }).catch(function () { /* migration failure ist OK */ });
+  }
+
+  // ── Init ───────────────────────────────────────────────────
+  updateProgress();
+
+  if (_R && _D) {
+    connTag.textContent = '· verbunden';
+    migrateFromSocial().then(function () {
+      _D.ref('rooms/' + _R + '/content').once('value').then(function (snap) {
+        var v = snap.val() || {};
+        applyRemoteStrategy(v);
+        applyRemoteVideos(v.videos || null);
+        _D.ref('rooms/' + _R + '/content').on('value', function (s) {
+          var v2 = s.val() || {};
+          applyRemoteStrategy(v2);
+          applyRemoteVideos(v2.videos || null);
+        });
+      }).catch(function (e) { connTag.textContent = '⚠ ' + (e.code || e.message); });
+    });
+  } else {
+    connTag.textContent = '· lokal (kein Raum)';
+  }
+})();
+</script>
+</body>
+</html>
