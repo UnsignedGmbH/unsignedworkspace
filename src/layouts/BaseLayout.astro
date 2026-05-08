@@ -526,6 +526,66 @@ const { title = "Unsigned Workspace" } = Astro.props;
           console.warn("[zombie] force reload (attempt " + (attempts.length + 1) + "/" + MAX_RECOVERIES + ")");
           location.reload();
         }
+
+        // ── Proaktive Health-Checks: App heilt sich selbst ─────────────
+        // Statt nur reaktiv zu reagieren wenn User probiert was zu lesen,
+        // checken wir aktiv:
+        //   - Periodisch alle 90s wenn sichtbar
+        //   - Wenn User aus Hintergrund zurueckkommt (>20s weg)
+        //   - Bei bfcache-Restore IMMER reload (sicherster Fix)
+
+        // bfcache-Restore = Browser stellt page aus Memory wieder her, WS
+        // ist da garantiert stale → Reload ist der zuverlaessigste Fix.
+        // Counter limitiert Loops bei echten Outages.
+        window.addEventListener("pageshow", function (e) {
+          if (!e.persisted) return;
+          var attempts = recoveryAttempts();
+          if (attempts.length >= MAX_RECOVERIES) {
+            console.warn("[health] bfcache restore but reload-limit hit, leaving as-is");
+            return;
+          }
+          recordRecovery();
+          console.warn("[health] bfcache restore → fresh reload");
+          location.reload();
+        });
+
+        // Visibility-Change: Wenn User aus Hintergrund kommt (>20s),
+        // sofort Read-Test machen → Recovery wenn noetig.
+        var hiddenAt = null;
+        document.addEventListener("visibilitychange", function () {
+          if (document.visibilityState === "hidden") {
+            hiddenAt = Date.now();
+          } else if (document.visibilityState === "visible" && hiddenAt) {
+            var awayMs = Date.now() - hiddenAt;
+            hiddenAt = null;
+            if (awayMs > 20000 && state.auth === "✓") {
+              console.warn("[health] back from background " + Math.round(awayMs/1000) + "s, verifying");
+              runReadTest();
+            }
+          }
+        });
+
+        // Periodischer Health-Check: alle 90s wenn sichtbar.
+        // Faengt langsam-degradierende Connections ab bevor User merkt.
+        setInterval(function () {
+          if (document.visibilityState !== "visible") return;
+          if (state.auth !== "✓") return;
+          // Stille Verifikation: probeOnce mit 4s Timeout, bei Fail
+          // direkt Recovery-Kette starten.
+          probeOnce(4000, function (ok, err) {
+            if (ok) {
+              if (state.read !== "✓") {
+                state.read = "✓";
+                setLabel("uw-d-r", "R✓");
+                recomputeBg();
+                clearRecoveries();
+              }
+              return;
+            }
+            console.warn("[health] periodic probe failed:", err, "→ auto-recovery");
+            attemptSoftReconnect();
+          });
+        }, 90000);
       })();
     </script>
   </head>
