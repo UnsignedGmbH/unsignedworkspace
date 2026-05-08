@@ -263,20 +263,15 @@ const { title = "Unsigned Workspace" } = Astro.props;
         }
       } catch (e) {}
 
-      // ── iOS PWA / Mobile-Browser Resilience ─────────────────────────
-      // iOS schließt PWAs aggressiv und Firebase-WebSockets können beim
-      // Reopen "tot" sein → JS läuft, Auth fired, aber RTDB-Subscriptions
-      // liefern nie Daten. Mehrere Schutzschichten arbeiten zusammen:
-      //  - Soft-Reconnect (goOffline+goOnline) — schnell, nicht-disruptiv
-      //  - Hard-Reload nur als Fallback
-      //  - Zeitfenster-basierter Counter (statt persistenter Counter, der
-      //    auf iOS-PWA-sessionStorage manchmal hängenbleibt)
+      // ── Resilience: Boot-Watchdog + Reset-UI (minimal & sicher) ─────
+      // Wir vertrauen Firebase's interner Connection-Management und
+      // greifen NUR ein wenn Boot komplett scheitert. Aggressive
+      // goOffline/goOnline-Patterns verursachen mehr Probleme als sie lösen.
       (function () {
-        var BOOT_RECONNECT_MS = 6000;     // erst Soft-Reconnect probieren
-        var BOOT_RELOAD_MS    = 14000;    // dann harter Reload als Fallback
+        var BOOT_RELOAD_MS    = 18000;   // 18s ist großzügig für schwache Netze
         var WATCHDOG_KEY      = "uw.watchdog_attempts";
-        var ATTEMPT_WINDOW_MS = 5 * 60 * 1000;  // Counter resettet nach 5 Min
-        var MAX_ATTEMPTS      = 4;        // max 4 Reloads pro 5-Min-Fenster
+        var ATTEMPT_WINDOW_MS = 5 * 60 * 1000;
+        var MAX_ATTEMPTS      = 3;
         var connectedOnce = false;
 
         function recentAttempts() {
@@ -299,40 +294,8 @@ const { title = "Unsigned Workspace" } = Astro.props;
         function clearAttempts() {
           try { sessionStorage.removeItem(WATCHDOG_KEY); } catch (e) {}
         }
-        function softReconnect(reason) {
-          if (!window.firebase || !window.firebase.database) return false;
-          try {
-            console.warn("[fb] soft-reconnect:", reason);
-            window.firebase.database().goOffline();
-            setTimeout(function () {
-              try { window.firebase.database().goOnline(); } catch (e) {}
-            }, 200);
-            return true;
-          } catch (e) {
-            console.warn("[fb] soft-reconnect failed:", e);
-            return false;
-          }
-        }
 
-        // 1) bfcache-Restore: Page aus Browser-Memory → WebSocket stale.
-        //    Erst Soft-Reconnect probieren, das ist nicht-disruptiv.
-        window.addEventListener("pageshow", function (e) {
-          if (e.persisted) softReconnect("bfcache restore");
-        });
-
-        // 2) App kommt aus dem Hintergrund (>15s weg) → Soft-Reconnect.
-        var hiddenAt = null;
-        document.addEventListener("visibilitychange", function () {
-          if (document.visibilityState === "hidden") {
-            hiddenAt = Date.now();
-          } else if (document.visibilityState === "visible" && hiddenAt) {
-            var awayMs = Date.now() - hiddenAt;
-            hiddenAt = null;
-            if (awayMs > 15000) softReconnect("returned from background " + Math.round(awayMs/1000) + "s");
-          }
-        });
-
-        // 3) Connection-Tracker: setzt connectedOnce, resettet Counter.
+        // Connection-Tracker: setzt connectedOnce, resettet Counter.
         function trackConnection() {
           if (!window.firebase || !window.firebase.database) {
             return setTimeout(trackConnection, 100);
@@ -340,20 +303,14 @@ const { title = "Unsigned Workspace" } = Astro.props;
           window.firebase.database().ref(".info/connected").on("value", function (s) {
             if (s.val() === true) {
               connectedOnce = true;
-              clearAttempts();  // erfolgreicher Connect → Counter weg
+              clearAttempts();
             }
           });
         }
         trackConnection();
 
-        // 4) Boot-Watchdog: zwei Stufen.
-        //    Stufe 1 (6s): Soft-Reconnect erzwingen.
-        //    Stufe 2 (14s): falls dann immer noch nichts, hard reload.
-        setTimeout(function () {
-          if (connectedOnce) return;
-          softReconnect("boot stage 1 — no connection after 6s");
-        }, BOOT_RECONNECT_MS);
-
+        // Watchdog: Wenn nach 18s Firebase nicht verbunden, einmaliger
+        // Reload-Versuch (max 3 in 5 Min damit kein Endlos-Loop).
         setTimeout(function () {
           if (connectedOnce) return;
           var attempts = recentAttempts();
