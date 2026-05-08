@@ -263,128 +263,81 @@ const { title = "Unsigned Workspace" } = Astro.props;
         }
       } catch (e) {}
 
-      // ── Resilience: Boot-Watchdog + Reset-UI (minimal & sicher) ─────
-      // Wir vertrauen Firebase's interner Connection-Management und
-      // greifen NUR ein wenn Boot komplett scheitert. Aggressive
-      // goOffline/goOnline-Patterns verursachen mehr Probleme als sie lösen.
+      // ── Diagnose-Pille (klein, oben rechts) ─────────────────────────
+      // Zeigt live: Auth · DB · letzte Aktivität. Zum schnellen Debuggen
+      // damit du auf Handy/PC sofort siehst wo's hakt — ohne DevTools.
+      // Tap aufs Pill = Force-Reload mit Cache-Wipe (Notfall-Button).
       (function () {
-        var BOOT_RELOAD_MS    = 18000;   // 18s ist großzügig für schwache Netze
-        var WATCHDOG_KEY      = "uw.watchdog_attempts";
-        var ATTEMPT_WINDOW_MS = 5 * 60 * 1000;
-        var MAX_ATTEMPTS      = 3;
-        var connectedOnce = false;
+        if (window.UW_DIAG_DISABLED) return;
+        var pill;
+        function ensure() {
+          if (pill) return pill;
+          pill = document.createElement("div");
+          pill.id = "uw-diag-pill";
+          pill.style.cssText =
+            "position:fixed;top:6px;right:6px;z-index:9990;background:rgba(0,0,0,0.75);color:#fff;font:700 9px/1 Montserrat,system-ui,sans-serif;padding:5px 8px;border-radius:8px;display:flex;gap:6px;align-items:center;cursor:pointer;backdrop-filter:blur(6px);user-select:none;";
+          pill.title = "Tap = Cache-Reset & Reload";
+          pill.innerHTML = '<span id="uw-d-a">A?</span><span style="opacity:0.4">·</span><span id="uw-d-d">D?</span>';
+          pill.onclick = function () {
+            if (!confirm("App-Cache leeren und neu starten?")) return;
+            try { if (window.firebase) window.firebase.auth().signOut().catch(function () {}); } catch (e) {}
+            try { Object.keys(localStorage).forEach(function (k) { if (k.indexOf("uw.") === 0) localStorage.removeItem(k); }); } catch (e) {}
+            try { Object.keys(sessionStorage).forEach(function (k) { if (k.indexOf("uw.") === 0) sessionStorage.removeItem(k); }); } catch (e) {}
+            if (window.indexedDB && indexedDB.databases) {
+              indexedDB.databases().then(function (dbs) {
+                Promise.all((dbs || []).map(function (db) {
+                  return new Promise(function (r) {
+                    try { var rq = indexedDB.deleteDatabase(db.name); rq.onsuccess = rq.onerror = rq.onblocked = function () { r(); }; }
+                    catch (e) { r(); }
+                  });
+                })).then(function () { location.replace("/"); });
+              }).catch(function () { location.replace("/"); });
+            } else { location.replace("/"); }
+          };
+          if (document.body) document.body.appendChild(pill);
+          else document.addEventListener("DOMContentLoaded", function () { document.body.appendChild(pill); });
+          return pill;
+        }
+        function setBg(state) {
+          var p = ensure();
+          if (state === "ok")    p.style.background = "rgba(29,158,117,0.85)";
+          else if (state === "warn") p.style.background = "rgba(193,128,48,0.85)";
+          else if (state === "err")  p.style.background = "rgba(193,48,48,0.85)";
+          else                       p.style.background = "rgba(0,0,0,0.75)";
+        }
+        function setAuth(label) {
+          ensure(); var el = document.getElementById("uw-d-a"); if (el) el.textContent = label;
+        }
+        function setDb(label) {
+          ensure(); var el = document.getElementById("uw-d-d"); if (el) el.textContent = label;
+        }
 
-        function recentAttempts() {
-          try {
-            var raw = sessionStorage.getItem(WATCHDOG_KEY);
-            if (!raw) return [];
-            var arr = JSON.parse(raw);
-            if (!Array.isArray(arr)) return [];
-            var cut = Date.now() - ATTEMPT_WINDOW_MS;
-            return arr.filter(function (t) { return t > cut; });
-          } catch (e) { return []; }
-        }
-        function recordAttempt() {
-          try {
-            var arr = recentAttempts();
-            arr.push(Date.now());
-            sessionStorage.setItem(WATCHDOG_KEY, JSON.stringify(arr));
-          } catch (e) {}
-        }
-        function clearAttempts() {
-          try { sessionStorage.removeItem(WATCHDOG_KEY); } catch (e) {}
-        }
-
-        // Connection-Tracker: setzt connectedOnce, resettet Counter.
-        function trackConnection() {
-          if (!window.firebase || !window.firebase.database) {
-            return setTimeout(trackConnection, 100);
-          }
-          window.firebase.database().ref(".info/connected").on("value", function (s) {
-            if (s.val() === true) {
-              connectedOnce = true;
-              clearAttempts();
-            }
+        // Auth-State watchen
+        function watchAuth() {
+          if (!window.firebase || !window.firebase.auth) return setTimeout(watchAuth, 200);
+          window.firebase.auth().onAuthStateChanged(function (u) {
+            if (u) { setAuth("A✓"); }
+            else   { setAuth("A—"); }
           });
         }
-        trackConnection();
+        watchAuth();
 
-        // Watchdog: Wenn nach 18s Firebase nicht verbunden, einmaliger
-        // Reload-Versuch (max 3 in 5 Min damit kein Endlos-Loop).
-        setTimeout(function () {
-          if (connectedOnce) return;
-          var attempts = recentAttempts();
-          if (attempts.length >= MAX_ATTEMPTS) {
-            console.warn("[boot] watchdog: " + attempts.length + " attempts in last 5min, giving up → showing reset UI");
-            showStuckUI();
-            return;
-          }
-          recordAttempt();
-          console.warn("[boot] watchdog: no connection after " + BOOT_RELOAD_MS + "ms (attempt " + (attempts.length + 1) + "/" + MAX_ATTEMPTS + ") → reload");
-          location.reload();
-        }, BOOT_RELOAD_MS);
-
-        // ── Letzte Verteidigungslinie: sichtbarer Reset-Button ──────
-        // Wenn nichts mehr hilft, Nutzer kann einen vollständigen
-        // Cache-Reset auslösen: Auth signOut + Firebase-IndexedDB löschen
-        // + alle localStorage/sessionStorage uw.* Schlüssel weg + reload.
-        // Das löst >99% aller hartnäckigen iOS-PWA-Stuck-Cases.
-        function showStuckUI() {
-          if (document.getElementById("uw-stuck-overlay")) return;
-          var ov = document.createElement("div");
-          ov.id = "uw-stuck-overlay";
-          ov.style.cssText =
-            "position:fixed;inset:0;z-index:99999;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px;font:600 14px Montserrat,system-ui,sans-serif;color:#111;text-align:center;gap:14px;";
-          ov.innerHTML =
-            '<div style="font:900 24px Montserrat;color:#c13030">⚠ Verbindung hängt</div>' +
-            '<div style="max-width:340px;line-height:1.4;color:#555">Die Datenverbindung lässt sich nicht herstellen. Klick unten auf <strong>App-Cache zurücksetzen</strong> — das löst es zuverlässig.</div>' +
-            '<button id="uw-stuck-reset" style="margin-top:8px;background:#c13030;color:#fff;border:0;border-radius:10px;padding:14px 22px;font:800 14px Montserrat;cursor:pointer">App-Cache zurücksetzen</button>' +
-            '<button id="uw-stuck-retry" style="background:transparent;color:#555;border:0;font:600 12px Montserrat;cursor:pointer;margin-top:4px">Erneut versuchen</button>';
-          document.body.appendChild(ov);
-          document.getElementById("uw-stuck-retry").onclick = function () {
-            try { sessionStorage.removeItem(WATCHDOG_KEY); } catch (e) {}
-            location.reload();
-          };
-          document.getElementById("uw-stuck-reset").onclick = function () {
-            try {
-              // 1) Sign out aus Firebase Auth
-              if (window.firebase && window.firebase.auth) {
-                window.firebase.auth().signOut().catch(function () {});
-              }
-              // 2) Alle uw.* aus localStorage + sessionStorage
-              try {
-                Object.keys(localStorage || {}).forEach(function (k) {
-                  if (k.indexOf("uw.") === 0) localStorage.removeItem(k);
-                });
-              } catch (e) {}
-              try {
-                Object.keys(sessionStorage || {}).forEach(function (k) {
-                  if (k.indexOf("uw.") === 0) sessionStorage.removeItem(k);
-                });
-              } catch (e) {}
-              // 3) Firebase-IndexedDB-Datenbanken löschen
-              if (window.indexedDB && indexedDB.databases) {
-                indexedDB.databases().then(function (dbs) {
-                  var dels = (dbs || []).map(function (db) {
-                    return new Promise(function (res) {
-                      try {
-                        var req = indexedDB.deleteDatabase(db.name);
-                        req.onsuccess = req.onerror = req.onblocked = function () { res(); };
-                      } catch (e) { res(); }
-                    });
-                  });
-                  Promise.all(dels).then(function () {
-                    location.replace("/");
-                  });
-                }).catch(function () { location.replace("/"); });
-              } else {
-                location.replace("/");
-              }
-            } catch (e) {
-              location.replace("/");
-            }
-          };
+        // DB-State watchen
+        var dbConnected = false;
+        function watchDb() {
+          if (!window.firebase || !window.firebase.database) return setTimeout(watchDb, 200);
+          window.firebase.database().ref(".info/connected").on("value", function (s) {
+            dbConnected = s.val() === true;
+            if (dbConnected) { setDb("D✓"); setBg("ok"); }
+            else             { setDb("D—"); setBg("warn"); }
+          });
         }
+        watchDb();
+
+        // Status nach 15s ohne DB-Verbindung → rot
+        setTimeout(function () {
+          if (!dbConnected) setBg("err");
+        }, 15000);
       })();
     </script>
   </head>

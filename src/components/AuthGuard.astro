@@ -22,76 +22,56 @@
           name: (user.email || "").split("@")[0],
         };
 
-        // Token-Refresh mit Timeout-Schutz (3s). Firebase RTDB syncht den
-        // frischen Token automatisch zur bestehenden WebSocket-Connection;
-        // KEIN goOffline/goOnline hier — das würde Firebase's interne
-        // Connection-Management durcheinanderbringen und kann zu
-        // hartnäckigen Stuck-States führen.
-        function refreshToken() {
-          return new Promise(function (resolve) {
-            var done = false;
-            var finish = function () { if (!done) { done = true; resolve(); } };
-            setTimeout(finish, 3000);
-            user.getIdToken(true)
-              .catch(function (err) {
-                console.warn("[auth] token refresh failed:", err && err.code);
-              })
-              .then(finish);
-          });
-        }
-
-        refreshToken().then(function () {
-          // Profile: never overwrite role on a re-auth.
-          var teamRef = window.fb.ref("team/" + user.uid);
-          teamRef.once("value").then(function (snap) {
-            var existing = snap.val() || {};
-            var patch = {
-              uid: user.uid,
-              email: user.email,
-              name: existing.name || window.ME.name,
-            };
-            if (!existing.role) patch.role = "member";
-            teamRef.update(patch).then(function () {
-              // After team profile exists, try to claim a pending invite.
-              tryClaimInvite(user);
-            });
-          });
-
-          var pres = window.fb.ref("presence/" + user.uid);
-          pres.update({
-            online: true,
-            lastSeen: window.fb.ts(),
+        // Profile: never overwrite role on a re-auth.
+        var teamRef = window.fb.ref("team/" + user.uid);
+        teamRef.once("value").then(function (snap) {
+          var existing = snap.val() || {};
+          var patch = {
             uid: user.uid,
             email: user.email,
-            name: window.ME.name,
+            name: existing.name || window.ME.name,
+          };
+          if (!existing.role) patch.role = "member";
+          teamRef.update(patch).then(function () {
+            // After team profile exists, try to claim a pending invite.
+            tryClaimInvite(user);
           });
-          pres.onDisconnect().update({
-            online: false,
-            lastSeen: window.fb.ts(),
-          });
-
-          // Heartbeat: alle 30s lastSeen aktualisieren, damit der Owner-Filter
-          // (presence/<uid>/lastSeen aelter als TTL = offline) Browser-Crashes
-          // erkennt und keine Zombie-Online-Anzeigen entstehen.
-          // Pausiert wenn Tab unsichtbar (Browser drosseln Timer dort sowieso).
-          var HEARTBEAT_INT = (window.appUI && window.appUI.CONST.PRESENCE_HEARTBEAT_MS) || 30000;
-          function beat() {
-            if (document.visibilityState !== "visible") return;
-            pres.update({ online: true, lastSeen: window.fb.ts() }).catch(function () {});
-          }
-          var heartbeatId = setInterval(beat, HEARTBEAT_INT);
-          document.addEventListener("visibilitychange", function () {
-            if (document.visibilityState === "visible") beat();
-          });
-          // Beim Verlassen Cleanup (verhindert offene Intervals nach Logout)
-          window.addEventListener("pagehide", function () {
-            clearInterval(heartbeatId);
-          });
-
-          document.dispatchEvent(
-            new CustomEvent("auth-ready", { detail: window.ME })
-          );
         });
+
+        var pres = window.fb.ref("presence/" + user.uid);
+        pres.update({
+          online: true,
+          lastSeen: window.fb.ts(),
+          uid: user.uid,
+          email: user.email,
+          name: window.ME.name,
+        });
+        pres.onDisconnect().update({
+          online: false,
+          lastSeen: window.fb.ts(),
+        });
+
+        // Heartbeat: alle 30s lastSeen aktualisieren, damit der Owner-Filter
+        // (presence/<uid>/lastSeen aelter als TTL = offline) Browser-Crashes
+        // erkennt und keine Zombie-Online-Anzeigen entstehen.
+        // Pausiert wenn Tab unsichtbar (Browser drosseln Timer dort sowieso).
+        var HEARTBEAT_INT = (window.appUI && window.appUI.CONST.PRESENCE_HEARTBEAT_MS) || 30000;
+        function beat() {
+          if (document.visibilityState !== "visible") return;
+          pres.update({ online: true, lastSeen: window.fb.ts() }).catch(function () {});
+        }
+        var heartbeatId = setInterval(beat, HEARTBEAT_INT);
+        document.addEventListener("visibilitychange", function () {
+          if (document.visibilityState === "visible") beat();
+        });
+        // Beim Verlassen Cleanup (verhindert offene Intervals nach Logout)
+        window.addEventListener("pagehide", function () {
+          clearInterval(heartbeatId);
+        });
+
+        document.dispatchEvent(
+          new CustomEvent("auth-ready", { detail: window.ME })
+        );
       });
     }
 
