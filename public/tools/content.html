@@ -91,7 +91,11 @@ body { font-family: 'Montserrat', sans-serif; background: var(--bg); color: var(
 .btn-add-video:hover { background: var(--red-dark); }
 .video-card { position: relative; padding-top: 14px; }
 .video-card-head { display: flex; align-items: center; gap: 8px; padding-bottom: 12px; margin-bottom: 12px; border-bottom: 1px solid var(--border); }
-.video-card-title { font-size: 13px; font-weight: 800; color: var(--text); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.video-card-title-input { font-family: inherit; font-size: 13px; font-weight: 800; color: var(--text); flex: 1; min-width: 0; background: transparent; border: 1px solid transparent; border-radius: 6px; padding: 4px 6px; margin: -4px -6px; outline: none; transition: border-color 0.15s, background 0.15s; }
+.video-card-title-input:hover { border-color: var(--border); background: var(--bg); }
+.video-card-title-input:focus { border-color: var(--border-red); background: #fff; }
+.video-card-title-input::placeholder { color: var(--text-dimmer); font-weight: 700; }
+.video-card.is-archived .video-card-title-input { color: var(--green); }
 .video-typ-pill { font-size: 9px; font-weight: 800; padding: 3px 8px; border-radius: 10px; background: var(--bg3); color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.08em; flex-shrink: 0; }
 .video-typ-pill.pb { background: rgba(193,48,48,0.12); color: var(--red); }
 .video-typ-pill.ba { background: rgba(24,95,165,0.12); color: #185fa5; }
@@ -101,7 +105,7 @@ body { font-family: 'Montserrat', sans-serif; background: var(--bg); color: var(
 .video-action-btn:hover { color: var(--red); border-color: var(--border-red); }
 .video-action-btn.archive-btn:hover { color: var(--green); border-color: var(--green); }
 .video-card.is-archived { opacity: 0.85; background: rgba(0,0,0,0.02); }
-.video-card.is-archived .video-card-title::before { content: "✓ "; color: var(--green); font-weight: 900; }
+.video-card-archive-mark { color: var(--green); font-weight: 900; flex-shrink: 0; font-size: 14px; line-height: 1; }
 .empty-videos { text-align: center; padding: 40px 20px; color: var(--text-dimmer); font-size: 12px; font-weight: 600; background: var(--bg2); border: 1.5px dashed var(--border); border-radius: 12px; line-height: 1.6; }
 .empty-videos strong { color: var(--red); font-weight: 800; }
 
@@ -208,12 +212,12 @@ body { font-family: 'Montserrat', sans-serif; background: var(--bg); color: var(
     },
   ];
 
-  // Felder pro Video-Slot
+  // Felder pro Video-Slot — title wird inline im Card-Header geeditet
   var VIDEO_FIELDS = [
-    { k: 'title', label: 'Titel / Thema', type: 'text', ph: 'z.B. Drop-Teaser 1' },
     { k: 'videoTyp', label: 'Video-Typ', type: 'radio', options: ['Personal Brand', 'Brand Account', 'Ads'] },
     { k: 'hook', label: 'Hook', type: 'text', ph: 'Die Aufmerksamkeits-Zeile in den ersten 2 Sek' },
     { k: 'idee', label: 'Idee / Skript', type: 'textarea', ph: 'Was passiert im Video? Welche Szenen? Wie der Aufbau?' },
+    { k: 'link', label: '🔗 Beispielvideo / Inspiration-Link', type: 'text', ph: 'https://… (Instagram, TikTok, YouTube — was dich inspiriert hat)' },
     { k: 'status', label: 'Status', type: 'radio', options: ['Idee', 'In Arbeit', 'Gedreht', 'Live'] },
   ];
 
@@ -481,21 +485,36 @@ body { font-family: 'Montserrat', sans-serif; background: var(--bg); color: var(
     card.dataset.archived = isArchived ? '1' : '0';
 
     var head = el('div', 'video-card-head', card);
-    var titleEl = el('div', 'video-card-title', head);
-    titleEl.textContent = (data.title && data.title.trim()) || 'Neues Video';
+    if (isArchived) {
+      var mark = el('span', 'video-card-archive-mark', head);
+      mark.textContent = '✓';
+    }
+    // Title als inline-Input direkt im Header
+    var titleInput = el('input', 'video-card-title-input', head);
+    titleInput.type = 'text';
+    titleInput.placeholder = 'Neues Video';
+    titleInput.value = data.title || '';
+    var titleDeb;
+    titleInput.addEventListener('input', function () {
+      if (!VIDEOS[videoId]) VIDEOS[videoId] = {};
+      VIDEOS[videoId].title = titleInput.value;
+      clearTimeout(titleDeb);
+      titleDeb = setTimeout(function () {
+        persistVideoField(videoId, 'title');
+        updateProgress();
+      }, 350);
+    });
     var typPill = el('span', 'video-typ-pill ' + videoTypClass(data.videoTyp), head);
     typPill.textContent = videoTypShort(data.videoTyp);
     var actions = el('div', 'video-actions', head);
 
     if (isArchived) {
-      // Wiederherstellen-Button (zurück nach Videos)
       var unarchBtn = el('button', 'video-action-btn', actions);
       unarchBtn.type = 'button';
       unarchBtn.title = 'Wiederherstellen';
       unarchBtn.textContent = '↩';
       unarchBtn.onclick = function (e) { e.stopPropagation(); unarchiveVideo(videoId); };
     } else {
-      // Archivieren-Button (fertig → ins Archiv)
       var archBtn = el('button', 'video-action-btn archive-btn', actions);
       archBtn.type = 'button';
       archBtn.title = 'Archivieren (fertig)';
@@ -514,10 +533,19 @@ body { font-family: 'Montserrat', sans-serif; background: var(--bg); color: var(
     delBtn.onclick = function (e) { e.stopPropagation(); deleteVideo(videoId); };
 
     VIDEO_REFS[videoId] = {};
+    // Title-Ref für remote-sync
+    VIDEO_REFS[videoId]['title'] = {
+      input: titleInput,
+      applyValue: function (v) {
+        if (!VIDEOS[videoId]) VIDEOS[videoId] = {};
+        VIDEOS[videoId].title = v || '';
+        titleInput.value = v || '';
+      },
+      isFocused: function () { return document.activeElement === titleInput; },
+    };
     VIDEO_FIELDS.forEach(function (it) {
       renderVideoField(videoId, it, card, function () {
         var d = VIDEOS[videoId] || {};
-        titleEl.textContent = (d.title && d.title.trim()) || 'Neues Video';
         typPill.className = 'video-typ-pill ' + videoTypClass(d.videoTyp);
         typPill.textContent = videoTypShort(d.videoTyp);
       });
@@ -827,14 +855,15 @@ body { font-family: 'Montserrat', sans-serif; background: var(--bg); color: var(
       } else {
         var wasArchived = !!VIDEOS[id].archived;
         VIDEOS[id] = VIDEOS[id] || {};
-        VIDEO_FIELDS.forEach(function (it) {
-          var ref = VIDEO_REFS[id] && VIDEO_REFS[id][it.k];
+        // Alle registered VIDEO_REFS-Felder syncen (inkl. title das im Header sitzt)
+        Object.keys(VIDEO_REFS[id] || {}).forEach(function (k) {
+          var ref = VIDEO_REFS[id][k];
           if (!ref) return;
           if (ref.isFocused && ref.isFocused()) {
-            VIDEOS[id][it.k] = ref.input ? ref.input.value : VIDEOS[id][it.k];
+            VIDEOS[id][k] = ref.input ? ref.input.value : VIDEOS[id][k];
             return;
           }
-          ref.applyValue(v[it.k] || '');
+          ref.applyValue(v[k] || '');
         });
         VIDEOS[id].archived = v.archived;
         if (wasArchived !== nowArchived) {
@@ -846,11 +875,9 @@ body { font-family: 'Montserrat', sans-serif; background: var(--bg); color: var(
           if (emptyEl2) clearChildren(targetWrap2);
           renderVideoCard(id, nowArchived);
         } else {
-          // Nur Title/Pill update
+          // Pill-Update (title läuft schon über applyValue oben)
           var card = (wasArchived ? archiveWrapEl : videosWrapEl).querySelector('[data-id="' + id + '"]');
           if (card) {
-            var titleEl = card.querySelector('.video-card-title');
-            if (titleEl) titleEl.textContent = (v.title && v.title.trim()) || 'Neues Video';
             var pillEl = card.querySelector('.video-typ-pill');
             if (pillEl) {
               pillEl.className = 'video-typ-pill ' + videoTypClass(v.videoTyp);
