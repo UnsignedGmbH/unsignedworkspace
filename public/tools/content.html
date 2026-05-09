@@ -153,6 +153,97 @@ body { font-family: 'Montserrat', sans-serif; background: var(--bg); color: var(
   .foot { padding: 0 16px; }
   .foot-rules { display: none; }
 }
+
+/* Hook-Picker (Cross-Tool: Hook aus Strategie ins Video übernehmen) */
+.field-picker-btn {
+  margin-top: 6px;
+  background: var(--bg2);
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 11px;
+  font: 700 10px Montserrat, system-ui, sans-serif;
+  color: var(--text-dim);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  transition: all 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.field-picker-btn:hover { border-color: var(--border-red); color: var(--red); }
+
+.hook-picker-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 9999;
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px;
+}
+.hook-picker-modal {
+  background: var(--bg2);
+  border-radius: 14px;
+  max-width: 480px; width: 100%; max-height: 80vh;
+  display: flex; flex-direction: column;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.2);
+  overflow: hidden;
+}
+.hook-picker-head {
+  display: flex; align-items: center; gap: 12px;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.hook-picker-title { font: 800 13px Montserrat; flex: 1; color: var(--text); }
+.hook-picker-close {
+  background: transparent; border: 0;
+  font-size: 22px; color: var(--text-dim);
+  cursor: pointer; line-height: 1;
+  padding: 4px 8px;
+  -webkit-tap-highlight-color: transparent;
+}
+.hook-picker-close:hover { color: var(--red); }
+.hook-picker-body {
+  padding: 14px 18px;
+  overflow-y: auto;
+  flex: 1;
+}
+.hook-picker-empty {
+  text-align: center;
+  color: var(--text-dimmer);
+  font-size: 12px;
+  padding: 30px 12px;
+  line-height: 1.6;
+  font-weight: 600;
+}
+.hook-picker-empty strong { color: var(--red); }
+.hook-picker-group { margin-bottom: 16px; }
+.hook-picker-group:last-child { margin-bottom: 0; }
+.hook-picker-group-head {
+  font: 800 9px Montserrat;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-bottom: 6px;
+  padding-left: 2px;
+}
+.hook-picker-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: var(--bg);
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 6px;
+  font: 600 13px Montserrat;
+  line-height: 1.4;
+  color: var(--text);
+  cursor: pointer;
+  transition: all 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.hook-picker-item:hover { border-color: var(--border-red); background: var(--red-dim); color: var(--red); }
+.hook-picker-item:active { transform: scale(0.98); }
 </style>
 </head>
 <body>
@@ -237,7 +328,7 @@ body { font-family: 'Montserrat', sans-serif; background: var(--bg); color: var(
   // Felder pro Video-Slot — title wird inline im Card-Header geeditet
   var VIDEO_FIELDS = [
     { k: 'videoTyp', label: 'Video-Typ', type: 'radio', options: ['Personal Brand', 'Brand Account', 'Ads', 'Content Creator / Influencer'] },
-    { k: 'hook', label: 'Hook', type: 'text', ph: 'Die Aufmerksamkeits-Zeile in den ersten 2 Sek' },
+    { k: 'hook', label: 'Hook', type: 'text', ph: 'Die Aufmerksamkeits-Zeile in den ersten 2 Sek', picker: 'hooks' },
     { k: 'idee', label: 'Idee / Skript', type: 'textarea', ph: 'Was passiert im Video? Welche Szenen? Wie der Aufbau?' },
     { k: 'link', label: '🔗 Beispielvideo / Inspiration-Link', type: 'text', ph: 'https://… (Instagram, TikTok, YouTube — was dich inspiriert hat)' },
     { k: 'status', label: 'Status', type: 'radio', options: ['Idee', 'In Arbeit', 'Gedreht', 'Live'] },
@@ -509,9 +600,102 @@ body { font-family: 'Montserrat', sans-serif; background: var(--bg); color: var(
         isFocused: function () { return document.activeElement === inputEl; },
       };
     }
+    // Cross-Tool-Picker: Hook-Button bei Hook-Feld (Video → Strategie-Hooks)
+    if (inputEl && it.picker === 'hooks') {
+      var pickerBtn = el('button', 'field-picker-btn', f);
+      pickerBtn.type = 'button';
+      pickerBtn.textContent = '🔗 Aus Strategie wählen';
+      pickerBtn.onclick = function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        openHookPicker(function (selectedText) {
+          inputEl.value = selectedText;
+          dataObj[it.k] = selectedText;
+          onPersist(it.k);
+          if (onChange) onChange();
+          updateProgress();
+        });
+      };
+    }
     if (it.hint) {
       var hint3 = el('div', 'field-hint', f); hint3.textContent = it.hint;
     }
+  }
+
+  // ── Hook-Picker: zieht Hooks aus allen Strategien ─────────
+  function gatherAllHooks() {
+    var groups = [];
+    sortedStrategyIds().forEach(function (sId) {
+      var s = STRATEGIES[sId] || {};
+      var raw = (s.hooks || '').toString();
+      var hooks = raw.split('\n').map(function (h) { return h.trim(); }).filter(Boolean);
+      if (hooks.length === 0) return;
+      groups.push({
+        strategyId: sId,
+        name: (s.name && s.name.trim()) || 'Strategie',
+        hooks: hooks,
+      });
+    });
+    return groups;
+  }
+
+  function openHookPicker(onSelect) {
+    var existing = document.getElementById('hookPickerOverlay');
+    if (existing) existing.remove();
+
+    var overlay = el('div', 'hook-picker-overlay');
+    overlay.id = 'hookPickerOverlay';
+    overlay.addEventListener('click', function (e) {
+      if (e.target === overlay) close();
+    });
+
+    var modal = el('div', 'hook-picker-modal', overlay);
+    var head = el('div', 'hook-picker-head', modal);
+    var title = el('div', 'hook-picker-title', head);
+    title.textContent = '🔗 Hook aus Strategie wählen';
+    var closeBtn = el('button', 'hook-picker-close', head);
+    closeBtn.type = 'button';
+    closeBtn.textContent = '×';
+    closeBtn.title = 'Schließen';
+    closeBtn.onclick = close;
+
+    var body = el('div', 'hook-picker-body', modal);
+    var groups = gatherAllHooks();
+    if (groups.length === 0) {
+      var em = el('div', 'hook-picker-empty', body);
+      em.appendChild(document.createTextNode('Noch keine Hooks in deinen Strategien.'));
+      em.appendChild(document.createElement('br'));
+      em.appendChild(document.createTextNode('Wechsle zur Strategie und füll '));
+      var s = el('strong', null, em);
+      s.textContent = 'Hook-Sammlung';
+      em.appendChild(document.createTextNode(' — die landen dann hier zur Auswahl.'));
+    } else {
+      groups.forEach(function (grp) {
+        var grpEl = el('div', 'hook-picker-group', body);
+        var grpHd = el('div', 'hook-picker-group-head', grpEl);
+        grpHd.textContent = grp.name;
+        grp.hooks.forEach(function (h) {
+          var item = el('button', 'hook-picker-item', grpEl);
+          item.type = 'button';
+          item.textContent = h;
+          item.onclick = function () {
+            onSelect(h);
+            close();
+          };
+        });
+      });
+    }
+
+    function close() {
+      overlay.remove();
+      document.removeEventListener('keydown', escHandler);
+    }
+    function escHandler(e) {
+      if (e.key === 'Escape') close();
+    }
+    document.addEventListener('keydown', escHandler);
+
+    document.body.appendChild(overlay);
   }
 
   // ── Strategy: Chips-Bar + Detail-Area ─────────────────────
