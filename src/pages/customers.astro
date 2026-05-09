@@ -95,6 +95,24 @@ const filters = [
   <div id="resultCount" class="hidden text-[11px] text-ink-mute mb-2 font-medium" aria-live="polite"></div>
 
   <div class="flex flex-col gap-[7px]" id="customerList"></div>
+
+  <!-- Papierkorb (30 Tage Retention) — sichtbar nur wenn was drin ist -->
+  <div id="trashSection" class="hidden mt-8 pt-5 border-t-[0.5px] border-line">
+    <button
+      id="trashToggle"
+      type="button"
+      class="flex items-center gap-2 text-[12px] font-bold text-ink-soft hover:text-brand bg-transparent border-0 cursor-pointer w-full text-left py-2"
+    >
+      <span>🗑 Papierkorb</span>
+      <span
+        id="trashCount"
+        class="text-[10px] bg-brand-dim text-brand px-2 py-[1px] rounded-full font-extrabold"
+      >0</span>
+      <span class="text-[10px] text-ink-mute font-medium">— wird nach 30 Tagen endgültig gelöscht</span>
+      <span id="trashChevron" class="ml-auto text-ink-mute">▶</span>
+    </button>
+    <div id="trashList" class="hidden mt-2 flex flex-col gap-[5px]"></div>
+  </div>
 </AppLayout>
 
 <script is:inline>
@@ -251,17 +269,24 @@ const filters = [
               title: "Kunde löschen?",
               description:
                 "„" + (c.name || "?") +
-                "“ wird aus der Liste entfernt UND der Portal-Link wird gesperrt. Der Kunde kann den Link danach nicht mehr öffnen. Tool-Daten im Raum bleiben für dich als Backup erhalten.",
-              okLabel: "Löschen",
+                "“ wandert in den Papierkorb. Du kannst ihn 30 Tage wiederherstellen, danach wird er endgültig gelöscht. Während der Zeit ist der Portal-Link für den Kunden gesperrt.",
+              okLabel: "In Papierkorb",
             }).then(function (ok) {
               if (!ok) return;
+              var meUid = (window.ME && window.ME.uid) || null;
               Promise.all([
                 window.fb.ref("rooms/" + c.room + "/_closed").set({
                   ts: window.fb.ts(),
                   reason: "customer-deleted",
                 }),
-                window.fb.ref("workspace/customers/" + id).remove(),
-              ]).catch(function (e) { ui.toast("Fehler: " + (e.code || e.message)); });
+                window.fb.ref("workspace/customers/" + id).update({
+                  _trashed: true,
+                  _deletedAt: window.fb.ts(),
+                  _deletedBy: meUid,
+                }),
+              ]).then(function () {
+                ui.toast("In Papierkorb verschoben");
+              }).catch(function (e) { ui.toast("Fehler: " + (e.code || e.message)); });
             });
           }
         });
@@ -394,11 +419,142 @@ const filters = [
       window.appUI.subscribeCustomers(function (state) {
         lastState = state;
         renderThrottled();
+        renderTrash(state.trashList || []);
+        autoCleanupTrash(state.trashList || []);
       });
       if (new URLSearchParams(location.search).get("new") === "1") {
         openNewCustomer();
       }
     });
+
+    // ── Papierkorb (30-Tage-Retention) ────────────────────────
+    var TRASH_RETENTION_DAYS = 30;
+    var TRASH_RETENTION_MS = TRASH_RETENTION_DAYS * 24 * 60 * 60 * 1000;
+    var trashSection = document.getElementById("trashSection");
+    var trashListEl = document.getElementById("trashList");
+    var trashCountEl = document.getElementById("trashCount");
+    var trashToggle = document.getElementById("trashToggle");
+    var trashChevron = document.getElementById("trashChevron");
+    var trashOpen = false;
+    if (trashToggle) {
+      trashToggle.addEventListener("click", function () {
+        trashOpen = !trashOpen;
+        trashListEl.classList.toggle("hidden", !trashOpen);
+        trashChevron.textContent = trashOpen ? "▼" : "▶";
+      });
+    }
+
+    function renderTrash(trashList) {
+      if (!trashSection) return;
+      var n = trashList.length;
+      trashCountEl.textContent = String(n);
+      if (n === 0) {
+        trashSection.classList.add("hidden");
+        return;
+      }
+      trashSection.classList.remove("hidden");
+      var ui = window.appUI;
+      trashListEl.innerHTML = trashList.map(function (c) {
+        var nameSafe = ui.escapeHtml(c.name || "Unbenannt");
+        var roomSafe = ui.escapeHtml(c.room || "");
+        var idSafe = ui.escapeHtml(c.id);
+        var initialsSafe = ui.escapeHtml(ui.initials(c.name));
+        var deletedAt = c._deletedAt || 0;
+        var ageMs = Date.now() - deletedAt;
+        var daysLeft = Math.max(0, TRASH_RETENTION_DAYS - Math.floor(ageMs / (24 * 60 * 60 * 1000)));
+        var daysLeftLabel = daysLeft <= 1 ? "morgen wird gelöscht" : "noch " + daysLeft + " Tage";
+        return (
+          '<div class="bg-card border-[0.5px] border-line rounded-[10px] px-4 py-3 flex items-center gap-3 opacity-80" data-trashid="' +
+          idSafe + '">' +
+          '<span class="w-2 h-2 rounded-full shrink-0 bg-line"></span>' +
+          '<span class="w-[34px] h-[34px] rounded-full bg-[#f5f5f5] text-ink-mute text-[12px] font-bold flex items-center justify-center shrink-0">' +
+          initialsSafe + '</span>' +
+          '<div class="flex-1 min-w-0">' +
+          '<div class="text-[13px] font-bold text-ink-soft truncate">' +
+          nameSafe + ' <span class="text-[9px] font-bold px-[7px] py-[2px] rounded-full bg-[#f5f5f5] text-ink-mute ml-1">Papierkorb</span></div>' +
+          '<div class="text-[11px] text-ink-mute truncate mt-[1px]">Raum ' +
+          roomSafe + " · gelöscht " + ui.escapeHtml(ui.fmtAgo(deletedAt)) +
+          " · " + daysLeftLabel +
+          "</div></div>" +
+          '<div class="flex gap-1 shrink-0 ml-2">' +
+          '<button type="button" data-trashact="restore" data-trashid="' + idSafe +
+          '" class="text-[11px] text-ink-mute hover:text-success bg-transparent border-0 cursor-pointer px-1" title="Wiederherstellen">↺</button>' +
+          '<button type="button" data-trashact="purge" data-trashid="' + idSafe +
+          '" class="text-[11px] text-ink-mute hover:text-brand bg-transparent border-0 cursor-pointer px-1" title="Endgültig löschen">✕</button>' +
+          "</div></div>"
+        );
+      }).join("");
+
+      trashListEl.querySelectorAll("[data-trashact]").forEach(function (b) {
+        b.addEventListener("click", function (e) {
+          e.preventDefault();
+          e.stopPropagation();
+          var id = b.dataset.trashid;
+          var c = (lastState.trashList || []).find(function (x) { return x.id === id; });
+          if (!c) return;
+          if (b.dataset.trashact === "restore") {
+            restoreCustomer(c);
+          } else if (b.dataset.trashact === "purge") {
+            permaDeleteCustomer(c);
+          }
+        });
+      });
+    }
+
+    function restoreCustomer(c) {
+      var ui = window.appUI;
+      // _trashed-Felder entfernen + room-_closed entfernen
+      Promise.all([
+        window.fb.ref("workspace/customers/" + c.id).update({
+          _trashed: null,
+          _deletedAt: null,
+          _deletedBy: null,
+        }),
+        window.fb.ref("rooms/" + c.room + "/_closed").remove(),
+      ]).then(function () {
+        ui.toast("Wiederhergestellt ✓");
+      }).catch(function (e) { ui.toast("Fehler: " + (e.code || e.message)); });
+    }
+
+    function permaDeleteCustomer(c) {
+      var ui = window.appUI;
+      ui.confirm({
+        title: "Endgültig löschen?",
+        description:
+          "Alle Tool-Daten von „" + (c.name || "?") + "“ werden unwiderruflich gelöscht. Brand Identity, Shooting-Listen, Designs, Techpacks — alles weg. Diese Aktion kann nicht rückgängig gemacht werden.",
+        okLabel: "Endgültig löschen",
+      }).then(function (ok) {
+        if (!ok) return;
+        Promise.all([
+          window.fb.ref("workspace/customers/" + c.id).remove(),
+          window.fb.ref("rooms/" + c.room).remove(),
+        ]).then(function () {
+          ui.toast("Endgültig gelöscht");
+        }).catch(function (e) { ui.toast("Fehler: " + (e.code || e.message)); });
+      });
+    }
+
+    // Auto-Cleanup: Einträge älter als 30 Tage werden hard-deleted.
+    // Läuft beim Boot und bei jedem Subscribe-Update — pragmatisch günstig.
+    var cleanupRunning = {};
+    function autoCleanupTrash(trashList) {
+      var cutoff = Date.now() - TRASH_RETENTION_MS;
+      trashList.forEach(function (c) {
+        if (cleanupRunning[c.id]) return; // schon laufend, doppelte Calls vermeiden
+        if ((c._deletedAt || 0) >= cutoff) return; // noch nicht alt genug
+        cleanupRunning[c.id] = true;
+        Promise.all([
+          window.fb.ref("workspace/customers/" + c.id).remove(),
+          window.fb.ref("rooms/" + c.room).remove(),
+        ]).then(function () {
+          console.warn("[trash] auto-cleanup: " + (c.name || c.id) + " endgültig gelöscht (>" + TRASH_RETENTION_DAYS + " Tage)");
+        }).catch(function (e) {
+          console.error("[trash] cleanup failed for " + c.id, e);
+        }).then(function () {
+          delete cleanupRunning[c.id];
+        });
+      });
+    }
 
     // ── Globaler Backup-Export ────────────────────────────────
     var exportBtn = document.getElementById("exportBtn");

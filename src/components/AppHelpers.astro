@@ -144,7 +144,8 @@
 
     // Single shared subscription to workspace/customers — pages and the sidebar
     // hook in here instead of calling .on() directly. Listener attaches once.
-    var customersState = { ready: false, list: [], byId: {} };
+    // state.list = aktive (nicht im Papierkorb), state.trashList = gelöschte.
+    var customersState = { ready: false, list: [], byId: {}, trashList: [] };
     var customersSubs = [];
     var customersAttached = false;
     function ensureCustomersListener() {
@@ -155,20 +156,29 @@
         function (snap) {
           var v = snap.val() || {};
           var byId = {};
-          var list = Object.keys(v)
+          var allList = Object.keys(v)
             .map(function (k) {
               var c = v[k];
               c.id = c.id || k;
               byId[c.id] = c;
               return c;
-            })
+            });
+          // Aktive: keine _trashed-Markierung, sortiert nach lastActive
+          var list = allList
+            .filter(function (c) { return !c._trashed; })
             .sort(function (a, b) {
               return (
                 (b.lastActive || b.created || 0) -
                 (a.lastActive || a.created || 0)
               );
             });
-          customersState = { ready: true, list: list, byId: byId };
+          // Papierkorb: _trashed=true, sortiert nach Lösch-Datum (neueste zuerst)
+          var trashList = allList
+            .filter(function (c) { return !!c._trashed; })
+            .sort(function (a, b) {
+              return (b._deletedAt || 0) - (a._deletedAt || 0);
+            });
+          customersState = { ready: true, list: list, byId: byId, trashList: trashList };
           customersSubs.slice().forEach(function (cb) {
             try { cb(customersState); } catch (e) { console.error(e); }
           });
