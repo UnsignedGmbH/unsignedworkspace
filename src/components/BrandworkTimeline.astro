@@ -328,12 +328,13 @@ const RING_C = 113.097;
       });
     }
 
-    function render(getPct, onPick) {
+    function render(getPct, onPick, getStatusText) {
       lastOnPick = onPick || lastOnPick;
       setup();
       var sum = 0, counted = 0;
       document.querySelectorAll(".bw-tl-node").forEach(function (btn) {
         if (btn.dataset.soon === "1") return;
+        var tool = btn.dataset.tool;
         var pct;
         if (btn.dataset.tools) {
           var keys = btn.dataset.tools.split(",");
@@ -341,15 +342,38 @@ const RING_C = 113.097;
           keys.forEach(function (k) { s += parseInt(getPct(k), 10) || 0; });
           pct = Math.round(s / keys.length);
         } else {
-          pct = parseInt(getPct(btn.dataset.tool), 10) || 0;
+          pct = parseInt(getPct(tool), 10) || 0;
         }
         if (pct < 0) pct = 0;
         if (pct > 100) pct = 100;
+
+        // Special-Case: Tools mit Status-Text statt %
+        var statusInfo = null;
+        if (typeof getStatusText === "function") {
+          statusInfo = getStatusText(tool);
+        }
+
+        if (statusInfo && (statusInfo.label || statusInfo.sub)) {
+          // Status-Text-Mode (z.B. Production)
+          var fg = btn.querySelector(".ring-fg");
+          if (fg) fg.setAttribute("stroke-dashoffset", String(RING_C * (1 - pct / 100)));
+          var pctEl = btn.querySelector(".bw-tl-pct");
+          if (pctEl) pctEl.textContent = statusInfo.label || "—";
+          var subEl = btn.querySelector(".bw-tl-sub");
+          if (subEl && statusInfo.sub) subEl.textContent = statusInfo.sub;
+          // Pct fließt nicht in Avg ein wenn Status-Text-Mode (sonst verfälscht)
+          // Aber wenn pct vom Caller geliefert, mit einrechnen
+          if (statusInfo.includeInAvg !== false) { sum += pct; counted++; }
+          btn.classList.toggle("is-complete", pct >= 100);
+          btn.classList.toggle("is-active", pct > 0 && pct < 100);
+          return;
+        }
+
         sum += pct; counted++;
-        var fg = btn.querySelector(".ring-fg");
-        if (fg) fg.setAttribute("stroke-dashoffset", String(RING_C * (1 - pct / 100)));
-        var pctEl = btn.querySelector(".bw-tl-pct");
-        if (pctEl) pctEl.textContent = pct + "%";
+        var fg2 = btn.querySelector(".ring-fg");
+        if (fg2) fg2.setAttribute("stroke-dashoffset", String(RING_C * (1 - pct / 100)));
+        var pctEl2 = btn.querySelector(".bw-tl-pct");
+        if (pctEl2) pctEl2.textContent = pct + "%";
         btn.classList.toggle("is-complete", pct >= 100);
         btn.classList.toggle("is-active", pct > 0 && pct < 100);
       });

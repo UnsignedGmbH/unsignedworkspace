@@ -476,6 +476,8 @@ window.addEventListener('beforeunload', trackOff);
   if (!_DB){ setTimeout(boot, 200); return; }
   // openPack URL-Param hat Vorrang (z.B. Cross-Tool-Link aus Production-Tool)
   var urlPack = new URLSearchParams(location.search).get('openPack');
+  var urlPreview = new URLSearchParams(location.search).get('previewMode') === '1';
+  window._TP_PREVIEW = urlPreview;
   if (urlPack) {
     STATE.activePackId = urlPack;
   } else {
@@ -838,47 +840,59 @@ function renderEditor(){
   $('viewEditor').hidden = false;
   var pack = STATE.packs[STATE.activePackId];
   if (!pack){ closePack(); return; }
+  var preview = !!window._TP_PREVIEW;
 
   clearEl($('hdrActions'));
   var titleHost = $('hdrTitle');
   clearEl(titleHost);
-  var back = el('button', 'btn', '← Zurück');
-  back.title = 'Zurück zur Liste';
-  back.style.cssText = 'padding:8px 14px;font-size:12px;font-weight:800;background:#111;color:#fff;border:0;border-radius:8px;cursor:pointer;flex-shrink:0;';
-  back.onclick = closePack;
-  titleHost.appendChild(back);
-  var titleInput = document.createElement('input');
-  titleInput.type = 'text';
-  titleInput.value = (pack.meta && pack.meta.name) || '';
-  titleInput.placeholder = 'Pack-Name';
-  var _titleSaveTimer = null;
-  function saveTitle(){
-    var v = (titleInput.value || '').trim();
-    if (!v) return;
-    safeUpdate(fbPack(STATE.activePackId).child('meta'), { name: v, updated: Date.now() });
+
+  if (preview) {
+    // Preview-Mode: nur Pack-Name + PDF-Download, kein „Zurück", kein Edit
+    var nameSpan = el('span', null, (pack.meta && pack.meta.name) || 'Techpack');
+    nameSpan.style.cssText = 'font-weight:800;font-size:14px;color:#111;';
+    titleHost.appendChild(nameSpan);
+    var pdfBtnP = el('button', 'btn btn-accent', '📥 PDF Download');
+    pdfBtnP.onclick = function(){ exportPdf(STATE.activePackId); };
+    $('hdrActions').appendChild(pdfBtnP);
+  } else {
+    var back = el('button', 'btn', '← Zurück');
+    back.title = 'Zurück zur Liste';
+    back.style.cssText = 'padding:8px 14px;font-size:12px;font-weight:800;background:#111;color:#fff;border:0;border-radius:8px;cursor:pointer;flex-shrink:0;';
+    back.onclick = closePack;
+    titleHost.appendChild(back);
+    var titleInput = document.createElement('input');
+    titleInput.type = 'text';
+    titleInput.value = (pack.meta && pack.meta.name) || '';
+    titleInput.placeholder = 'Pack-Name';
+    var _titleSaveTimer = null;
+    function saveTitle(){
+      var v = (titleInput.value || '').trim();
+      if (!v) return;
+      safeUpdate(fbPack(STATE.activePackId).child('meta'), { name: v, updated: Date.now() });
+    }
+    titleInput.oninput = function(){
+      clearTimeout(_titleSaveTimer);
+      _titleSaveTimer = setTimeout(saveTitle, 600);
+    };
+    titleInput.onblur = saveTitle;
+    titleHost.appendChild(titleInput);
+
+    // "+ Neuer Pack" auch im Editor-Header — direkter Zugriff ohne Zurueck-Navigation.
+    var newBtn = el('button', 'btn');
+    newBtn.textContent = '+ Neues';
+    newBtn.title = 'Neues Techpack anlegen';
+    newBtn.onclick = openNewPackModal;
+    $('hdrActions').appendChild(newBtn);
+    var pdfBtn = el('button', 'btn btn-accent', 'PDF Export');
+    pdfBtn.onclick = function(){ exportPdf(STATE.activePackId); };
+    $('hdrActions').appendChild(pdfBtn);
+
+    // → in Produktion schieben — immer sichtbar, erstellt jedesmal ein neues Piece
+    var prodBtn = el('button', 'btn', '→ in Produktion');
+    prodBtn.title = 'Als neues Piece in Produktion anlegen (Spalte „Techpack fertig")';
+    prodBtn.onclick = function(){ pushToProduction(STATE.activePackId); };
+    $('hdrActions').appendChild(prodBtn);
   }
-  titleInput.oninput = function(){
-    clearTimeout(_titleSaveTimer);
-    _titleSaveTimer = setTimeout(saveTitle, 600);
-  };
-  titleInput.onblur = saveTitle;
-  titleHost.appendChild(titleInput);
-
-  // "+ Neuer Pack" auch im Editor-Header — direkter Zugriff ohne Zurueck-Navigation.
-  var newBtn = el('button', 'btn');
-  newBtn.textContent = '+ Neues';
-  newBtn.title = 'Neues Techpack anlegen';
-  newBtn.onclick = openNewPackModal;
-  $('hdrActions').appendChild(newBtn);
-  var pdfBtn = el('button', 'btn btn-accent', 'PDF Export');
-  pdfBtn.onclick = function(){ exportPdf(STATE.activePackId); };
-  $('hdrActions').appendChild(pdfBtn);
-
-  // → in Produktion schieben — immer sichtbar, erstellt jedesmal ein neues Piece
-  var prodBtn = el('button', 'btn', '→ in Produktion');
-  prodBtn.title = 'Als neues Piece in Produktion anlegen (Spalte „Techpack fertig")';
-  prodBtn.onclick = function(){ pushToProduction(STATE.activePackId); };
-  $('hdrActions').appendChild(prodBtn);
 
   var v = $('viewEditor');
   clearEl(v);
@@ -888,10 +902,12 @@ function renderEditor(){
   var pageList = el('ul', 'page-list');
   pageList.id = 'pageListEl';
   sidebar.appendChild(pageList);
-  var addBtn = el('button', 'page-add-btn', '+ Seite hinzufügen');
-  addBtn.type = 'button';
-  addBtn.onclick = openAddPageModal;
-  sidebar.appendChild(addBtn);
+  if (!preview) {
+    var addBtn = el('button', 'page-add-btn', '+ Seite hinzufügen');
+    addBtn.type = 'button';
+    addBtn.onclick = openAddPageModal;
+    sidebar.appendChild(addBtn);
+  }
   grid.appendChild(sidebar);
 
   var canvas = el('section', 'editor-canvas');

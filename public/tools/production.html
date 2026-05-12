@@ -167,6 +167,13 @@ input:focus,textarea:focus,select:focus{outline:none;}
 
 .role-banner{background:var(--blue-soft);border:0.5px solid #bcd3f5;color:var(--blue);font-size:11px;font-weight:700;padding:8px 12px;border-radius:8px;margin-bottom:10px;}
 .danger{color:#a82929;}
+
+.pdf-preview-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.55);display:none;align-items:center;justify-content:center;z-index:3000;padding:12px;}
+.pdf-preview-overlay.on{display:flex;}
+.pdf-preview-frame{background:var(--bg2);border-radius:14px;width:100%;max-width:1080px;height:calc(100vh - 28px);display:flex;flex-direction:column;box-shadow:var(--shadow-lg);overflow:hidden;}
+.pdf-preview-head{display:flex;align-items:center;gap:10px;padding:11px 14px;border-bottom:0.5px solid var(--line);background:var(--bg);}
+.pdf-preview-head span#pdfPreviewTitle{flex:1;font-weight:800;font-size:13px;color:var(--ink);}
+.pdf-preview-frame iframe{flex:1;width:100%;border:0;background:#fff;}
 </style>
 </head>
 <body>
@@ -263,6 +270,17 @@ input:focus,textarea:focus,select:focus{outline:none;}
       <button class="cancel" id="confirmCancel">Abbrechen</button>
       <button class="ok" id="confirmOk">Bestätigen</button>
     </div>
+  </div>
+</div>
+
+<!-- PDF Preview Overlay (Techpack-Iframe inline) -->
+<div class="pdf-preview-overlay" id="pdfPreviewOverlay">
+  <div class="pdf-preview-frame">
+    <div class="pdf-preview-head">
+      <span id="pdfPreviewTitle">Techpack-Vorschau</span>
+      <button class="detail-close" id="pdfPreviewClose">×</button>
+    </div>
+    <iframe id="pdfPreviewIframe" src="about:blank" title="Techpack Vorschau"></iframe>
   </div>
 </div>
 
@@ -906,6 +924,23 @@ function openMoveSheet(cardId) {
 }
 
 // ─── Card Detail Modal ───────────────────────────────────────
+// PDF-Preview Modal (zeigt Techpack-Seiten im Iframe)
+var pdfPreviewOverlay = document.getElementById('pdfPreviewOverlay');
+var pdfPreviewIframe = document.getElementById('pdfPreviewIframe');
+var pdfPreviewTitle = document.getElementById('pdfPreviewTitle');
+document.getElementById('pdfPreviewClose').onclick = closePdfPreview;
+pdfPreviewOverlay.addEventListener('click', function (e) { if (e.target === pdfPreviewOverlay) closePdfPreview(); });
+function openPdfPreview(packId, name) {
+  if (!_R || !packId) return;
+  pdfPreviewTitle.textContent = name ? ('📐 ' + name) : 'Techpack-Vorschau';
+  pdfPreviewIframe.src = '/tools/techpack.html?room=' + encodeURIComponent(_R) + '&openPack=' + encodeURIComponent(packId) + '&previewMode=1';
+  pdfPreviewOverlay.classList.add('on');
+}
+function closePdfPreview() {
+  pdfPreviewOverlay.classList.remove('on');
+  pdfPreviewIframe.src = 'about:blank';
+}
+
 var detailOverlay = document.getElementById('detailOverlay');
 var detailTitleInput = document.getElementById('detailTitleInput');
 var detailNotes = document.getElementById('detailNotes');
@@ -945,17 +980,10 @@ function renderCardDetail() {
     linkSec.id = 'detailTechpackLink';
     var lh = el('h4', null, linkSec); lh.textContent = '📐 Aus Techpack';
     var btn = el('button', 'act-btn', linkSec);
-    btn.textContent = '→ Techpack öffnen / PDF herunterladen';
+    btn.textContent = '📄 PDF anschauen / herunterladen';
     btn.style.width = '100%';
     btn.onclick = function () {
-      // postMessage an Parent → wechsel zu techpack-Tool mit packId
-      try {
-        window.parent.postMessage({
-          type: 'openTool',
-          tool: 'techpack',
-          packId: c.origin.packId,
-        }, '*');
-      } catch(e){}
+      openPdfPreview(c.origin.packId, c.name || 'Techpack');
     };
     // Einfuegen nach Stage-Section (am Anfang nach Title)
     var body = document.querySelector('.detail-body');

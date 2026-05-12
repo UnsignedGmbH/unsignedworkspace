@@ -482,6 +482,22 @@ import BrandworkTimeline from "../components/BrandworkTimeline.astro";
         production: pctOf(c, "prodP"),
       };
     }
+    // Kalkulator hat kein „100% erreichen" — eigene Card ohne Pct.
+    function _calcCard(t, cid) {
+      var url = "/customer?id=" + encodeURIComponent(cid) + "&tool=" + encodeURIComponent(t.file);
+      var parts = [];
+      parts.push('<a href="' + url + '" class="bg-card border-[0.5px] border-line rounded-xl p-4 no-underline hover:border-brand-border hover:bg-brand-dim transition-colors block">');
+      parts.push('<div class="flex items-center gap-3 mb-3">');
+      parts.push('<span class="w-10 h-10 rounded-lg bg-brand-dim flex items-center justify-center text-[20px] shrink-0">' + t.icon + '</span>');
+      parts.push('<div class="flex-1 min-w-0">');
+      parts.push('<div class="text-[13px] font-extrabold text-ink truncate">' + ui.escapeHtml(t.label) + '</div>');
+      parts.push('<div class="text-[10px] text-ink-mute truncate">' + ui.escapeHtml(t.desc) + '</div>');
+      parts.push('</div></div>');
+      parts.push('<div class="text-[10px] text-ink-mute">→ Multi-Tab pro Piece</div>');
+      parts.push('</a>');
+      return parts.join("");
+    }
+
     // Techpack hat keine zentrale Progress (mehrere Packs pro Customer).
     // Eigene Card ohne Prozent-Bar, nur als Tool-Einstieg.
     function _tpCard(t, cid) {
@@ -505,6 +521,7 @@ import BrandworkTimeline from "../components/BrandworkTimeline.astro";
       var grid = $("toolGrid");
       grid.innerHTML = TOOLS.map(function (t) {
         if (t.id === "tp") return _tpCard(t, customerId);
+        if (t.id === "calculator") return _calcCard(t, customerId);
         var pct = pm[t.id] || 0;
         totalDone += pct;
         var pctTxt = pct + "% ausgefüllt";
@@ -551,7 +568,7 @@ import BrandworkTimeline from "../components/BrandworkTimeline.astro";
       if (btnPrint) btnPrint.addEventListener("click", function () { window.print(); });
 
       // Update meta line with avg progress (Techpack vom Schnitt ausgenommen, da kein einzelner %-Wert).
-      var progressTools = TOOLS.filter(function (t) { return t.id !== "tp"; });
+      var progressTools = TOOLS.filter(function (t) { return t.id !== "tp" && t.id !== "calculator"; });
       var avg = progressTools.length ? Math.round(totalDone / progressTools.length) : 0;
       $("cMeta").textContent =
         "Raum " + (c.room || "—") +
@@ -571,8 +588,47 @@ import BrandworkTimeline from "../components/BrandworkTimeline.astro";
             history.pushState({}, "", url);
             showTool(t.file);
           }
+        }, function (toolKey) {
+          // Status-Text statt Pct fuer Production
+          if (toolKey !== "production") return null;
+          return buildProductionStatus();
         });
       }
+    }
+
+    // ─── Production status (für Roadmap-Tile) ────────────────
+    var _prodCards = null, _prodColumns = null;
+    function buildProductionStatus() {
+      if (!_prodCards || !_prodColumns) return { label: "—", sub: "Produktion · Sampling · Bulk" };
+      var pieceIds = Object.keys(_prodCards).filter(function (k) { return !_prodCards[k].archived; });
+      var colIds = Object.keys(_prodColumns)
+        .filter(function (k) { return !_prodColumns[k].hidden; })
+        .sort(function (a, b) { return (_prodColumns[a].order || 0) - (_prodColumns[b].order || 0); });
+      if (pieceIds.length === 0) {
+        return { label: "0 Pieces", sub: "Noch nichts in Produktion" };
+      }
+      var label = pieceIds.length + " " + (pieceIds.length === 1 ? "Piece" : "Pieces");
+      // Status-Sub: bis zu 2 Pieces mit Stage
+      var sorted = pieceIds.sort(function (a, b) { return (_prodCards[a].createdAt || 0) - (_prodCards[b].createdAt || 0); });
+      var parts = sorted.slice(0, 2).map(function (pid) {
+        var card = _prodCards[pid];
+        var colLabel = (_prodColumns[card.columnId] && _prodColumns[card.columnId].label) || "?";
+        return (card.name || "Piece") + " → " + colLabel;
+      });
+      if (sorted.length > 2) parts.push("… +" + (sorted.length - 2));
+      return { label: label, sub: parts.join(" · "), includeInAvg: false };
+    }
+    function attachProductionStatusListener(room) {
+      if (!room || !window.fb) return;
+      var base = window.fb.ref("rooms/" + room + "/production");
+      trackOn("rooms/" + room + "/production/cards", "value", function (s) {
+        _prodCards = s.val() || {};
+        if (customer) renderToolGrid(customer);
+      });
+      trackOn("rooms/" + room + "/production/columns", "value", function (s) {
+        _prodColumns = s.val() || {};
+        if (customer) renderToolGrid(customer);
+      });
     }
 
     // ── Mode Switch ──────────────────────────────────────────
@@ -793,6 +849,7 @@ import BrandworkTimeline from "../components/BrandworkTimeline.astro";
           attachBIProgress(c.room);
           attachDesignProgress(c.room);
           attachToolPctListeners(c.room);
+          attachProductionStatusListener(c.room);
           attachClientPresence(c.room);
           if (initialTool && TOOL_BY_FILE[initialTool]) showTool(initialTool);
           else showOverview();

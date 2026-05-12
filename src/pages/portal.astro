@@ -461,10 +461,26 @@ import BrandworkTimeline from "../components/BrandworkTimeline.astro";
       return parts.join("");
     }
 
+    function _calcPortalCard(t) {
+      var parts = [];
+      parts.push('<button type="button" data-tool="' + t.id + '"');
+      parts.push(' class="tool-card group bg-card border-[0.5px] border-line rounded-xl p-3 md:p-[14px] flex flex-col gap-2 hover:border-brand-border hover:bg-brand-dim hover:shadow-[0_4px_16px_rgba(193,48,48,0.08)] transition-all text-left cursor-pointer min-w-0">');
+      parts.push('<div class="flex items-start gap-3 min-w-0">');
+      parts.push('<span class="w-9 h-9 md:w-10 md:h-10 rounded-lg bg-brand-dim flex items-center justify-center text-[18px] md:text-[20px] shrink-0 group-hover:bg-brand group-hover:text-white transition-colors">' + t.icon + '</span>');
+      parts.push('<div class="flex-1 min-w-0">');
+      parts.push('<div class="text-[12px] md:text-[13px] font-extrabold text-ink truncate">' + t.label + '</div>');
+      parts.push('<div class="text-[10px] md:text-[11px] text-ink-mute mt-[1px] truncate">' + t.desc + '</div>');
+      parts.push('</div></div>');
+      parts.push('<div class="text-[10px] text-ink-soft mt-1">&rarr; Multi-Tab pro Piece</div>');
+      parts.push('</button>');
+      return parts.join("");
+    }
+
     function renderGrid() {
       var grid = document.getElementById("ovGrid");
       grid.innerHTML = TOOLS.map(function (t) {
         if (t.id === "techpack") return _tpPortalCard(t);
+        if (t.id === "calculator") return _calcPortalCard(t);
         var pct = TOOL_PROGRESS[t.id] || 0;
         return (
           '<button type="button" data-tool="' + t.id + '"' +
@@ -492,8 +508,29 @@ import BrandworkTimeline from "../components/BrandworkTimeline.astro";
           return TOOL_PROGRESS[toolKey] || 0;
         }, function (toolKey) {
           openTool(toolKey);
+        }, function (toolKey) {
+          if (toolKey !== "production") return null;
+          return buildProductionStatusPortal();
         });
       }
+    }
+
+    var _portalProdCards = null, _portalProdColumns = null;
+    function buildProductionStatusPortal() {
+      if (!_portalProdCards || !_portalProdColumns) return { label: "—", sub: "Produktion · Sampling · Bulk" };
+      var pieceIds = Object.keys(_portalProdCards).filter(function (k) { return !_portalProdCards[k].archived; });
+      if (pieceIds.length === 0) {
+        return { label: "0 Pieces", sub: "Noch nichts in Produktion" };
+      }
+      var label = pieceIds.length + " " + (pieceIds.length === 1 ? "Piece" : "Pieces");
+      var sorted = pieceIds.sort(function (a, b) { return (_portalProdCards[a].createdAt || 0) - (_portalProdCards[b].createdAt || 0); });
+      var parts = sorted.slice(0, 2).map(function (pid) {
+        var card = _portalProdCards[pid];
+        var colLabel = (_portalProdColumns[card.columnId] && _portalProdColumns[card.columnId].label) || "?";
+        return (card.name || "Piece") + " → " + colLabel;
+      });
+      if (sorted.length > 2) parts.push("… +" + (sorted.length - 2));
+      return { label: label, sub: parts.join(" · "), includeInAvg: false };
     }
 
     // Subscribe to per-tool progress and re-render the grid whenever any tool's pct changes.
@@ -513,6 +550,15 @@ import BrandworkTimeline from "../components/BrandworkTimeline.astro";
       window.fb.ref("rooms/" + room + "/shop_pct").on("value", function(s){ setPct("shop", s.val()); });
       window.fb.ref("rooms/" + room + "/social_pct").on("value", function(s){ setPct("social", s.val()); });
       window.fb.ref("rooms/" + room + "/content_pct").on("value", function(s){ setPct("content", s.val()); });
+      // Production: cards + columns für Status-Text-Mode in Roadmap
+      window.fb.ref("rooms/" + room + "/production/cards").on("value", function(s){
+        _portalProdCards = s.val() || {};
+        if (typeof renderGrid === "function") renderGrid();
+      });
+      window.fb.ref("rooms/" + room + "/production/columns").on("value", function(s){
+        _portalProdColumns = s.val() || {};
+        if (typeof renderGrid === "function") renderGrid();
+      });
       // BI: derive from rooms/<room>/data/fields (count fields with text or images)
       window.fb.ref("rooms/" + room + "/data/fields").on("value", function(s){
         var v = s.val() || {};
