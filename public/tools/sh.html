@@ -70,6 +70,13 @@ body{font-family:'Montserrat',sans-serif;background:var(--bg);color:var(--text);
 .add-item-btn{display:flex;align-items:center;gap:7px;padding:8px 14px;border:1.5px dashed var(--text-dimmer);border-radius:9px;background:none;font-family:'Montserrat',sans-serif;font-size:11px;font-weight:700;color:var(--text-dimmer);cursor:pointer;width:100%;touch-action:manipulation;-webkit-tap-highlight-color:transparent;transition:all 0.2s;}
 .add-item-btn:hover{border-color:var(--red);color:var(--red);}
 .add-item-btn span{font-size:16px;font-weight:400;line-height:1;}
+.add-cat-btn{display:flex;align-items:center;justify-content:center;gap:8px;padding:12px 16px;border:1.5px dashed var(--text-dimmer);border-radius:11px;background:none;font-family:'Montserrat',sans-serif;font-size:12px;font-weight:800;color:var(--text-dimmer);cursor:pointer;width:100%;margin-top:18px;text-transform:uppercase;letter-spacing:0.05em;touch-action:manipulation;-webkit-tap-highlight-color:transparent;transition:all 0.2s;}
+.add-cat-btn:hover{border-color:var(--red);color:var(--red);}
+.add-cat-btn span{font-size:18px;font-weight:400;line-height:1;}
+.section-title[contenteditable="true"]{outline:none;border-bottom:0.5px dashed transparent;transition:border-color 0.15s;cursor:text;}
+.section-title[contenteditable="true"]:hover,.section-title[contenteditable="true"]:focus{border-bottom-color:var(--text-dimmer);}
+.cat-del-btn{background:none;border:none;color:var(--text-dimmer);font-size:14px;cursor:pointer;padding:4px 6px;border-radius:6px;line-height:1;flex-shrink:0;transition:color 0.15s;}
+.cat-del-btn:hover{color:var(--red);}
 .archive-section{margin-top:36px;padding-top:22px;border-top:2px solid var(--border);}
 .archive-title{font-size:11px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-dimmer);margin-bottom:14px;}
 .archive-empty{font-size:13px;color:var(--text-dimmer);font-style:italic;}
@@ -183,10 +190,14 @@ body{font-family:'Montserrat',sans-serif;background:var(--bg);color:var(--text);
 
 /* Image-Grid für aktive Kategorie */
 .mb-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px;}
-.mb-cell{position:relative;aspect-ratio:1/1;background:var(--bg);border:1px solid var(--border);border-radius:10px;overflow:hidden;cursor:zoom-in;}
+.mb-cell{position:relative;background:var(--bg);border:1px solid var(--border);border-radius:10px;overflow:hidden;display:flex;flex-direction:column;}
+.mb-cell-img-wrap{position:relative;aspect-ratio:1/1;background:var(--bg);overflow:hidden;cursor:zoom-in;}
 .mb-cell img{width:100%;height:100%;object-fit:cover;display:block;}
 .mb-cell .mb-cell-del{position:absolute;top:6px;right:6px;width:24px;height:24px;border-radius:6px;background:rgba(0,0,0,0.6);color:#fff;border:0;font-size:13px;cursor:pointer;display:none;align-items:center;justify-content:center;line-height:1;-webkit-tap-highlight-color:transparent;}
 .mb-cell:hover .mb-cell-del{display:flex;}
+.mb-cell-note{display:block;width:100%;padding:7px 10px;border:0;border-top:0.5px solid var(--border);background:var(--bg2);color:var(--text);font-family:inherit;font-size:12px;font-weight:600;outline:none;line-height:1.3;box-sizing:border-box;}
+.mb-cell-note::placeholder{color:var(--text-dimmer);font-weight:500;font-style:italic;}
+.mb-cell-note:focus{background:#fff;}
 
 .mb-empty{text-align:center;padding:40px 20px;color:var(--text-dimmer);font-size:12px;font-weight:600;background:var(--bg2);border:1.5px dashed var(--border);border-radius:12px;line-height:1.6;}
 .mb-empty strong{color:var(--red);font-weight:800;}
@@ -283,69 +294,8 @@ if(_R && _D) {
   </div>
   <div class="important-box"><p><strong>Wichtige Regel:</strong> An jeder Location erst alles für dieses Produkt shooten — Fotos + Videos — bevor ihr die Location wechselt.</p></div>
 
-  <div class="section">
-    <div class="section-header">
-      <div class="section-icon">📍</div>
-      <div class="section-info"><p class="section-title">Pflicht-Content pro Location</p><p class="section-sub">Muss an jeder Location gemacht werden</p></div>
-      <span class="section-count" id="count-location"></span>
-    </div>
-    <div class="checklist" id="cat-location"></div>
-    <button class="add-item-btn" data-cat="location"><span>+</span> Feld hinzufügen</button>
-  </div>
-  <div class="section">
-    <div class="section-header">
-      <div class="section-icon">📦</div>
-      <div class="section-info"><p class="section-title">Produktbilder / Laydown / Bodenbilder</p><p class="section-sub">Einmalig pro Produkt</p></div>
-      <span class="section-count" id="count-laydown"></span>
-    </div>
-    <div class="checklist" id="cat-laydown"></div>
-    <button class="add-item-btn" data-cat="laydown"><span>+</span> Feld hinzufügen</button>
-  </div>
-  <div class="section">
-    <div class="section-header">
-      <div class="section-icon">🧍</div>
-      <div class="section-info"><p class="section-title">Bilder am Model</p><p class="section-sub">Pro Location vollständig</p></div>
-      <span class="section-count" id="count-model"></span>
-    </div>
-    <div class="checklist" id="cat-model"></div>
-    <button class="add-item-btn" data-cat="model"><span>+</span> Feld hinzufügen</button>
-  </div>
-  <div class="section">
-    <div class="section-header">
-      <div class="section-icon">📸</div>
-      <div class="section-info"><p class="section-title">Content für Ads / Newsletter / Feed</p><p class="section-sub">Marketing-Material</p></div>
-      <span class="section-count" id="count-ads"></span>
-    </div>
-    <div class="checklist" id="cat-ads"></div>
-    <button class="add-item-btn" data-cat="ads"><span>+</span> Feld hinzufügen</button>
-  </div>
-  <div class="section">
-    <div class="section-header">
-      <div class="section-icon">🎭</div>
-      <div class="section-info"><p class="section-title">Posen</p><p class="section-sub">Solo</p></div>
-      <span class="section-count" id="count-posen"></span>
-    </div>
-    <div class="checklist" id="cat-posen"></div>
-    <button class="add-item-btn" data-cat="posen"><span>+</span> Feld hinzufügen</button>
-  </div>
-  <div class="section">
-    <div class="section-header">
-      <div class="section-icon">💎</div>
-      <div class="section-info"><p class="section-title">Accessoires</p><p class="section-sub">Was dabei ist</p></div>
-      <span class="section-count" id="count-acc"></span>
-    </div>
-    <div class="checklist" id="cat-acc"></div>
-    <button class="add-item-btn" data-cat="acc"><span>+</span> Feld hinzufügen</button>
-  </div>
-  <div class="section">
-    <div class="section-header">
-      <div class="section-icon">✅</div>
-      <div class="section-info"><p class="section-title">Letzter Check vor Locationwechsel</p><p class="section-sub">Nicht weiterziehen ohne das!</p></div>
-      <span class="section-count" id="count-check"></span>
-    </div>
-    <div class="checklist" id="cat-check"></div>
-    <button class="add-item-btn" data-cat="check"><span>+</span> Feld hinzufügen</button>
-  </div>
+  <div id="checklistRoot"></div>
+  <button class="add-cat-btn" id="addCatBtn"><span>+</span> Neuer Oberpunkt</button>
   <div class="archive-section">
     <p class="archive-title">Abgeschlossene Shootings</p>
     <div id="archiveList"><p class="archive-empty">Noch keine abgeschlossenen Shootings.</p></div>
@@ -391,7 +341,9 @@ if(_R && _D) {
 <script>
 var PKEY='ug_products_v2', AKEY='ug_archive_v2';
 var CATS=['location','laydown','model','ads','posen','acc','check'];
-var CAT_NAMES={location:'Pflicht pro Location',laydown:'Produktbilder / Laydown',model:'Bilder am Model',ads:'Ads / Feed Content',posen:'Posen',acc:'Accessoires',check:'Letzter Check'};
+var CAT_NAMES={location:'Pflicht-Content pro Location',laydown:'Produktbilder / Laydown / Bodenbilder',model:'Bilder am Model',ads:'Content für Ads / Newsletter / Feed',posen:'Posen',acc:'Accessoires',check:'Letzter Check vor Locationwechsel'};
+var CAT_ICONS={location:'📍',laydown:'📦',model:'🧍',ads:'📸',posen:'🎭',acc:'💎',check:'✅'};
+var DEFAULT_CAT_ICON='📋';
 var DEFAULTS={"location": ["Produkt solo — Bilder", "Produkt solo — Videos", "Erst weiter zur nächsten Location wenn alles abgehakt ist"], "laydown": ["Oberteil einzeln auf dem Boden", "Hose einzeln auf dem Boden", "Komplettes Set auf dem Boden", "Detailbilder von Stoff, Logo, Print, Stick, Zip, Taschen, Bündchen, Nähten", "Langsame Produktvideos / Pan-Shots"], "model": ["Ganzkörper frontal", "Ganzkörper seitlich", "Ganzkörper von hinten", "Halbnahe Shots vom Oberteil", "Hose komplett sichtbar", "Getragene Detailbilder von Oberteil und Hose", "Nahshots von Stoff, Bündchen, Taschen, Zip, Print oder Stick", "Videos frontal, seitlich, hinten und Details in Bewegung"], "ads": ["Hero-Shots mit Attitude", "Cleane Ganzkörperbilder", "Laufbilder / Bewegungsshots", "Stehende Street-Posen", "Sitzende Posen auf Kante / Treppe / Bordstein", "Bilder mit Platz für Text — Newsletter oder Ads", "Enge Crop-Shots für Creatives", "Hochformatbilder für Feed / Story / Reel Cover", "Kurze Reel-Clips 3–5 Sekunden", "Längere Clips 5–10 Sekunden", "Ruhige Produktclips und aggressive Street-Clips"], "posen": ["Frontal stehen", "Seitlich stehen", "Blick in Kamera", "Blick weg von Kamera", "Hände in Taschen", "An Wand lehnen", "Sitzen", "Laufen", "Über Schulter schauen"], "acc": ["Cap / Beanie", "Crossbody Bag / Shoulder Bag", "Ketten, Ringe, Armband, Uhr", "Sonnenbrille / Kopfhörer", "Passende Sneaker — Option 1", "Zweite Schuhoption", "Fusselrolle, Klammern, Sicherheitsnadeln", "Powerbank, Ladegerät, Spiegel"], "check": ["Genug Ganzkörperbilder da", "Genug Detailbilder da", "Genug Hochformat da", "Genug Videos da", "Alles scharf gecheckt"]};
 var currentId=null;
 
@@ -433,28 +385,142 @@ function makeItem(label, done, cat) {
   return div;
 }
 
-// ── Read all sections from DOM ──
-function readSections() {
-  var s={};
-  CATS.forEach(function(cat){
-    var list=document.getElementById('cat-'+cat);
-    s[cat]=[];
-    list.querySelectorAll('.check-item').forEach(function(item){
-      s[cat].push({label:item.querySelector('.check-title').textContent.trim(),done:item.classList.contains('done')});
-    });
+// ── Helpers ──
+function _toArr(v){ if(Array.isArray(v)) return v; if(v && typeof v==='object') return Object.values(v); return []; }
+function _newCatId(){ return 'c_'+Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
+function _clearEl(el){ while(el.firstChild) el.removeChild(el.firstChild); }
+function _defaultCategories(){
+  return CATS.map(function(k){
+    return {
+      id:k,
+      label:CAT_NAMES[k],
+      icon:CAT_ICONS[k]||DEFAULT_CAT_ICON,
+      items:DEFAULTS[k].map(function(l){return{label:l,done:false};}),
+    };
   });
-  return s;
+}
+function _migrateSections(sections){
+  return CATS.map(function(k){
+    var raw=sections && sections[k];
+    var items=raw ? _toArr(raw).filter(Boolean).map(function(it){
+      return { label:(it.label||'').toString(), done:!!it.done };
+    }) : (DEFAULTS[k]||[]).map(function(l){return{label:l,done:false};});
+    return { id:k, label:CAT_NAMES[k], icon:CAT_ICONS[k]||DEFAULT_CAT_ICON, items:items };
+  });
 }
 
-// ── Apply sections to DOM ──
-function applySections(sections) {
-  function _toArr(v){ if(Array.isArray(v)) return v; if(v && typeof v==='object') return Object.values(v); return []; }
-  CATS.forEach(function(cat){
-    var list=document.getElementById('cat-'+cat);
-    list.innerHTML='';
-    var raw=(sections&&sections[cat]);
-    var items=raw ? _toArr(raw) : DEFAULTS[cat].map(function(l){return{label:l,done:false};});
-    items.forEach(function(item){ if(!item) return; list.appendChild(makeItem(item.label,item.done,cat));});
+// ── Render one category section ──
+function makeCategorySection(cat) {
+  var sec=document.createElement('div');
+  sec.className='section';
+  sec.dataset.catId=cat.id;
+
+  var head=document.createElement('div');
+  head.className='section-header';
+
+  var ic=document.createElement('div');
+  ic.className='section-icon';
+  ic.textContent=cat.icon||DEFAULT_CAT_ICON;
+  head.appendChild(ic);
+
+  var info=document.createElement('div');
+  info.className='section-info';
+  var title=document.createElement('p');
+  title.className='section-title';
+  title.contentEditable='true';
+  title.spellcheck=false;
+  title.textContent=cat.label||'Oberpunkt';
+  title.addEventListener('input',function(){saveCurrentProduct();});
+  title.addEventListener('blur',function(){saveCurrentProduct();});
+  title.addEventListener('keydown',function(e){
+    if(e.key==='Enter'){e.preventDefault();title.blur();}
+  });
+  info.appendChild(title);
+  head.appendChild(info);
+
+  var count=document.createElement('span');
+  count.className='section-count';
+  count.dataset.role='cat-count';
+  head.appendChild(count);
+
+  var del=document.createElement('button');
+  del.className='cat-del-btn';
+  del.type='button';
+  del.title='Oberpunkt löschen';
+  del.textContent='✕';
+  del.addEventListener('click',function(){
+    var hasItems=sec.querySelectorAll('.check-item').length>0;
+    if(hasItems && !confirm('Oberpunkt "'+(title.textContent.trim()||'?')+'" mit allen Items löschen?')) return;
+    sec.remove();
+    saveCurrentProduct();
+  });
+  head.appendChild(del);
+
+  sec.appendChild(head);
+
+  var list=document.createElement('div');
+  list.className='checklist';
+  list.dataset.role='items';
+  (cat.items||[]).forEach(function(it){
+    list.appendChild(makeItem(it.label,it.done,cat.id));
+  });
+  sec.appendChild(list);
+
+  var addBtn=document.createElement('button');
+  addBtn.className='add-item-btn';
+  addBtn.type='button';
+  var plusSpan=document.createElement('span');
+  plusSpan.textContent='+';
+  addBtn.appendChild(plusSpan);
+  addBtn.appendChild(document.createTextNode(' Feld hinzufügen'));
+  addBtn.addEventListener('click',function(){
+    var item=makeItem('Neues Feld…',false,cat.id);
+    list.appendChild(item);
+    var t=item.querySelector('.check-title');
+    t.focus();
+    var r=document.createRange(); r.selectNodeContents(t);
+    var s=window.getSelection(); s.removeAllRanges(); s.addRange(r);
+    saveCurrentProduct();
+  });
+  sec.appendChild(addBtn);
+
+  return sec;
+}
+
+// ── Read categories from DOM ──
+function readCategories() {
+  var root=document.getElementById('checklistRoot');
+  if(!root) return [];
+  var cats=[];
+  root.querySelectorAll('.section').forEach(function(sec){
+    var catId=sec.dataset.catId||_newCatId();
+    var title=sec.querySelector('.section-title');
+    var icon=sec.querySelector('.section-icon');
+    var items=[];
+    sec.querySelectorAll('.check-item').forEach(function(item){
+      items.push({
+        label:item.querySelector('.check-title').textContent.trim(),
+        done:item.classList.contains('done'),
+      });
+    });
+    cats.push({
+      id:catId,
+      label:title?title.textContent.trim():'Oberpunkt',
+      icon:icon?icon.textContent.trim():DEFAULT_CAT_ICON,
+      items:items,
+    });
+  });
+  return cats;
+}
+
+// ── Apply categories to DOM ──
+function applyCategories(categories) {
+  var root=document.getElementById('checklistRoot');
+  if(!root) return;
+  _clearEl(root);
+  (categories||[]).forEach(function(cat){
+    if(!cat) return;
+    root.appendChild(makeCategorySection(cat));
   });
   updateProgress();
 }
@@ -467,18 +533,15 @@ function updateProgress() {
   var pct=total?Math.round((d/total)*100):0;
   document.getElementById('progressFill').style.width=pct+'%';
   document.getElementById('progressCount').textContent=d+' / '+total;
-  CATS.forEach(function(cat){
-    var a=document.querySelectorAll('.check-item[data-cat="'+cat+'"]').length;
-    var dd=document.querySelectorAll('.check-item.done[data-cat="'+cat+'"]').length;
-    var el=document.getElementById('count-'+cat);
+  document.querySelectorAll('#checklistRoot .section').forEach(function(sec){
+    var a=sec.querySelectorAll('.check-item').length;
+    var dd=sec.querySelectorAll('.check-item.done').length;
+    var el=sec.querySelector('[data-role="cat-count"]');
     if(el) el.textContent=dd+' / '+a;
   });
-  // archiveBtn always visible
   var ab=document.getElementById('archiveBtn');if(ab)ab.style.display='inline-block';
-  // Always show delete button
   var delBtn=document.getElementById('deleteProductBtn');
   if(delBtn) delBtn.style.display='inline-block';
-  // Send progress to parent workspace
   window.parent.postMessage({type:'shPct', pct:pct}, '*');
   return {done:d,total:total,pct:pct};
 }
@@ -490,7 +553,9 @@ function saveCurrentProduct() {
   var p=products.find(function(x){return x.id===currentId;});
   if(!p) return;
   p.name=document.getElementById('productName').value;
-  p.sections=readSections();
+  p.categories=readCategories();
+  // sections-Legacy aufräumen sobald categories da sind
+  if(p.sections) delete p.sections;
   var prog=updateProgress();
   p.done=prog.done; p.total=prog.total; p.pct=prog.pct;
   saveProductsRaw(products);
@@ -505,7 +570,15 @@ function switchTo(id) {
   if(!p) return;
   currentId=id;
   document.getElementById('productName').value=p.name||'';
-  applySections(p.sections||null);
+  var cats;
+  if(p.categories && Array.isArray(p.categories) && p.categories.length){
+    cats=p.categories;
+  } else if(p.sections){
+    cats=_migrateSections(p.sections);
+  } else {
+    cats=_defaultCategories();
+  }
+  applyCategories(cats);
   renderTabs(products);
 }
 
@@ -527,7 +600,7 @@ function renderTabs(products) {
 // ── Create new product ──
 function createProduct(name) {
   var products=getProducts();
-  var p={id:Date.now(),name:name||'',sections:null,done:0,total:0,pct:0};
+  var p={id:Date.now(),name:name||'',categories:_defaultCategories(),done:0,total:0,pct:0};
   products.push(p);
   saveProductsRaw(products);
   switchTo(p.id);
@@ -538,18 +611,16 @@ function archiveCurrent() {
   var products=getProducts();
   var p=products.find(function(x){return x.id===currentId;});
   if(!p) return;
-  var allItems=document.querySelectorAll('.check-item');
-  var itemsList=[];
-  allItems.forEach(function(item){itemsList.push({label:item.querySelector('.check-title').textContent.trim(),cat:item.dataset.cat||'',done:item.classList.contains('done')});});
+  var cats=readCategories();
   var prog=updateProgress();
   var archive=getArchive();
-  archive.unshift({id:p.id,name:p.name||'Unbenanntes Produkt',pct:prog.pct,done:prog.done,total:prog.total,date:new Date().toLocaleDateString('de-DE'),items:itemsList});
+  archive.unshift({id:p.id,name:p.name||'Unbenanntes Produkt',pct:prog.pct,done:prog.done,total:prog.total,date:new Date().toLocaleDateString('de-DE'),categories:cats});
   saveArchive(archive);
   var newP=products.filter(function(x){return x.id!==currentId;});
   saveProductsRaw(newP);
   currentId=null;
   if(newP.length){switchTo(newP[0].id);}
-  else{applySections(null);document.getElementById('productName').value='';updateProgress();renderTabs([]);}
+  else{applyCategories(_defaultCategories());document.getElementById('productName').value='';updateProgress();renderTabs([]);}
   renderArchive();
 }
 
@@ -560,34 +631,67 @@ function deleteCurrentProduct() {
   saveProductsRaw(products);
   currentId=null;
   if(products.length){switchTo(products[0].id);}
-  else{applySections(null);document.getElementById('productName').value='';updateProgress();renderTabs([]);}
+  else{applyCategories(_defaultCategories());document.getElementById('productName').value='';updateProgress();renderTabs([]);}
 }
 
 // ── Archive render ──
 function renderArchive() {
   var archive=getArchive();
   var list=document.getElementById('archiveList');
-  if(!archive.length){list.innerHTML='<p class="archive-empty">Noch keine abgeschlossenen Shootings.</p>';return;}
-  list.innerHTML='';
+  _clearEl(list);
+  if(!archive.length){
+    var em=document.createElement('p');
+    em.className='archive-empty';
+    em.textContent='Noch keine abgeschlossenen Shootings.';
+    list.appendChild(em);
+    return;
+  }
   archive.forEach(function(item,idx){
     var c=item.pct===100?'var(--green)':item.pct>=50?'var(--amber)':'var(--red)';
     var card=document.createElement('div');
     card.className='archive-card';
-    card.innerHTML='<div class="archive-card-header">'+
-      '<div class="archive-dot" style="background:'+c+'"></div>'+
-      '<div class="archive-info"><p class="archive-name">'+item.name+'</p><p class="archive-meta">'+item.date+' · '+item.done+' / '+item.total+'</p></div>'+
-      '<span class="archive-pct" style="color:'+c+'">'+item.pct+'%</span>'+
-      '<button class="archive-toggle-btn">Details</button>'+
-      '<button class="archive-delete-btn">✕</button>'+
-      '</div>'+
-      '<div class="archive-detail"><div class="archive-detail-inner">'+buildDetail(item)+'</div></div>';
-    card.querySelector('.archive-toggle-btn').addEventListener('click',function(){
-      var det=card.querySelector('.archive-detail');
-      var open=det.style.display==='block';
-      det.style.display=open?'none':'block';
-      card.querySelector('.archive-toggle-btn').textContent=open?'Details':'Schließen';
+
+    var hd=document.createElement('div');
+    hd.className='archive-card-header';
+    var dot=document.createElement('div');
+    dot.className='archive-dot';
+    dot.style.background=c;
+    var info=document.createElement('div');
+    info.className='archive-info';
+    var nm=document.createElement('p');
+    nm.className='archive-name';
+    nm.textContent=item.name||'';
+    var meta=document.createElement('p');
+    meta.className='archive-meta';
+    meta.textContent=(item.date||'')+' · '+(item.done||0)+' / '+(item.total||0);
+    info.appendChild(nm); info.appendChild(meta);
+    var pct=document.createElement('span');
+    pct.className='archive-pct';
+    pct.style.color=c;
+    pct.textContent=(item.pct||0)+'%';
+    var tog=document.createElement('button');
+    tog.className='archive-toggle-btn';
+    tog.textContent='Details';
+    var del=document.createElement('button');
+    del.className='archive-delete-btn';
+    del.textContent='✕';
+    hd.appendChild(dot); hd.appendChild(info); hd.appendChild(pct); hd.appendChild(tog); hd.appendChild(del);
+    card.appendChild(hd);
+
+    var detWrap=document.createElement('div');
+    detWrap.className='archive-detail';
+    var detInner=document.createElement('div');
+    detInner.className='archive-detail-inner';
+    detInner.appendChild(buildDetailEl(item));
+    detWrap.appendChild(detInner);
+    card.appendChild(detWrap);
+
+    tog.addEventListener('click',function(){
+      var open=detWrap.style.display==='block';
+      detWrap.style.display=open?'none':'block';
+      tog.textContent=open?'Details':'Schließen';
     });
-    card.querySelector('.archive-delete-btn').addEventListener('click',function(){
+    del.addEventListener('click',function(){
       if(!confirm('Aus dem Archiv löschen?')) return;
       var a=getArchive(); a.splice(idx,1); saveArchive(a); renderArchive();
     });
@@ -595,34 +699,65 @@ function renderArchive() {
   });
 }
 
-function buildDetail(item) {
-  if(!item.items||!item.items.length) return '<p style="font-size:12px;color:#aaa;">Keine Details.</p>';
-  var byCat={};
-  item.items.forEach(function(i){if(!byCat[i.cat])byCat[i.cat]=[];byCat[i.cat].push(i);});
-  var h='';
-  CATS.forEach(function(cat){
-    if(!byCat[cat]||!byCat[cat].length) return;
-    h+='<p class="archive-detail-cat">'+(CAT_NAMES[cat]||cat)+'</p>';
-    byCat[cat].forEach(function(i){
-      h+='<div class="archive-detail-item'+(i.done?' done':'')+'"><div class="archive-detail-box">'+(i.done?'✓':'')+'</div><span class="archive-detail-label">'+i.label+'</span></div>';
+function buildDetailEl(item) {
+  var frag=document.createDocumentFragment();
+  // Neue Variante: item.categories = [{id,label,items:[...]}]
+  // Legacy: item.items = [{label,cat,done}]
+  var cats=null;
+  if(item.categories && Array.isArray(item.categories)){
+    cats=item.categories;
+  } else if(item.items && item.items.length){
+    var byCat={};
+    item.items.forEach(function(i){if(!byCat[i.cat||''])byCat[i.cat||'']=[];byCat[i.cat||''].push(i);});
+    cats=CATS.filter(function(c){return byCat[c]&&byCat[c].length;}).map(function(c){
+      return {id:c,label:CAT_NAMES[c]||c,items:byCat[c]};
+    });
+  }
+  if(!cats||!cats.length){
+    var p=document.createElement('p');
+    p.style.fontSize='12px';p.style.color='#aaa';
+    p.textContent='Keine Details.';
+    frag.appendChild(p);
+    return frag;
+  }
+  cats.forEach(function(cat){
+    if(!cat.items||!cat.items.length) return;
+    var t=document.createElement('p');
+    t.className='archive-detail-cat';
+    t.textContent=cat.label||'Oberpunkt';
+    frag.appendChild(t);
+    cat.items.forEach(function(i){
+      var row=document.createElement('div');
+      row.className='archive-detail-item'+(i.done?' done':'');
+      var box=document.createElement('div');
+      box.className='archive-detail-box';
+      if(i.done) box.textContent='✓';
+      var lab=document.createElement('span');
+      lab.className='archive-detail-label';
+      lab.textContent=(i.label||'').toString();
+      row.appendChild(box);
+      row.appendChild(lab);
+      frag.appendChild(row);
     });
   });
-  return h;
+  return frag;
 }
 
-// ── Add item buttons ──
-document.querySelectorAll('.add-item-btn').forEach(function(btn){
-  btn.addEventListener('click',function(){
-    var cat=btn.dataset.cat;
-    var list=document.getElementById('cat-'+cat);
-    var item=makeItem('Neues Feld…',false,cat);
-    list.appendChild(item);
-    var title=item.querySelector('.check-title');
+// ── New Oberpunkt button ──
+document.getElementById('addCatBtn').addEventListener('click',function(){
+  var root=document.getElementById('checklistRoot');
+  if(!root) return;
+  var newCat={ id:_newCatId(), label:'Neuer Oberpunkt', icon:DEFAULT_CAT_ICON, items:[] };
+  var sec=makeCategorySection(newCat);
+  root.appendChild(sec);
+  var title=sec.querySelector('.section-title');
+  if(title){
     title.focus();
     var r=document.createRange(); r.selectNodeContents(title);
     var s=window.getSelection(); s.removeAllRanges(); s.addRange(r);
-    saveCurrentProduct();
-  });
+  }
+  saveCurrentProduct();
+  sec.scrollIntoView({behavior:'smooth',block:'center'});
 });
 
 // ── Product name ──
@@ -1005,21 +1140,34 @@ document.getElementById('deleteProductBtn').addEventListener('click',deleteCurre
     } else {
       itemIds.forEach(function (itemId) {
         var cell = el('div', 'mb-cell', grid);
-        var img = el('img', null, cell);
+        var imgWrap = el('div', 'mb-cell-img-wrap', cell);
+        var img = el('img', null, imgWrap);
         img.src = items[itemId].url;
         img.alt = '';
         img.loading = 'lazy';
-        cell.addEventListener('click', function () {
+        imgWrap.addEventListener('click', function () {
           lbImgEl.src = items[itemId].url;
           lbEl.classList.add('on');
         });
-        var del = el('button', 'mb-cell-del', cell);
+        var del = el('button', 'mb-cell-del', imgWrap);
         del.type = 'button';
         del.textContent = '×';
         del.title = 'Bild entfernen';
         del.onclick = function (e) {
           e.stopPropagation();
           if (confirm('Dieses Bild entfernen?')) deleteImage(moodId, activeCatKey, itemId);
+        };
+        var note = el('input', 'mb-cell-note', cell);
+        note.type = 'text';
+        note.placeholder = 'Notiz...';
+        note.value = items[itemId].note || '';
+        note.onchange = function () {
+          if (!MOODS[moodId] || !MOODS[moodId].cats || !MOODS[moodId].cats[activeCatKey]) return;
+          MOODS[moodId].cats[activeCatKey][itemId].note = note.value;
+          if (_R && _D) {
+            _D.ref('rooms/' + _R + '/sh_moodboards/' + moodId + '/cats/' + activeCatKey + '/' + itemId + '/note')
+              .set(note.value).catch(function () {});
+          }
         };
       });
     }
@@ -1082,12 +1230,12 @@ document.getElementById('deleteProductBtn').addEventListener('click',deleteCurre
 
     if (_R && _D && !firebaseAttached) {
       firebaseAttached = true;
-      _D.ref('rooms/' + _R + '/sh_moodboards').on('value', function (snap) {
-        var v = snap.val() || {};
-        // Komplett ersetzen — moodboards sind nicht so groß dass partielles Sync nötig wäre
-        MOODS = {};
-        Object.keys(v).forEach(function (id) { MOODS[id] = v[id]; });
-        // Active falls noch da, sonst erste aktive nehmen
+      var _mbPendingRerender = false;
+      function _mbOnBlur(){
+        document.removeEventListener('blur', _mbOnBlur, true);
+        if (_mbPendingRerender) { _mbPendingRerender = false; _mbRerender(); }
+      }
+      function _mbRerender(){
         if (activeMoodId && !MOODS[activeMoodId]) activeMoodId = null;
         if (!activeMoodId) {
           var act = sortByOrder(activeMoods());
@@ -1095,6 +1243,21 @@ document.getElementById('deleteProductBtn').addEventListener('click',deleteCurre
         }
         renderMbAll();
         renderArAll();
+      }
+      _D.ref('rooms/' + _R + '/sh_moodboards').on('value', function (snap) {
+        var v = snap.val() || {};
+        MOODS = {};
+        Object.keys(v).forEach(function (id) { MOODS[id] = v[id]; });
+        // Wenn User gerade tippt → defer bis Blur, sonst werden Input-Felder
+        // (Notiz, Moodboard-Name) zerstört.
+        var ae = document.activeElement;
+        var typing = ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA' || ae.isContentEditable);
+        if (typing) {
+          _mbPendingRerender = true;
+          document.addEventListener('blur', _mbOnBlur, true);
+          return;
+        }
+        _mbRerender();
       });
     }
   }

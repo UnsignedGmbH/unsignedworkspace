@@ -56,18 +56,18 @@ body{font-family:'Montserrat',sans-serif;background:var(--bg);color:var(--t);min
 .ui::placeholder{color:var(--tdd);}
 .ua{background:var(--cd2);border:.5px solid var(--bd);border-radius:8px;padding:9px 14px;font-family:'Montserrat',sans-serif;font-size:11px;font-weight:700;color:var(--t);cursor:pointer;white-space:nowrap;}
 .mb-grid{columns:3 220px;gap:10px;}
-.mb-item{break-inside:avoid;margin-bottom:10px;position:relative;border-radius:10px;overflow:hidden;background:var(--cd2);cursor:pointer;}
-.mb-item img{width:100%;display:block;border-radius:10px;transition:transform .3s;}
+.mb-item{break-inside:avoid;margin-bottom:10px;position:relative;border-radius:10px;overflow:hidden;background:var(--cd2);display:flex;flex-direction:column;}
+.mb-item-img-wrap{position:relative;cursor:pointer;}
+.mb-item img{width:100%;display:block;transition:transform .3s;}
 .mb-item:hover img{transform:scale(1.03);}
-.mb-ov{position:absolute;inset:0;background:linear-gradient(180deg,transparent 30%,rgba(0,0,0,.85) 100%);opacity:0;transition:opacity .2s;border-radius:10px;display:flex;align-items:flex-end;padding:8px;pointer-events:none;}
-.mb-item:hover .mb-ov{opacity:1;}
-.mb-del{position:absolute;top:6px;right:6px;background:rgba(193,48,48,.85);border:none;border-radius:6px;width:26px;height:26px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#fff;font-size:13px;pointer-events:all;opacity:0;transition:opacity .2s;}
+.mb-del{position:absolute;top:6px;right:6px;background:rgba(193,48,48,.85);border:none;border-radius:6px;width:26px;height:26px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#fff;font-size:13px;opacity:0;transition:opacity .2s;}
 .mb-item:hover .mb-del{opacity:1;}
-.mb-dl{position:absolute;top:6px;right:38px;background:rgba(0,0,0,.6);border:none;border-radius:6px;width:26px;height:26px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#fff;font-size:13px;pointer-events:all;opacity:0;transition:opacity .2s;}
+.mb-dl{position:absolute;top:6px;right:38px;background:rgba(0,0,0,.6);border:none;border-radius:6px;width:26px;height:26px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#fff;font-size:13px;opacity:0;transition:opacity .2s;}
 .mb-item:hover .mb-dl{opacity:1;}
 .mb-dl:hover{background:rgba(0,0,0,.85);}
-.mb-note{flex:1;font-size:10px;color:rgba(255,255,255,.9);outline:none;background:none;border:none;font-family:'Montserrat',sans-serif;font-weight:600;pointer-events:all;}
-.mb-note::placeholder{color:rgba(255,255,255,.4);}
+.mb-note{display:block;width:100%;padding:8px 10px;font-size:12px;font-weight:600;color:var(--th);outline:none;background:var(--cd);border:0;border-top:0.5px solid var(--bd);font-family:'Montserrat',sans-serif;line-height:1.3;box-sizing:border-box;}
+.mb-note::placeholder{color:var(--tdd);font-weight:500;font-style:italic;}
+.mb-note:focus{background:#fff;color:#111;}
 .mb-empty{text-align:center;padding:50px 20px;color:var(--tdd);font-size:13px;font-weight:600;column-span:all;-webkit-column-span:all;width:100%;}
 
 /* KANBAN */
@@ -506,11 +506,12 @@ function renderMbGrid(){
     del.onclick=function(e){e.stopPropagation();mbData[curMbCat].splice(idx,1);renderMb();fbSave();};
     var dl=document.createElement('button');dl.className='mb-dl';dl.textContent='⬇';dl.title='Download';
     dl.onclick=function(e){e.stopPropagation();downloadImage(img.src,_suggestName(img));};
-    var ov=document.createElement('div');ov.className='mb-ov';
-    var n=document.createElement('input');n.className='mb-note';n.placeholder='Notiz...';n.type='text';n.value=img.note||'';
+    var w=document.createElement('div');w.className='mb-item-img-wrap';
+    w.appendChild(i);w.appendChild(dl);w.appendChild(del);
+    var n=document.createElement('input');n.className='mb-note';n.placeholder='Notiz hinzufügen...';n.type='text';n.value=img.note||'';
     n.onclick=function(e){e.stopPropagation();};
     n.onchange=function(){img.note=n.value;fbSave();};
-    ov.appendChild(n);d.appendChild(i);d.appendChild(dl);d.appendChild(del);d.appendChild(ov);grid.appendChild(d);
+    d.appendChild(w);d.appendChild(n);grid.appendChild(d);
   });
 }
 
