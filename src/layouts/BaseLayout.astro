@@ -14,8 +14,33 @@ const { title = "Unsigned Workspace" } = Astro.props;
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover" />
     <link rel="icon" type="image/png" href="/brand/v-dark.png" />
-    <!-- PWA: Web Manifest + Theme + iOS-spezifische Tags fuer "Zum Home-Bildschirm hinzufuegen" -->
-    <link rel="manifest" href="/manifest.webmanifest" />
+    <!-- PWA: Dynamisches Manifest pro Customer (vor Browser den Manifest-Tag fetched).
+         iOS Safari liest manifest beim "Add to Home Screen" — und cached den initial-Wert.
+         Daher MÜSSEN wir den Manifest-Link DYNAMISCH zur Zeit des Head-Parsings setzen,
+         nicht erst per JS nach Page-Load. -->
+    <script is:inline>
+      (function () {
+        try {
+          var room = new URLSearchParams(location.search).get("room");
+          // Customer-Raum: dynamisches Manifest mit start_url=/portal?room=XYZ
+          // Sonst: Standard-Manifest (Owner)
+          var href = room ? "/api/manifest?room=" + encodeURIComponent(room) : "/manifest.webmanifest";
+          var l = document.createElement("link");
+          l.rel = "manifest";
+          l.href = href;
+          document.head.appendChild(l);
+          if (room) {
+            try { localStorage.setItem("uw.customerRoom", room); } catch (e) {}
+          }
+        } catch (e) {
+          // Fallback: statisches Manifest
+          var l2 = document.createElement("link");
+          l2.rel = "manifest";
+          l2.href = "/manifest.webmanifest";
+          document.head.appendChild(l2);
+        }
+      })();
+    </script>
     <meta name="theme-color" content="#c13030" />
     <link rel="apple-touch-icon" href="/brand/v-dark.png" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
