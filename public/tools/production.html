@@ -433,7 +433,8 @@ function persistColumnDelete(colId) {
 function persistCard(cardId) {
   if (!_R || !_D || !CARDS[cardId]) return;
   _D.ref('rooms/' + _R + '/production/cards/' + cardId).set(CARDS[cardId])
-    .then(showSaved).catch(function (e) { setConn('⚠ ' + (e.code || e.message)); });
+    .then(function () { showSaved(); updateProductionPct(); })
+    .catch(function (e) { setConn('⚠ ' + (e.code || e.message)); });
 }
 function persistCardField(cardId, field) {
   if (!_R || !_D || !CARDS[cardId]) return;
@@ -443,13 +444,39 @@ function persistCardField(cardId, field) {
 function persistCardDelete(cardId) {
   if (!_R || !_D) return;
   _D.ref('rooms/' + _R + '/production/cards/' + cardId).remove()
-    .then(showSaved).catch(function (e) { setConn('⚠ ' + (e.code || e.message)); });
+    .then(function () { showSaved(); updateProductionPct(); })
+    .catch(function (e) { setConn('⚠ ' + (e.code || e.message)); });
 }
 function persistCalc() {
   if (!_R || !_D || !CALC) return;
   _D.ref('rooms/' + _R + '/production/calculator').set(CALC)
     .then(showSaved).catch(function (e) { setConn('⚠ ' + (e.code || e.message)); });
 }
+function updateProductionPct() {
+  if (!_R || !_D) return;
+  var ids = activePieceIds();
+  var pipeline = sortedColumnIds(true); // include hidden — full pipeline order
+  var total = pipeline.length;
+  if (total === 0 || ids.length === 0) {
+    var pct0 = 0;
+    _D.ref('rooms/' + _R + '/production_pct').set(pct0).catch(function(){});
+    try { window.parent.postMessage({ type: 'productionPct', pct: pct0 }, '*'); } catch(e){}
+    return;
+  }
+  var sum = 0;
+  ids.forEach(function (pid) {
+    var c = CARDS[pid];
+    var idx = pipeline.indexOf(c.columnId);
+    if (idx < 0) return;
+    var p = ((idx + 1) / total) * 100;
+    sum += p;
+  });
+  var pct = Math.round(sum / ids.length);
+  if (pct < 0) pct = 0; if (pct > 100) pct = 100;
+  _D.ref('rooms/' + _R + '/production_pct').set(pct).catch(function(){});
+  try { window.parent.postMessage({ type: 'productionPct', pct: pct }, '*'); } catch(e){}
+}
+
 function logFeedEntry(entry) {
   if (!_R || !_D) return;
   var k = _D.ref('rooms/' + _R + '/production/feed').push();
@@ -511,6 +538,19 @@ function renderPieceTabs() {
       renderPieceTabs();
       renderPieceContent();
     };
+    if (!IS_CUSTOMER) {
+      tab.draggable = true;
+      tab.addEventListener('dragstart', function (e) {
+        dragCardId = pid;
+        tab.style.opacity = '0.5';
+        try { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', pid); } catch(_){}
+      });
+      tab.addEventListener('dragend', function () {
+        dragCardId = null;
+        tab.style.opacity = '';
+        document.querySelectorAll('.cell.is-drop').forEach(function (x) { x.classList.remove('is-drop'); });
+      });
+    }
   });
   if (!IS_CUSTOMER) {
     var add = el('button', 'piece-tab-add', pieceTabsBar);
@@ -562,6 +602,19 @@ function renderPieceContent() {
   var stageText = document.createElement('span');
   stageText.textContent = currentStageLabel(card);
   stagePill.appendChild(stageText);
+
+  // Techpack-Origin Indicator
+  if (card.origin && card.origin.tool === 'techpack') {
+    var orig = el('span', 'piece-cur-stage', head);
+    orig.style.background = 'var(--blue-soft)';
+    orig.style.color = 'var(--blue)';
+    orig.title = 'Aus Techpack-Tool importiert';
+    var oDot = el('span', null, orig);
+    oDot.textContent = '📐';
+    var oTxt = document.createElement('span');
+    oTxt.textContent = 'aus Techpack';
+    orig.appendChild(oTxt);
+  }
 
   if (!IS_CUSTOMER) {
     var actWrap = el('div', 'piece-actions', head);
@@ -625,6 +678,21 @@ function renderPieceContent() {
         t.textContent = 'Aktuell · ' + relTime(enteredAt);
         var m = el('div', 'cell-meta is-current', c);
         m.textContent = '✓ Hier';
+        // Drag-source: active piece can be dragged from its current cell
+        if (!IS_CUSTOMER) {
+          c.draggable = true;
+          c.style.cursor = 'grab';
+          c.addEventListener('dragstart', function (e) {
+            dragCardId = activePieceId;
+            c.style.opacity = '0.5';
+            try { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', activePieceId); } catch(_){}
+          });
+          c.addEventListener('dragend', function () {
+            dragCardId = null;
+            c.style.opacity = '';
+            document.querySelectorAll('.cell.is-drop').forEach(function (x) { x.classList.remove('is-drop'); });
+          });
+        }
       }
       var canMove = !IS_CUSTOMER || cid === FINAL_COL_ID;
       if (canMove && card.columnId !== cid) {
@@ -1146,6 +1214,7 @@ if (!_R) {
     setConn('· verbunden');
     renderPieceTabs();
     renderPieceContent();
+    updateProductionPct();
   }).catch(function (e) { setConn('⚠ ' + (e.code || e.message)); });
 
   var _pendingRerender = false;
@@ -1175,6 +1244,7 @@ if (!_R) {
   base.child('cards').on('value', function (s) {
     CARDS = s.val() || {};
     _maybeRerender();
+    updateProductionPct();
   });
   base.child('feed').on('value', function (s) {
     var v = s.val() || {};

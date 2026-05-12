@@ -351,6 +351,63 @@ window.toast = toast;
    ════════════════════════════════════════════════════════════════════ */
 
 function fbRoot(){ return _DB ? _DB.ref('rooms/' + ROOM + '/techpack') : null; }
+
+// ── Push Techpack → Production ───────────────────────────────
+var PROD_DEFAULT_COLUMNS = [
+  { id: 'col_techpack',    label: 'Techpack fertig',       groupKey: 'prep',       groupLabel: 'Vorbereitung', order: 100 },
+  { id: 'col_s1_proc',     label: 'Sample 1 im Prozess',   groupKey: 'sample1',    groupLabel: 'Sample 1',     order: 200 },
+  { id: 'col_s1_way',      label: 'Sample 1 auf dem Weg',  groupKey: 'sample1',    groupLabel: 'Sample 1',     order: 300 },
+  { id: 'col_s1_done',     label: 'Sample 1 fertig',       groupKey: 'sample1',    groupLabel: 'Sample 1',     order: 400 },
+  { id: 'col_finalchange', label: 'Final Change',          groupKey: 'sample1',    groupLabel: 'Sample 1',     order: 500 },
+  { id: 'col_bulk',        label: 'Bulk Produktion',       groupKey: 'produktion', groupLabel: 'Produktion',   order: 1200 },
+  { id: 'col_versand',     label: 'Versand',               groupKey: 'produktion', groupLabel: 'Produktion',   order: 1300 },
+  { id: 'col_done',        label: 'Fertig empfangen',      groupKey: 'produktion', groupLabel: 'Produktion',   order: 1400 },
+];
+
+function pushToProduction(packId) {
+  if (!_DB || !ROOM) { toast('Kein Raum verbunden.'); return; }
+  var pack = STATE.packs[packId];
+  if (!pack || !pack.meta) { toast('Pack nicht gefunden.'); return; }
+  var packName = (pack.meta.name || '').trim() || 'Unbenannt';
+  var prodRef = _DB.ref('rooms/' + ROOM + '/production');
+
+  // 1. Check ob columns existieren — falls leer, Defaults seeden
+  prodRef.child('columns').once('value').then(function(snap){
+    var existing = snap.val() || {};
+    var cnt = Object.keys(existing).length;
+    var seedPromise = Promise.resolve();
+    if (cnt === 0) {
+      var seedObj = {};
+      PROD_DEFAULT_COLUMNS.forEach(function(dc){
+        seedObj[dc.id] = { label: dc.label, order: dc.order, groupKey: dc.groupKey, groupLabel: dc.groupLabel, isCustom: false };
+      });
+      seedPromise = prodRef.child('columns').set(seedObj);
+    }
+    return seedPromise;
+  }).then(function(){
+    // 2. Create card
+    var now = Date.now();
+    var cardId = 'card_' + now.toString(36) + Math.random().toString(36).slice(2,6);
+    var card = {
+      name: packName,
+      columnId: 'col_techpack',
+      notes: '',
+      createdAt: now,
+      history: [{ col: 'col_techpack', enteredAt: now, byUid: (window.ME && window.ME.uid) || null }],
+      origin: { tool: 'techpack', packId: packId, baseStyle: (pack.meta && pack.meta.baseStyle) || 'custom' },
+    };
+    return prodRef.child('cards/' + cardId).set(card);
+  }).then(function(){
+    // 3. Pack-Status auto auf sample_1 setzen wenn noch finalized
+    if (pack.meta && pack.meta.status === 'finalized') {
+      return safeUpdate(fbPack(packId).child('meta'), { status: 'sample_1', updated: Date.now() });
+    }
+  }).then(function(){
+    toast('„' + packName + '" → in Produktion ✓');
+  }).catch(function(e){
+    toast('Fehler: ' + (e.code || e.message));
+  });
+}
 function fbPacks(){ return fbRoot() ? fbRoot().child('packs') : null; }
 function fbPack(id){ return fbPacks() ? fbPacks().child(id) : null; }
 
@@ -818,6 +875,15 @@ function renderEditor(){
   var pdfBtn = el('button', 'btn btn-accent', 'PDF Export');
   pdfBtn.onclick = function(){ exportPdf(STATE.activePackId); };
   $('hdrActions').appendChild(pdfBtn);
+
+  // → in Produktion schieben — sichtbar wenn Pack nicht mehr im Draft ist
+  var packStatus = (pack.meta && pack.meta.status) || 'draft';
+  if (packStatus !== 'draft') {
+    var prodBtn = el('button', 'btn', '→ in Produktion');
+    prodBtn.title = 'Erzeugt eine Karte im Produktion-Tool (Techpack fertig)';
+    prodBtn.onclick = function(){ pushToProduction(STATE.activePackId); };
+    $('hdrActions').appendChild(prodBtn);
+  }
 
   var v = $('viewEditor');
   clearEl(v);

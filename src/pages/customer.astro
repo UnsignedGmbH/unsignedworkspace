@@ -269,7 +269,7 @@ import BrandworkTimeline from "../components/BrandworkTimeline.astro";
     }
 
     // ── progress sources ─────────────────────────────────────
-    var lastBiP = null, lastShP = null, lastCrP = null, lastAgP = null, lastDnP = null, lastMkP = null, lastShopP = null, lastSocialP = null, lastContentP = null;
+    var lastBiP = null, lastShP = null, lastCrP = null, lastAgP = null, lastDnP = null, lastMkP = null, lastShopP = null, lastSocialP = null, lastContentP = null, lastProdP = null;
 
     var bumpLastActive = ui.throttle(function () {
       if (!customer) return;
@@ -382,6 +382,7 @@ import BrandworkTimeline from "../components/BrandworkTimeline.astro";
     var lastShopPRef    = { read: function(){ return lastShopP; }, write: function(v){ lastShopP = v; } };
     var lastSocialPRef  = { read: function(){ return lastSocialP; }, write: function(v){ lastSocialP = v; } };
     var lastContentPRef = { read: function(){ return lastContentP; }, write: function(v){ lastContentP = v; } };
+    var lastProdPRef    = { read: function(){ return lastProdP; }, write: function(v){ lastProdP = v; } };
     function attachToolPctListeners(room) {
       attachPctListener(room, "sh_pct", lastShPRef, "shP");
       attachPctListener(room, "cr_pct", lastCrPRef, "crP");
@@ -390,6 +391,7 @@ import BrandworkTimeline from "../components/BrandworkTimeline.astro";
       attachPctListener(room, "shop_pct", lastShopPRef, "shopP");
       attachPctListener(room, "social_pct", lastSocialPRef, "socialP");
       attachPctListener(room, "content_pct", lastContentPRef, "contentP");
+      attachPctListener(room, "production_pct", lastProdPRef, "prodP");
     }
 
     // Live presence indicator + customer profile
@@ -469,6 +471,7 @@ import BrandworkTimeline from "../components/BrandworkTimeline.astro";
         shop: pctOf(c, "shopP"),
         social: pctOf(c, "socialP"),
         content: pctOf(c, "contentP"),
+        production: pctOf(c, "prodP"),
       };
     }
     // Techpack hat keine zentrale Progress (mehrere Packs pro Customer).
@@ -766,6 +769,7 @@ import BrandworkTimeline from "../components/BrandworkTimeline.astro";
         lastShopP = c.shopP == null ? null : clamp(c.shopP);
         lastSocialP = c.socialP == null ? null : clamp(c.socialP);
         lastContentP = c.contentP == null ? null : clamp(c.contentP);
+        lastProdP = c.prodP == null ? null : clamp(c.prodP);
 
         $("topName").textContent = c.name || "Unbenannt";
         $("cName").textContent = c.name || "Unbenannt";
