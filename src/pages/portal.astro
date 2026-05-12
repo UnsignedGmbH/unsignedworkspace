@@ -37,6 +37,28 @@ import BrandworkTimeline from "../components/BrandworkTimeline.astro";
       class="flex-1 px-4 md:px-6 lg:px-8 py-5 fade-up"
       style="animation-delay:120ms"
     >
+      <!-- Push-Permission Banner -->
+      <div
+        id="pushBanner"
+        class="hidden mb-3 bg-brand-dim border-[0.5px] border-brand-border rounded-xl px-4 py-3 flex items-center gap-3 flex-wrap"
+      >
+        <span class="text-[18px] shrink-0" aria-hidden="true">🔔</span>
+        <div class="flex-1 min-w-0">
+          <div class="text-[12px] font-extrabold text-ink leading-tight" id="pushBannerTitle">Benachrichtigungen aktivieren?</div>
+          <div class="text-[11px] text-ink-mute leading-snug" id="pushBannerSub">Bekomme Updates zur Produktion deiner Pieces direkt auf dein Gerät.</div>
+        </div>
+        <button
+          type="button"
+          id="pushBannerBtn"
+          class="text-[11px] font-bold text-white bg-brand border-0 rounded-lg px-3 py-2 cursor-pointer shrink-0 hover:bg-[#a82929]"
+        >Aktivieren</button>
+        <button
+          type="button"
+          id="pushBannerDismiss"
+          class="text-[11px] font-bold text-ink-mute bg-transparent border-0 cursor-pointer shrink-0"
+          title="Banner verstecken">✕</button>
+      </div>
+
       <!-- ═══════ TOOL OVERVIEW (Landing) ═══════ -->
       <div id="overviewView">
         <!-- HERO -->
@@ -248,6 +270,8 @@ import BrandworkTimeline from "../components/BrandworkTimeline.astro";
         desc: "Moodboard · 1:1 · 9:16" },
       { id: "social", icon: "💬", label: "Social Media",
         desc: "Profile · Highlights · Captions · WhatsApp" },
+      { id: "production", icon: "🏭", label: "Produktion",
+        desc: "Status & Stages deiner Pieces · Kalkulator" },
     ];
 
     if (!room) {
@@ -521,7 +545,7 @@ import BrandworkTimeline from "../components/BrandworkTimeline.astro";
       document.getElementById("toolView").classList.remove("hidden");
       document.getElementById("toolCrumb").textContent = t.icon + " " + t.label;
       frame.src =
-        "/tools/" + toolId + ".html?room=" + encodeURIComponent(room) + "&owner=1";
+        "/tools/" + toolId + ".html?room=" + encodeURIComponent(room) + "&owner=1&role=customer";
       pingFn(toolId);
     }
 
@@ -576,4 +600,90 @@ import BrandworkTimeline from "../components/BrandworkTimeline.astro";
     }
     watchClosed();
   })();
+</script>
+
+<!-- Push-Notification Setup (Customer-Portal) -->
+<script src="/push-client.js" defer></script>
+<script is:inline>
+(function () {
+  var banner = document.getElementById('pushBanner');
+  var btn = document.getElementById('pushBannerBtn');
+  var dismiss = document.getElementById('pushBannerDismiss');
+  var titleEl = document.getElementById('pushBannerTitle');
+  var subEl = document.getElementById('pushBannerSub');
+  if (!banner || !btn) return;
+
+  var DISMISS_KEY = 'unsigned_push_dismissed_until';
+
+  function dismissedRecently() {
+    try {
+      var until = parseInt(localStorage.getItem(DISMISS_KEY) || '0', 10);
+      return until > Date.now();
+    } catch (e) { return false; }
+  }
+
+  function setDismissed(days) {
+    try {
+      localStorage.setItem(DISMISS_KEY, String(Date.now() + days * 86400000));
+    } catch (e) {}
+  }
+
+  function getRoom() {
+    var p = new URLSearchParams(location.search);
+    return p.get('room') || (window.PORTAL_ROOM || null);
+  }
+
+  function update() {
+    if (!window.UWPush) { setTimeout(update, 200); return; }
+    if (!UWPush.isSupported()) { banner.classList.add('hidden'); return; }
+    var st = UWPush.permState();
+    var room = getRoom();
+    if (!room) { banner.classList.add('hidden'); return; }
+
+    if (st === 'granted') {
+      banner.classList.add('hidden');
+      UWPush.refresh(room).catch(function () {});
+    } else if (st === 'denied') {
+      banner.classList.remove('hidden');
+      titleEl.textContent = 'Benachrichtigungen sind blockiert';
+      subEl.textContent = 'Erlaube sie in den Browser-Einstellungen (Safari → Einstellungen → Websites → Mitteilungen).';
+      btn.style.display = 'none';
+    } else {
+      // 'default' — noch nicht gefragt
+      if (dismissedRecently()) { banner.classList.add('hidden'); return; }
+      banner.classList.remove('hidden');
+      // iOS-PWA-Hinweis falls Safari (nicht im Homescreen-Mode)
+      var ua = navigator.userAgent || '';
+      var iOSnotStandalone = (/iPhone|iPad/.test(ua)) && !UWPush.isIOSStandalone();
+      if (iOSnotStandalone) {
+        titleEl.textContent = 'Für Push-Benachrichtigungen: App zum Home-Bildschirm';
+        subEl.textContent = 'Safari-Teilen-Button → "Zum Home-Bildschirm". Dann diese App vom Homescreen öffnen und nochmal hier klicken.';
+        btn.textContent = 'OK, verstanden';
+        btn.onclick = function () { setDismissed(2); banner.classList.add('hidden'); };
+      } else {
+        titleEl.textContent = 'Benachrichtigungen aktivieren?';
+        subEl.textContent = 'Bekomme Updates zur Produktion deiner Pieces direkt auf dein Gerät.';
+        btn.textContent = 'Aktivieren';
+        btn.onclick = function () {
+          btn.disabled = true;
+          btn.textContent = 'Aktiviere …';
+          UWPush.subscribe(room).then(function () {
+            banner.classList.add('hidden');
+          }).catch(function (e) {
+            btn.disabled = false;
+            btn.textContent = 'Aktivieren';
+            subEl.textContent = (e && e.message) || 'Konnte nicht aktiviert werden.';
+          });
+        };
+      }
+    }
+  }
+
+  dismiss.onclick = function () { setDismissed(7); banner.classList.add('hidden'); };
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', update);
+  } else {
+    update();
+  }
+})();
 </script>

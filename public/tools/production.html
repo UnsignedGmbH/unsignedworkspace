@@ -1,0 +1,1164 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Produktion · Unsigned Workspace</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" crossorigin />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,600;0,700;0,800;0,900;1,800&display=swap" />
+<style>
+:root{
+  --bg:#fafaf6; --bg2:#fff; --card:#fff; --line:rgba(0,0,0,0.08);
+  --ink:#0a0a0a; --ink-soft:#3a3a3a; --ink-mute:#666; --ink-dim:#999;
+  --brand:#c13030; --brand-dim:rgba(193,48,48,0.08); --brand-border:rgba(193,48,48,0.25);
+  --green:#3a9a6e; --amber:#b8842b; --shadow:0 1px 2px rgba(0,0,0,0.04);
+}
+*,*::before,*::after{box-sizing:border-box;}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:'Montserrat',sans-serif;font-size:13px;font-weight:500;-webkit-font-smoothing:antialiased;}
+body{padding:14px 16px 80px;min-height:100vh;}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit;-webkit-tap-highlight-color:transparent;}
+input,textarea,select{font-family:inherit;font-size:inherit;color:inherit;}
+input:focus,textarea:focus,select:focus{outline:none;}
+
+.top-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px;}
+.outer-tabs{display:flex;gap:5px;background:var(--bg2);border:0.5px solid var(--line);border-radius:11px;padding:4px;flex-shrink:0;}
+.outer-tab{padding:7px 14px;border-radius:8px;font-weight:800;font-size:11px;color:var(--ink-mute);cursor:pointer;-webkit-tap-highlight-color:transparent;}
+.outer-tab.on{background:var(--ink);color:#fff;}
+.top-actions{display:flex;gap:6px;flex-wrap:wrap;margin-left:auto;}
+.act-btn{padding:7px 12px;border-radius:9px;border:1px solid var(--line);background:var(--bg2);font-weight:700;font-size:11px;color:var(--ink-soft);transition:all 0.15s;}
+.act-btn:hover{border-color:var(--brand-border);color:var(--brand);}
+.act-btn.primary{background:var(--brand);color:#fff;border-color:var(--brand);}
+.act-btn.primary:hover{background:#a82929;color:#fff;}
+.tag{font-size:10px;color:var(--ink-dim);font-weight:700;letter-spacing:0.04em;}
+
+.tab-view{display:none;}
+.tab-view.on{display:block;}
+
+.kanban-wrap{overflow-x:auto;overflow-y:visible;padding-bottom:6px;-webkit-overflow-scrolling:touch;}
+.kanban{display:inline-flex;gap:10px;min-width:100%;padding-bottom:4px;align-items:flex-start;}
+.col{flex:0 0 270px;background:var(--bg2);border:0.5px solid var(--line);border-radius:12px;display:flex;flex-direction:column;max-height:calc(100vh - 130px);box-shadow:var(--shadow);}
+.col.is-drop{border-color:var(--brand);background:var(--brand-dim);}
+.col.is-hidden{opacity:0.55;}
+.col-head{display:flex;align-items:center;gap:7px;padding:11px 12px 9px;border-bottom:0.5px solid var(--line);}
+.col-title{flex:1;min-width:0;font-weight:800;font-size:12px;color:var(--ink);outline:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;letter-spacing:-0.005em;}
+.col-title[contenteditable="true"]{cursor:text;}
+.col-title.is-hidden::before{content:"🙈 ";opacity:0.6;}
+.col-count{font-size:10px;font-weight:800;background:var(--bg);color:var(--ink-mute);padding:2px 7px;border-radius:9px;letter-spacing:0.02em;flex-shrink:0;}
+.col-menu-btn{padding:2px 6px;color:var(--ink-dim);font-size:14px;border-radius:6px;line-height:1;}
+.col-menu-btn:hover{background:var(--bg);color:var(--ink);}
+.col-list{flex:1;overflow-y:auto;padding:8px 8px 4px;display:flex;flex-direction:column;gap:6px;min-height:60px;}
+.col-empty{font-size:10px;color:var(--ink-dim);font-style:italic;text-align:center;padding:18px 6px;}
+.col-add-card{margin:4px 8px 10px;padding:7px 10px;border:1px dashed var(--line);border-radius:8px;font-size:11px;font-weight:700;color:var(--ink-dim);transition:all 0.15s;}
+.col-add-card:hover{border-color:var(--brand-border);color:var(--brand);}
+.add-col-tile{flex:0 0 200px;background:var(--bg2);border:1.5px dashed var(--line);border-radius:12px;padding:14px 12px;display:flex;flex-direction:column;gap:7px;align-items:stretch;align-self:flex-start;}
+.add-col-tile button{padding:7px 10px;border-radius:8px;font-size:11px;font-weight:700;color:var(--ink-soft);border:1px solid var(--line);background:var(--bg);transition:all 0.15s;}
+.add-col-tile button:hover{border-color:var(--brand);color:var(--brand);}
+
+.card{background:var(--bg);border:0.5px solid var(--line);border-radius:9px;padding:9px 10px;cursor:grab;transition:transform 0.1s,box-shadow 0.15s;user-select:none;}
+.card:hover{border-color:var(--brand-border);box-shadow:0 2px 6px rgba(0,0,0,0.05);}
+.card:active{cursor:grabbing;}
+.card.is-drag{opacity:0.5;}
+.card-title{font-weight:800;font-size:12.5px;color:var(--ink);margin-bottom:5px;line-height:1.3;}
+.card-meta{display:flex;align-items:center;gap:5px;flex-wrap:wrap;}
+.card-pill{font-size:9px;font-weight:800;padding:2px 6px;border-radius:5px;letter-spacing:0.04em;text-transform:uppercase;}
+.card-pill.sample{background:#e8f1ff;color:#2a5fbf;}
+.card-pill.assignee{background:var(--bg2);color:var(--ink-soft);border:0.5px solid var(--line);}
+.card-time{font-size:10px;color:var(--ink-dim);margin-left:auto;font-weight:600;}
+
+.detail-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.4);display:none;align-items:center;justify-content:center;z-index:1000;padding:14px;}
+.detail-overlay.on{display:flex;}
+.detail-modal{background:var(--bg2);border-radius:16px;width:100%;max-width:620px;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,0.3);overflow:hidden;}
+.detail-head{display:flex;align-items:center;gap:8px;padding:14px 16px 11px;border-bottom:0.5px solid var(--line);}
+.detail-title-input{flex:1;min-width:0;font-weight:800;font-size:15px;background:transparent;border:1px solid transparent;border-radius:6px;padding:5px 7px;margin:-5px -7px;}
+.detail-title-input:hover{border-color:var(--line);}
+.detail-title-input:focus{border-color:var(--brand-border);background:var(--bg);}
+.detail-close{padding:5px 9px;font-size:18px;color:var(--ink-mute);border-radius:6px;line-height:1;flex-shrink:0;}
+.detail-close:hover{background:var(--bg);}
+.detail-tabs{display:flex;gap:3px;padding:8px 14px 0;border-bottom:0.5px solid var(--line);background:var(--bg);}
+.detail-tab{padding:8px 14px;font-size:11px;font-weight:800;color:var(--ink-mute);border-radius:6px 6px 0 0;border:1px solid transparent;border-bottom:0;cursor:pointer;}
+.detail-tab.on{background:var(--bg2);color:var(--ink);border-color:var(--line);position:relative;top:1px;}
+.detail-body{flex:1;overflow-y:auto;padding:16px;}
+.detail-section{margin-bottom:18px;}
+.detail-section h4{font-size:10px;font-weight:800;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink-mute);margin:0 0 7px;}
+.detail-input,.detail-textarea,.detail-select{width:100%;padding:8px 11px;border:1px solid var(--line);border-radius:8px;background:var(--bg2);font-size:12px;color:var(--ink);box-sizing:border-box;}
+.detail-input:focus,.detail-textarea:focus,.detail-select:focus{border-color:var(--brand);}
+.detail-textarea{min-height:90px;resize:vertical;line-height:1.4;}
+.move-row{display:flex;gap:7px;flex-wrap:wrap;}
+.move-row button{flex:1;min-width:140px;padding:10px 12px;border-radius:9px;font-weight:800;font-size:11.5px;border:1px solid var(--line);background:var(--bg2);color:var(--ink-soft);}
+.move-row button:hover{border-color:var(--brand);color:var(--brand);}
+.move-row button.primary{background:var(--brand);color:#fff;border-color:var(--brand);}
+.move-row button.primary:hover{background:#a82929;}
+.move-row button:disabled{opacity:0.4;cursor:not-allowed;}
+.history-list{display:flex;flex-direction:column;gap:6px;}
+.history-row{display:flex;align-items:flex-start;gap:9px;padding:8px 10px;background:var(--bg);border-radius:7px;font-size:11px;}
+.history-row .dot{width:8px;height:8px;border-radius:50%;background:var(--brand);flex-shrink:0;margin-top:4px;}
+.history-row .info{flex:1;min-width:0;}
+.history-row .stage{font-weight:800;color:var(--ink);}
+.history-row .ts{font-size:10px;color:var(--ink-mute);font-weight:600;margin-top:1px;}
+.history-empty{font-size:11px;color:var(--ink-dim);font-style:italic;text-align:center;padding:12px;}
+
+.calc-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+@media (max-width:560px){.calc-grid{grid-template-columns:1fr;}}
+.calc-block{background:var(--bg);border:0.5px solid var(--line);border-radius:9px;padding:11px 12px;}
+.calc-block.out{background:#e8f5ee;border-color:#bfdfcc;}
+.calc-block h5{font-size:10px;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:var(--ink-mute);margin:0 0 8px;}
+.calc-row{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:5px 0;border-bottom:0.5px solid var(--line);}
+.calc-row:last-child{border-bottom:none;}
+.calc-row label{font-size:11px;font-weight:600;color:var(--ink-soft);flex:1;min-width:0;line-height:1.2;}
+.calc-row input{width:90px;padding:5px 8px;border:1px solid var(--line);border-radius:6px;background:var(--bg2);font-size:12px;text-align:right;font-weight:700;flex-shrink:0;}
+.calc-row input:focus{border-color:var(--brand);}
+.calc-row .v{font-size:12px;font-weight:800;color:#225a3a;text-align:right;min-width:90px;}
+.calc-row .unit{font-size:9px;color:var(--ink-dim);font-weight:700;width:14px;flex-shrink:0;}
+
+.feed-list{display:flex;flex-direction:column;gap:8px;}
+.feed-row{display:flex;gap:10px;align-items:flex-start;background:var(--bg2);border:0.5px solid var(--line);border-radius:9px;padding:10px 12px;}
+.feed-row .dot{width:6px;height:6px;border-radius:50%;background:var(--brand);margin-top:7px;flex-shrink:0;}
+.feed-row .info{flex:1;min-width:0;}
+.feed-row .txt{font-size:12px;font-weight:600;color:var(--ink-soft);line-height:1.4;}
+.feed-row .txt strong{font-weight:800;color:var(--ink);}
+.feed-row .meta{font-size:10px;color:var(--ink-mute);margin-top:3px;font-weight:600;}
+.feed-empty{font-size:12px;color:var(--ink-dim);font-style:italic;text-align:center;padding:30px 16px;}
+
+.sheet-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.5);display:none;align-items:flex-end;justify-content:center;z-index:2000;}
+.sheet-overlay.on{display:flex;}
+.sheet{background:var(--bg2);width:100%;max-width:480px;border-radius:18px 18px 0 0;padding:14px 16px 22px;max-height:80vh;overflow-y:auto;animation:slideUp 0.18s ease-out;}
+@keyframes slideUp{from{transform:translateY(100%);}to{transform:translateY(0);}}
+.sheet h3{font-size:12px;font-weight:800;letter-spacing:0.04em;text-transform:uppercase;color:var(--ink-mute);margin:0 0 12px;text-align:center;}
+.sheet-list{display:flex;flex-direction:column;gap:5px;}
+.sheet-list button{padding:11px 13px;background:var(--bg);border:0.5px solid var(--line);border-radius:9px;font-size:12.5px;font-weight:700;color:var(--ink-soft);text-align:left;}
+.sheet-list button:hover,.sheet-list button.current{background:var(--brand-dim);color:var(--brand);border-color:var(--brand-border);}
+.sheet-list button.current::after{content:" • aktuell";font-size:10px;opacity:0.7;}
+
+.manage-list{display:flex;flex-direction:column;gap:5px;}
+.manage-row{display:flex;align-items:center;gap:9px;padding:9px 11px;background:var(--bg);border:0.5px solid var(--line);border-radius:8px;}
+.manage-row .name{flex:1;font-size:12px;font-weight:700;color:var(--ink);}
+.manage-row .toggle{padding:4px 9px;border-radius:6px;font-size:10px;font-weight:800;cursor:pointer;border:1px solid var(--line);background:var(--bg2);color:var(--ink-mute);}
+.manage-row .toggle.on{background:var(--brand);color:#fff;border-color:var(--brand);}
+.manage-row .order-btn{padding:3px 7px;color:var(--ink-mute);font-size:13px;line-height:1;border-radius:5px;}
+.manage-row .order-btn:hover{background:var(--bg2);color:var(--ink);}
+.manage-row.is-hidden .name{opacity:0.5;}
+
+.empty-state{text-align:center;padding:50px 20px;color:var(--ink-mute);}
+.empty-state .icon{font-size:42px;margin-bottom:10px;}
+.empty-state h3{font-size:14px;font-weight:800;color:var(--ink);margin:0 0 5px;}
+.empty-state p{font-size:11px;color:var(--ink-mute);margin:0;}
+
+.role-banner{background:#e8f1ff;border:0.5px solid #bcd3f5;color:#2a5fbf;font-size:11px;font-weight:700;padding:8px 12px;border-radius:8px;margin-bottom:10px;}
+</style>
+</head>
+<body>
+
+<div class="top-bar">
+  <div class="outer-tabs">
+    <div class="outer-tab on" data-tab="kanban">Kanban</div>
+    <div class="outer-tab" data-tab="archiv">Archiv</div>
+    <div class="outer-tab" data-tab="feed">Aktivität</div>
+  </div>
+  <span class="tag" id="connTag">· verbinde …</span>
+  <div class="top-actions" id="ownerActions">
+    <button class="act-btn" id="manageColsBtn" title="Spalten verwalten">⚙ Spalten</button>
+    <button class="act-btn" id="addSampleGroupBtn" title="Sample-Gruppe (3 Spalten) hinzufügen">+ Sample-Gruppe</button>
+    <button class="act-btn primary" id="addCardBtn">+ Neue Karte</button>
+  </div>
+</div>
+
+<div id="roleBanner" class="role-banner" style="display:none;">
+  👁 Read-only-Ansicht. Du kannst die Karte „Fertig empfangen" tippen und Notizen/Kalkulator anpassen.
+</div>
+
+<div class="tab-view on" id="view-kanban">
+  <div class="kanban-wrap">
+    <div class="kanban" id="kanbanInner"></div>
+  </div>
+</div>
+
+<div class="tab-view" id="view-archiv">
+  <div id="archivList"></div>
+</div>
+
+<div class="tab-view" id="view-feed">
+  <div class="feed-list" id="feedList"></div>
+</div>
+
+<div class="detail-overlay" id="detailOverlay">
+  <div class="detail-modal">
+    <div class="detail-head">
+      <input class="detail-title-input" id="detailTitleInput" type="text" placeholder="Piece-Name" />
+      <span class="card-pill sample" id="detailSamplePill" style="display:none;">Sample 1</span>
+      <button class="detail-close" id="detailClose">×</button>
+    </div>
+    <div class="detail-tabs">
+      <div class="detail-tab on" data-dtab="info">Info</div>
+      <div class="detail-tab" data-dtab="calc">Kalkulator</div>
+      <div class="detail-tab" data-dtab="history">Verlauf</div>
+    </div>
+    <div class="detail-body">
+      <div class="dtab-view on" id="dview-info">
+        <div class="detail-section">
+          <h4>Stage</h4>
+          <div class="move-row">
+            <button id="detailPrevBtn">← Vorherige Stufe</button>
+            <button id="detailNextBtn" class="primary">Nächste Stufe →</button>
+          </div>
+          <div style="font-size:11px;color:var(--ink-mute);margin-top:6px;font-weight:600;" id="detailStageInfo"></div>
+        </div>
+        <div class="detail-section">
+          <h4>Notizen</h4>
+          <textarea class="detail-textarea" id="detailNotes" placeholder="Notizen zu diesem Piece …"></textarea>
+        </div>
+        <div class="detail-section">
+          <h4>Sample-Nummer</h4>
+          <input class="detail-input" id="detailSampleNr" type="number" min="1" max="20" />
+        </div>
+        <div class="detail-section">
+          <h4>Verantwortlich</h4>
+          <input class="detail-input" id="detailAssignee" type="text" placeholder="z.B. Eva, Yilynne, Lefu …" />
+        </div>
+        <div class="detail-section" id="detailDeleteWrap">
+          <button class="act-btn" id="detailDelBtn" style="color:#a82929;border-color:#f0c5c5;">🗑 Karte löschen</button>
+        </div>
+      </div>
+      <div class="dtab-view" id="dview-calc" style="display:none;"></div>
+      <div class="dtab-view" id="dview-history" style="display:none;">
+        <div class="history-list" id="historyList"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="sheet-overlay" id="sheetOverlay">
+  <div class="sheet">
+    <h3 id="sheetTitle">Karte verschieben in …</h3>
+    <div class="sheet-list" id="sheetList"></div>
+  </div>
+</div>
+
+<div class="detail-overlay" id="manageOverlay">
+  <div class="detail-modal" style="max-width:480px;">
+    <div class="detail-head">
+      <div style="font-weight:800;font-size:14px;flex:1;">Spalten verwalten</div>
+      <button class="detail-close" id="manageClose">×</button>
+    </div>
+    <div class="detail-body">
+      <p style="font-size:11px;color:var(--ink-mute);margin:0 0 11px;">Sichtbarkeit + Reihenfolge der Spalten für diesen Kunden.</p>
+      <div class="manage-list" id="manageList"></div>
+      <div style="margin-top:14px;display:flex;gap:6px;flex-wrap:wrap;">
+        <button class="act-btn" id="addCustomColBtn">+ Custom-Spalte</button>
+        <button class="act-btn" id="resetColsBtn" style="color:var(--ink-mute);">↺ Auf Defaults zurücksetzen</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+<script src="/tools/_shared/iframe-resilience.js"></script>
+
+<script>
+(function () {
+'use strict';
+
+var _R = new URLSearchParams(location.search).get('room');
+var _ROLE = new URLSearchParams(location.search).get('role') || 'owner';
+var IS_CUSTOMER = _ROLE === 'customer';
+firebase.initializeApp({
+  apiKey: 'AIzaSyBsbWPNZ_lUVHsZA5fEGEsZTbAuO6kPmHM',
+  authDomain: 'unsignedworkspace.firebaseapp.com',
+  databaseURL: 'https://unsignedworkspace-default-rtdb.europe-west1.firebasedatabase.app',
+  projectId: 'unsignedworkspace',
+});
+var _D = firebase.database();
+var connTag = document.getElementById('connTag');
+
+var COLUMNS = {};
+var CARDS = {};
+var FEED = [];
+var openCardId = null;
+
+var DEFAULT_COLUMNS = [
+  { id: 'col_techpack',    label: 'Techpack fertig',        order: 100 },
+  { id: 'col_s1_proc',     label: 'Sample 1 im Prozess',    order: 200 },
+  { id: 'col_s1_way',      label: 'Sample 1 auf dem Weg',   order: 300 },
+  { id: 'col_s1_done',     label: 'Sample 1 fertig',        order: 400 },
+  { id: 'col_finalchange', label: 'Final Change',           order: 500 },
+  { id: 'col_s2_proc',     label: 'Sample 2 im Prozess',    order: 600 },
+  { id: 'col_s2_way',      label: 'Sample 2 auf dem Weg',   order: 700 },
+  { id: 'col_s2_done',     label: 'Sample 2 fertig',        order: 800 },
+  { id: 'col_s3_proc',     label: 'Sample 3 im Prozess',    order: 900 },
+  { id: 'col_s3_way',      label: 'Sample 3 auf dem Weg',   order: 1000 },
+  { id: 'col_s3_done',     label: 'Sample 3 fertig',        order: 1100 },
+  { id: 'col_bulk',        label: 'Bulk Produktion',        order: 1200 },
+  { id: 'col_versand',     label: 'Versand',                order: 1300 },
+  { id: 'col_done',        label: 'Fertig empfangen',       order: 1400 },
+];
+var FINAL_COL_ID = 'col_done';
+
+function el(tag, cls, parent) {
+  var d = document.createElement(tag);
+  if (cls) d.className = cls;
+  if (parent) parent.appendChild(d);
+  return d;
+}
+function clearEl(node) { while (node.firstChild) node.removeChild(node.firstChild); }
+function newId(p) { return p + '_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+function tsNow() { return Date.now(); }
+function relTime(ts) {
+  if (!ts) return '—';
+  var d = Date.now() - ts;
+  var s = Math.floor(d / 1000);
+  if (s < 60) return 'gerade eben';
+  var m = Math.floor(s / 60);
+  if (m < 60) return m + ' Min';
+  var h = Math.floor(m / 60);
+  if (h < 24) return h + ' Std';
+  var dd = Math.floor(h / 24);
+  if (dd < 30) return dd + ' Tag' + (dd === 1 ? '' : 'e');
+  var mo = Math.floor(dd / 30);
+  return mo + ' Monat' + (mo === 1 ? '' : 'e');
+}
+function fmtDateTime(ts) {
+  if (!ts) return '—';
+  var d = new Date(ts);
+  function p(n){return n < 10 ? '0' + n : '' + n;}
+  return p(d.getDate()) + '.' + p(d.getMonth() + 1) + '. ' + p(d.getHours()) + ':' + p(d.getMinutes());
+}
+function fmtDuration(ms) {
+  if (!ms || ms < 0) return '—';
+  var s = Math.floor(ms / 1000);
+  var m = Math.floor(s / 60);
+  if (m < 60) return m + ' Min';
+  var h = Math.floor(m / 60);
+  if (h < 24) return h + ' Std';
+  var d = Math.floor(h / 24);
+  var hr = h % 24;
+  return d + 'd ' + hr + 'h';
+}
+function showSaved() {
+  if (!connTag) return;
+  var old = connTag.textContent;
+  connTag.textContent = '· gespeichert';
+  clearTimeout(connTag._t);
+  connTag._t = setTimeout(function () { connTag.textContent = old; }, 1400);
+}
+
+function sortedColumnIds(includeHidden) {
+  return Object.keys(COLUMNS)
+    .filter(function (k) { return includeHidden || !COLUMNS[k].hidden; })
+    .sort(function (a, b) { return (COLUMNS[a].order || 0) - (COLUMNS[b].order || 0); });
+}
+function cardsInColumn(colId) {
+  return Object.keys(CARDS)
+    .filter(function (k) { return CARDS[k].columnId === colId && !CARDS[k].archived; })
+    .sort(function (a, b) { return (CARDS[a].createdAt || 0) - (CARDS[b].createdAt || 0); });
+}
+
+function persistColumn(colId) {
+  if (!_R || !_D || !COLUMNS[colId]) return;
+  _D.ref('rooms/' + _R + '/production/columns/' + colId).set(COLUMNS[colId])
+    .then(showSaved)
+    .catch(function (e) { connTag.textContent = '⚠ ' + (e.code || e.message); });
+}
+function persistColumnDelete(colId) {
+  if (!_R || !_D) return;
+  _D.ref('rooms/' + _R + '/production/columns/' + colId).remove()
+    .then(showSaved)
+    .catch(function (e) { connTag.textContent = '⚠ ' + (e.code || e.message); });
+}
+function persistCard(cardId) {
+  if (!_R || !_D || !CARDS[cardId]) return;
+  _D.ref('rooms/' + _R + '/production/cards/' + cardId).set(CARDS[cardId])
+    .then(showSaved)
+    .catch(function (e) { connTag.textContent = '⚠ ' + (e.code || e.message); });
+}
+function persistCardField(cardId, field) {
+  if (!_R || !_D || !CARDS[cardId]) return;
+  _D.ref('rooms/' + _R + '/production/cards/' + cardId + '/' + field).set(CARDS[cardId][field])
+    .then(showSaved)
+    .catch(function (e) { connTag.textContent = '⚠ ' + (e.code || e.message); });
+}
+function persistCardDelete(cardId) {
+  if (!_R || !_D) return;
+  _D.ref('rooms/' + _R + '/production/cards/' + cardId).remove()
+    .then(showSaved)
+    .catch(function (e) { connTag.textContent = '⚠ ' + (e.code || e.message); });
+}
+function logFeedEntry(entry) {
+  if (!_R || !_D) return;
+  var k = _D.ref('rooms/' + _R + '/production/feed').push();
+  k.set(entry).catch(function () {});
+  if (!IS_CUSTOMER && window.fetch) {
+    var title = entry.cardName || 'Karte';
+    var body = 'jetzt in: ' + (entry.toColLabel || '');
+    fetch('/api/notify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ room: _R, title: title, body: body, url: '/portal' }),
+    }).catch(function () {});
+  }
+}
+
+if (IS_CUSTOMER) {
+  document.getElementById('ownerActions').style.display = 'none';
+  document.getElementById('roleBanner').style.display = 'block';
+}
+
+var kanbanInner = document.getElementById('kanbanInner');
+
+function renderKanban() {
+  clearEl(kanbanInner);
+  var visibleCols = sortedColumnIds(false);
+  if (visibleCols.length === 0) {
+    var em = el('div', 'empty-state', kanbanInner);
+    var ic = el('div', 'icon', em); ic.textContent = '🛠';
+    var h = el('h3', null, em); h.textContent = 'Noch keine Spalten';
+    var p = el('p', null, em); p.textContent = IS_CUSTOMER ? 'Warte bis dein Brand-Manager die Spalten einrichtet.' : 'Klick „⚙ Spalten" oben um Defaults zu laden.';
+    return;
+  }
+  visibleCols.forEach(function (colId) {
+    kanbanInner.appendChild(makeColumnEl(colId));
+  });
+  if (!IS_CUSTOMER) {
+    var addTile = el('div', 'add-col-tile', kanbanInner);
+    var b1 = el('button', null, addTile);
+    b1.textContent = '+ Custom-Spalte';
+    b1.onclick = addCustomColumn;
+    var b2 = el('button', null, addTile);
+    b2.textContent = '+ Sample-Gruppe (3 Spalten)';
+    b2.onclick = addSampleGroup;
+  }
+}
+
+function makeColumnEl(colId) {
+  var col = COLUMNS[colId];
+  var cardIds = cardsInColumn(colId);
+  var d = el('div', 'col' + (col.hidden ? ' is-hidden' : ''));
+  d.dataset.colId = colId;
+
+  var head = el('div', 'col-head', d);
+  var title = el('div', 'col-title' + (col.hidden ? ' is-hidden' : ''), head);
+  title.textContent = col.label || 'Spalte';
+  if (!IS_CUSTOMER && col.isCustom) {
+    title.contentEditable = 'true';
+    title.spellcheck = false;
+    title.addEventListener('input', function () {
+      COLUMNS[colId].label = title.textContent.trim() || 'Spalte';
+    });
+    title.addEventListener('blur', function () {
+      persistColumn(colId);
+    });
+    title.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') { e.preventDefault(); title.blur(); }
+    });
+  }
+  var count = el('span', 'col-count', head);
+  count.textContent = cardIds.length;
+
+  if (!IS_CUSTOMER) {
+    var menuBtn = el('button', 'col-menu-btn', head);
+    menuBtn.textContent = '⋯';
+    menuBtn.title = 'Spalten-Optionen';
+    menuBtn.onclick = function (e) {
+      e.stopPropagation();
+      colMenu(colId);
+    };
+  }
+
+  var list = el('div', 'col-list', d);
+  list.dataset.colDrop = colId;
+  if (cardIds.length === 0) {
+    var em = el('div', 'col-empty', list);
+    em.textContent = 'Leer';
+  } else {
+    cardIds.forEach(function (cardId) {
+      list.appendChild(makeCardEl(cardId));
+    });
+  }
+
+  if (!IS_CUSTOMER) {
+    var addBtn = el('button', 'col-add-card', d);
+    addBtn.textContent = '+ Karte in dieser Spalte';
+    addBtn.onclick = function () { addNewCard(colId); };
+  }
+
+  setupColumnDropZone(list, colId);
+  return d;
+}
+
+function makeCardEl(cardId) {
+  var c = CARDS[cardId] || {};
+  var d = el('div', 'card');
+  d.dataset.cardId = cardId;
+  if (!IS_CUSTOMER) d.draggable = true;
+  var t = el('div', 'card-title', d);
+  t.textContent = c.name || 'Unbenannt';
+  var meta = el('div', 'card-meta', d);
+  if (c.sampleNr) {
+    var sp = el('span', 'card-pill sample', meta);
+    sp.textContent = 'Sample ' + c.sampleNr;
+  }
+  if (c.assignee && c.assignee.trim()) {
+    var ap = el('span', 'card-pill assignee', meta);
+    ap.textContent = c.assignee.trim();
+  }
+  var lastMove = (c.history && c.history.length) ? c.history[c.history.length - 1].enteredAt : c.createdAt;
+  var tm = el('span', 'card-time', meta);
+  tm.textContent = relTime(lastMove);
+
+  d.addEventListener('click', function () {
+    if (d.dataset.wasDrag === '1') { d.dataset.wasDrag = ''; return; }
+    openCardDetail(cardId);
+  });
+
+  if (!IS_CUSTOMER) {
+    var pressTimer = null;
+    d.addEventListener('touchstart', function () {
+      pressTimer = setTimeout(function () {
+        pressTimer = null;
+        d.dataset.wasDrag = '1';
+        openMoveSheet(cardId);
+      }, 450);
+    }, {passive:true});
+    d.addEventListener('touchend', function () {
+      if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
+    });
+    d.addEventListener('touchmove', function () {
+      if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
+    });
+    setupCardDrag(d, cardId);
+  }
+  return d;
+}
+
+var dragCardId = null;
+function setupCardDrag(d, cardId) {
+  d.addEventListener('dragstart', function (e) {
+    dragCardId = cardId;
+    d.classList.add('is-drag');
+    d.dataset.wasDrag = '1';
+    try { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', cardId); } catch(_){}
+  });
+  d.addEventListener('dragend', function () {
+    d.classList.remove('is-drag');
+    dragCardId = null;
+    document.querySelectorAll('.col-list.is-drop').forEach(function (l) { l.classList.remove('is-drop'); });
+    setTimeout(function(){ d.dataset.wasDrag = ''; }, 50);
+  });
+}
+function setupColumnDropZone(list, colId) {
+  list.addEventListener('dragover', function (e) {
+    if (!dragCardId) return;
+    e.preventDefault();
+    list.classList.add('is-drop');
+  });
+  list.addEventListener('dragleave', function (e) {
+    if (e.relatedTarget && list.contains(e.relatedTarget)) return;
+    list.classList.remove('is-drop');
+  });
+  list.addEventListener('drop', function (e) {
+    e.preventDefault();
+    list.classList.remove('is-drop');
+    if (!dragCardId) return;
+    moveCard(dragCardId, colId);
+  });
+}
+
+function moveCard(cardId, toColId, byUid) {
+  var c = CARDS[cardId];
+  if (!c) return;
+  var fromColId = c.columnId;
+  if (fromColId === toColId) return;
+  var now = tsNow();
+  c.history = c.history || [];
+  if (c.history.length) {
+    var last = c.history[c.history.length - 1];
+    if (last && !last.leftAt) last.leftAt = now;
+  }
+  c.history.push({ col: toColId, enteredAt: now, byUid: byUid || (window.ME && window.ME.uid) || null });
+  c.columnId = toColId;
+  persistCard(cardId);
+  logFeedEntry({
+    cardId: cardId,
+    cardName: c.name || '',
+    fromCol: fromColId,
+    fromColLabel: (COLUMNS[fromColId] && COLUMNS[fromColId].label) || '',
+    toCol: toColId,
+    toColLabel: (COLUMNS[toColId] && COLUMNS[toColId].label) || '',
+    byUid: byUid || (window.ME && window.ME.uid) || null,
+    ts: now,
+  });
+  renderKanban();
+  if (openCardId === cardId) renderCardDetail();
+}
+
+function addNewCard(colId) {
+  if (IS_CUSTOMER) return;
+  var name = window.prompt('Piece-Name (z.B. „Black Hoodie v2"):');
+  if (!name || !name.trim()) return;
+  var id = newId('card');
+  var firstCol = colId || sortedColumnIds(false)[0];
+  var now = tsNow();
+  CARDS[id] = {
+    name: name.trim(),
+    columnId: firstCol,
+    sampleNr: 1,
+    notes: '',
+    assignee: '',
+    createdAt: now,
+    history: [{ col: firstCol, enteredAt: now, byUid: (window.ME && window.ME.uid) || null }],
+    calculator: defaultCalculator(),
+  };
+  persistCard(id);
+  renderKanban();
+}
+function addCustomColumn() {
+  if (IS_CUSTOMER) return;
+  var label = window.prompt('Name der neuen Spalte:');
+  if (!label || !label.trim()) return;
+  var maxOrder = Object.keys(COLUMNS).reduce(function (m, k) { return Math.max(m, COLUMNS[k].order || 0); }, 0);
+  var id = newId('col');
+  COLUMNS[id] = { label: label.trim(), order: maxOrder + 100, isCustom: true };
+  persistColumn(id);
+  renderKanban();
+}
+function addSampleGroup() {
+  if (IS_CUSTOMER) return;
+  var maxN = 1;
+  Object.keys(COLUMNS).forEach(function (k) {
+    var m = /Sample\s+(\d+)/i.exec(COLUMNS[k].label || '');
+    if (m) maxN = Math.max(maxN, parseInt(m[1], 10) || 0);
+  });
+  var nextN = maxN + 1;
+  if (nextN > 12) { alert('Sample-Limit erreicht.'); return; }
+  var maxOrder = Object.keys(COLUMNS).reduce(function (m, k) { return Math.max(m, COLUMNS[k].order || 0); }, 0);
+  var labels = ['Sample ' + nextN + ' im Prozess', 'Sample ' + nextN + ' auf dem Weg', 'Sample ' + nextN + ' fertig'];
+  labels.forEach(function (lbl, i) {
+    var id = newId('col');
+    COLUMNS[id] = { label: lbl, order: maxOrder + (i + 1) * 100, isCustom: false };
+    persistColumn(id);
+  });
+  renderKanban();
+}
+
+function colMenu(colId) {
+  var c = COLUMNS[colId];
+  if (!c) return;
+  var action = window.prompt(
+    'Spalte: "' + c.label + '"\n\n' +
+    '1 = Umbenennen (nur Custom)\n' +
+    '2 = ' + (c.hidden ? 'Wieder zeigen' : 'Für Kunde verstecken') + '\n' +
+    '3 = Löschen\n' +
+    'Tipp: ⚙ Spalten oben für eine bessere Übersicht.',
+    '1'
+  );
+  if (action === '1') {
+    if (!c.isCustom) { alert('Nur Custom-Spalten können umbenannt werden.'); return; }
+    var nv = window.prompt('Neuer Name:', c.label);
+    if (nv && nv.trim()) { c.label = nv.trim(); persistColumn(colId); renderKanban(); }
+  } else if (action === '2') {
+    c.hidden = !c.hidden;
+    persistColumn(colId);
+    renderKanban();
+  } else if (action === '3') {
+    var cardsHere = cardsInColumn(colId).length;
+    if (cardsHere > 0) {
+      if (!confirm('Diese Spalte hat noch ' + cardsHere + ' Karten. Wirklich löschen?')) return;
+    }
+    delete COLUMNS[colId];
+    persistColumnDelete(colId);
+    renderKanban();
+  }
+}
+
+var manageOverlay = document.getElementById('manageOverlay');
+var manageList = document.getElementById('manageList');
+document.getElementById('manageClose').onclick = function () { manageOverlay.classList.remove('on'); };
+manageOverlay.addEventListener('click', function (e) { if (e.target === manageOverlay) manageOverlay.classList.remove('on'); });
+document.getElementById('manageColsBtn').onclick = function () { openManageModal(); };
+document.getElementById('addCustomColBtn').onclick = function () { addCustomColumn(); openManageModal(); };
+document.getElementById('resetColsBtn').onclick = function () {
+  if (!confirm('Spalten auf Default zurücksetzen? Custom-Spalten + Hide-States gehen verloren. Karten bleiben.')) return;
+  Object.keys(COLUMNS).forEach(function (k) { persistColumnDelete(k); delete COLUMNS[k]; });
+  seedDefaultsIfEmpty(true);
+  renderKanban();
+  openManageModal();
+};
+document.getElementById('addSampleGroupBtn').onclick = addSampleGroup;
+document.getElementById('addCardBtn').onclick = function () { addNewCard(null); };
+
+function openManageModal() {
+  clearEl(manageList);
+  var ids = Object.keys(COLUMNS).sort(function (a, b) { return (COLUMNS[a].order || 0) - (COLUMNS[b].order || 0); });
+  ids.forEach(function (cid, i) {
+    var c = COLUMNS[cid];
+    var row = el('div', 'manage-row' + (c.hidden ? ' is-hidden' : ''), manageList);
+    var up = el('button', 'order-btn', row);
+    up.textContent = '↑';
+    up.disabled = i === 0;
+    up.onclick = function () {
+      if (i === 0) return;
+      var prev = ids[i - 1];
+      var tmp = COLUMNS[cid].order || 0;
+      COLUMNS[cid].order = COLUMNS[prev].order || 0;
+      COLUMNS[prev].order = tmp;
+      persistColumn(cid); persistColumn(prev);
+      renderKanban();
+      openManageModal();
+    };
+    var dn = el('button', 'order-btn', row);
+    dn.textContent = '↓';
+    dn.disabled = i === ids.length - 1;
+    dn.onclick = function () {
+      if (i === ids.length - 1) return;
+      var nxt = ids[i + 1];
+      var tmp = COLUMNS[cid].order || 0;
+      COLUMNS[cid].order = COLUMNS[nxt].order || 0;
+      COLUMNS[nxt].order = tmp;
+      persistColumn(cid); persistColumn(nxt);
+      renderKanban();
+      openManageModal();
+    };
+    var nm = el('div', 'name', row);
+    nm.textContent = c.label + (c.isCustom ? ' (Custom)' : '');
+    var tog = el('button', 'toggle' + (!c.hidden ? ' on' : ''), row);
+    tog.textContent = c.hidden ? 'Versteckt' : 'Sichtbar';
+    tog.onclick = function () {
+      c.hidden = !c.hidden;
+      persistColumn(cid);
+      openManageModal();
+      renderKanban();
+    };
+    if (c.isCustom) {
+      var rm = el('button', 'order-btn', row);
+      rm.textContent = '✕';
+      rm.title = 'Löschen';
+      rm.style.color = '#a82929';
+      rm.onclick = function () {
+        if (!confirm('Custom-Spalte "' + c.label + '" löschen?')) return;
+        delete COLUMNS[cid];
+        persistColumnDelete(cid);
+        openManageModal();
+        renderKanban();
+      };
+    }
+  });
+  manageOverlay.classList.add('on');
+}
+
+var sheetOverlay = document.getElementById('sheetOverlay');
+var sheetList = document.getElementById('sheetList');
+sheetOverlay.addEventListener('click', function (e) { if (e.target === sheetOverlay) sheetOverlay.classList.remove('on'); });
+
+function openMoveSheet(cardId) {
+  var c = CARDS[cardId];
+  if (!c) return;
+  clearEl(sheetList);
+  document.getElementById('sheetTitle').textContent = 'Verschieben: ' + (c.name || 'Karte');
+  sortedColumnIds(false).forEach(function (cid) {
+    var b = el('button', cid === c.columnId ? 'current' : '', sheetList);
+    b.textContent = COLUMNS[cid].label;
+    b.onclick = function () {
+      if (cid !== c.columnId) moveCard(cardId, cid);
+      sheetOverlay.classList.remove('on');
+    };
+  });
+  sheetOverlay.classList.add('on');
+}
+
+var detailOverlay = document.getElementById('detailOverlay');
+var detailTitleInput = document.getElementById('detailTitleInput');
+var detailSamplePill = document.getElementById('detailSamplePill');
+var detailNotes = document.getElementById('detailNotes');
+var detailSampleNr = document.getElementById('detailSampleNr');
+var detailAssignee = document.getElementById('detailAssignee');
+var detailStageInfo = document.getElementById('detailStageInfo');
+var detailPrevBtn = document.getElementById('detailPrevBtn');
+var detailNextBtn = document.getElementById('detailNextBtn');
+var detailDelBtn = document.getElementById('detailDelBtn');
+
+document.getElementById('detailClose').onclick = closeCardDetail;
+detailOverlay.addEventListener('click', function (e) { if (e.target === detailOverlay) closeCardDetail(); });
+
+document.querySelectorAll('.detail-tab').forEach(function (t) {
+  t.addEventListener('click', function () {
+    document.querySelectorAll('.detail-tab').forEach(function (x) { x.classList.remove('on'); });
+    t.classList.add('on');
+    var name = t.dataset.dtab;
+    document.querySelectorAll('.dtab-view').forEach(function (v) { v.style.display = 'none'; v.classList.remove('on'); });
+    var view = document.getElementById('dview-' + name);
+    view.style.display = ''; view.classList.add('on');
+    if (name === 'calc') renderCalculator();
+    if (name === 'history') renderHistory();
+  });
+});
+
+function openCardDetail(cardId) {
+  if (!CARDS[cardId]) return;
+  openCardId = cardId;
+  renderCardDetail();
+  detailOverlay.classList.add('on');
+}
+function closeCardDetail() {
+  openCardId = null;
+  detailOverlay.classList.remove('on');
+}
+
+function renderCardDetail() {
+  if (!openCardId) return;
+  var c = CARDS[openCardId];
+  if (!c) { closeCardDetail(); return; }
+  detailTitleInput.value = c.name || '';
+  detailNotes.value = c.notes || '';
+  detailSampleNr.value = c.sampleNr || 1;
+  detailAssignee.value = c.assignee || '';
+  detailSamplePill.style.display = c.sampleNr ? '' : 'none';
+  detailSamplePill.textContent = 'Sample ' + (c.sampleNr || 1);
+  var curCol = COLUMNS[c.columnId];
+  detailStageInfo.textContent = 'Aktuell: ' + (curCol ? curCol.label : '—');
+
+  var customerReadOnly = IS_CUSTOMER;
+  detailTitleInput.disabled = customerReadOnly;
+  detailSampleNr.disabled = customerReadOnly;
+  detailAssignee.disabled = customerReadOnly;
+  detailNotes.disabled = false;
+  detailDelBtn.style.display = customerReadOnly ? 'none' : '';
+
+  var vis = sortedColumnIds(false);
+  var idx = vis.indexOf(c.columnId);
+  detailPrevBtn.disabled = idx <= 0;
+  detailNextBtn.disabled = idx >= vis.length - 1 || idx < 0;
+  if (IS_CUSTOMER) {
+    detailPrevBtn.disabled = true;
+    detailNextBtn.disabled = !(vis[idx + 1] === FINAL_COL_ID);
+    detailNextBtn.textContent = (vis[idx + 1] === FINAL_COL_ID) ? 'Empfangen bestätigen ✓' : 'Nur „Empfangen bestätigen" verfügbar';
+  } else {
+    detailNextBtn.textContent = 'Nächste Stufe →';
+  }
+}
+
+var detTitleDeb;
+detailTitleInput.addEventListener('input', function () {
+  if (!openCardId) return;
+  CARDS[openCardId].name = detailTitleInput.value;
+  clearTimeout(detTitleDeb);
+  detTitleDeb = setTimeout(function () {
+    persistCardField(openCardId, 'name');
+    renderKanban();
+  }, 400);
+});
+var detNotesDeb;
+detailNotes.addEventListener('input', function () {
+  if (!openCardId) return;
+  CARDS[openCardId].notes = detailNotes.value;
+  clearTimeout(detNotesDeb);
+  detNotesDeb = setTimeout(function () { persistCardField(openCardId, 'notes'); }, 400);
+});
+detailSampleNr.addEventListener('change', function () {
+  if (!openCardId) return;
+  var n = parseInt(detailSampleNr.value, 10) || 1;
+  CARDS[openCardId].sampleNr = n;
+  persistCardField(openCardId, 'sampleNr');
+  renderKanban();
+});
+var detAssDeb;
+detailAssignee.addEventListener('input', function () {
+  if (!openCardId) return;
+  CARDS[openCardId].assignee = detailAssignee.value;
+  clearTimeout(detAssDeb);
+  detAssDeb = setTimeout(function () { persistCardField(openCardId, 'assignee'); renderKanban(); }, 400);
+});
+detailPrevBtn.onclick = function () {
+  if (!openCardId) return;
+  var c = CARDS[openCardId];
+  var vis = sortedColumnIds(false);
+  var idx = vis.indexOf(c.columnId);
+  if (idx > 0) moveCard(openCardId, vis[idx - 1]);
+};
+detailNextBtn.onclick = function () {
+  if (!openCardId) return;
+  var c = CARDS[openCardId];
+  var vis = sortedColumnIds(false);
+  var idx = vis.indexOf(c.columnId);
+  if (idx >= 0 && idx < vis.length - 1) moveCard(openCardId, vis[idx + 1]);
+};
+detailDelBtn.onclick = function () {
+  if (!openCardId) return;
+  if (IS_CUSTOMER) return;
+  var c = CARDS[openCardId];
+  if (!confirm('Karte "' + (c.name || '?') + '" wirklich löschen?')) return;
+  delete CARDS[openCardId];
+  persistCardDelete(openCardId);
+  closeCardDetail();
+  renderKanban();
+};
+
+function renderHistory() {
+  var list = document.getElementById('historyList');
+  clearEl(list);
+  if (!openCardId) return;
+  var c = CARDS[openCardId];
+  var h = (c.history || []).slice().reverse();
+  if (h.length === 0) {
+    var em = el('div', 'history-empty', list);
+    em.textContent = 'Noch keine Stage-Wechsel.';
+    return;
+  }
+  h.forEach(function (entry) {
+    var row = el('div', 'history-row', list);
+    el('div', 'dot', row);
+    var info = el('div', 'info', row);
+    var stg = el('div', 'stage', info);
+    var colName = (COLUMNS[entry.col] && COLUMNS[entry.col].label) || '(gelöschte Spalte)';
+    stg.textContent = '→ ' + colName;
+    var ts = el('div', 'ts', info);
+    var dur = '';
+    if (entry.leftAt) dur = ' · ' + fmtDuration(entry.leftAt - entry.enteredAt);
+    ts.textContent = fmtDateTime(entry.enteredAt) + dur;
+  });
+}
+
+function defaultCalculator() {
+  return {
+    menge: 1, ek: 9, verpackung: 1.5, versand: 4.5,
+    retoure: 8, zahlung: 2, marketing: 2, sonstiges: 0.5, wunschMarge: 47,
+  };
+}
+function computeCalc(c) {
+  var r = c.retoure / 100;
+  var z = c.zahlung / 100;
+  var m = c.wunschMarge / 100;
+  var direkt = c.ek + c.verpackung + c.versand;
+  var retoureBuf = direkt * r;
+  var denom = (1 - z - m);
+  var preBrutto = denom > 0 ? (c.ek + c.verpackung + c.versand + retoureBuf + c.marketing + c.sonstiges) / denom : 0;
+  var vkBrutto = preBrutto * 1.19;
+  var vkNetto = vkBrutto / 1.19;
+  var mwst = vkBrutto - vkNetto;
+  var zahlAbs = vkNetto * z;
+  var gesKost = c.ek + c.verpackung + c.versand + zahlAbs + retoureBuf + c.marketing + c.sonstiges;
+  var beVk = gesKost * 1.19;
+  var gewinn = vkNetto - gesKost;
+  var margeReal = vkNetto > 0 ? gewinn / vkNetto : 0;
+  var roi = c.ek > 0 ? gewinn / c.ek : 0;
+  return {
+    vkBrutto: vkBrutto, vkNetto: vkNetto, mwst: mwst, zahlAbs: zahlAbs,
+    retoureBuf: retoureBuf, gesKost: gesKost, beVk: beVk, gewinn: gewinn,
+    margeReal: margeReal * 100, roi: roi * 100,
+  };
+}
+function fmtEUR(v) {
+  if (typeof v !== 'number' || !isFinite(v)) return '—';
+  return v.toFixed(2) + ' €';
+}
+function fmtPct(v) {
+  if (typeof v !== 'number' || !isFinite(v)) return '—';
+  return v.toFixed(1) + ' %';
+}
+function renderCalculator() {
+  var view = document.getElementById('dview-calc');
+  clearEl(view);
+  if (!openCardId) return;
+  var c = CARDS[openCardId];
+  if (!c.calculator) c.calculator = defaultCalculator();
+  var calc = c.calculator;
+
+  var grid = el('div', 'calc-grid', view);
+  var inB = el('div', 'calc-block', grid);
+  var h1 = el('h5', null, inB); h1.textContent = 'Eingaben';
+  var inputs = [
+    { k:'menge',       label:'Menge (Pieces)',       unit:'', step:1, min:1 },
+    { k:'ek',          label:'Einkauf (EK) pro Piece', unit:'€', step:0.1, min:0 },
+    { k:'verpackung',  label:'Verpackung pro Piece', unit:'€', step:0.1, min:0 },
+    { k:'versand',     label:'Versand pro Piece',    unit:'€', step:0.1, min:0 },
+    { k:'retoure',     label:'Retourenquote',        unit:'%', step:0.5, min:0 },
+    { k:'zahlung',     label:'Zahlungsgebühr',       unit:'%', step:0.1, min:0 },
+    { k:'marketing',   label:'Marketing pro Piece',  unit:'€', step:0.1, min:0 },
+    { k:'sonstiges',   label:'Sonstiges/Buffer',     unit:'€', step:0.1, min:0 },
+    { k:'wunschMarge', label:'Wunsch-Marge',         unit:'%', step:1, min:0 },
+  ];
+  var outRefs = {};
+  inputs.forEach(function (it) {
+    var r = el('div', 'calc-row', inB);
+    var lb = el('label', null, r); lb.textContent = it.label;
+    var inp = el('input', null, r);
+    inp.type = 'number'; inp.step = it.step; inp.min = it.min;
+    inp.value = calc[it.k];
+    inp.addEventListener('input', function () {
+      var v = parseFloat(inp.value);
+      if (!isFinite(v)) v = 0;
+      calc[it.k] = v;
+      updateOutputs();
+      clearTimeout(inp._t);
+      inp._t = setTimeout(function () { persistCardField(openCardId, 'calculator'); }, 400);
+    });
+    var u = el('span', 'unit', r); u.textContent = it.unit;
+  });
+
+  var outB = el('div', 'calc-block out', grid);
+  var h2 = el('h5', null, outB); h2.textContent = 'Auto-Berechnung (pro Piece)';
+  var outFields = [
+    { k:'vkBrutto',   label:'Empfohlener VK Brutto', fmt:'eur' },
+    { k:'vkNetto',    label:'VK Netto',              fmt:'eur' },
+    { k:'mwst',       label:'MwSt (19%)',            fmt:'eur' },
+    { k:'zahlAbs',    label:'Zahlungsgebühr absolut',fmt:'eur' },
+    { k:'retoureBuf', label:'Retouren-Buffer',       fmt:'eur' },
+    { k:'gesKost',    label:'Gesamtkosten',          fmt:'eur' },
+    { k:'beVk',       label:'Break-even VK',         fmt:'eur' },
+    { k:'gewinn',     label:'Gewinn',                fmt:'eur' },
+    { k:'margeReal',  label:'Tatsächliche Marge',    fmt:'pct' },
+    { k:'roi',        label:'ROI (Gewinn / EK)',     fmt:'pct' },
+  ];
+  outFields.forEach(function (it) {
+    var r = el('div', 'calc-row', outB);
+    var lb = el('label', null, r); lb.textContent = it.label;
+    var v = el('div', 'v', r);
+    outRefs[it.k] = { el: v, fmt: it.fmt };
+  });
+
+  function updateOutputs() {
+    var res = computeCalc(calc);
+    Object.keys(outRefs).forEach(function (k) {
+      var ref = outRefs[k];
+      ref.el.textContent = ref.fmt === 'pct' ? fmtPct(res[k]) : fmtEUR(res[k]);
+    });
+  }
+  updateOutputs();
+
+  var noteWrap = el('div', null, view);
+  noteWrap.style.marginTop = '12px';
+  var note = el('div', 'calc-block', noteWrap);
+  var h3 = el('h5', null, note); h3.textContent = 'Hinweise';
+  var p = el('p', null, note);
+  p.style.fontSize = '11px';
+  p.style.color = 'var(--ink-mute)';
+  p.style.lineHeight = '1.5';
+  p.style.margin = '0';
+  p.textContent = '· Werte werden live berechnet, sobald du tippst. · Ziel-Marge: 35% = solide / 40% = gut / 50%+ = Premium. · Retouren-Fashion: 8–15% (online bis 30%). · Shopify Payments: ~1.5–2% / PayPal: ~2.49% + 0.35 € Fixum.';
+}
+
+function renderArchive() {
+  var list = document.getElementById('archivList');
+  clearEl(list);
+  var archCardIds = Object.keys(CARDS).filter(function (k) { return CARDS[k].archived; });
+  if (archCardIds.length === 0) {
+    var em = el('div', 'empty-state', list);
+    var ic = el('div', 'icon', em); ic.textContent = '📦';
+    var h = el('h3', null, em); h.textContent = 'Archiv ist leer';
+    var p = el('p', null, em); p.textContent = 'Archivierte Karten landen hier.';
+    return;
+  }
+  archCardIds.forEach(function (cardId) {
+    var c = CARDS[cardId];
+    var row = el('div', 'history-row', list);
+    el('div', 'dot', row);
+    var info = el('div', 'info', row);
+    var stg = el('div', 'stage', info);
+    stg.textContent = c.name || 'Unbenannt';
+    var ts = el('div', 'ts', info);
+    ts.textContent = 'Archiviert · ' + fmtDateTime(c.archivedAt || c.createdAt);
+  });
+}
+
+function renderFeed() {
+  var list = document.getElementById('feedList');
+  clearEl(list);
+  if (FEED.length === 0) {
+    var em = el('div', 'feed-empty', list);
+    em.textContent = 'Noch keine Aktivität. Sobald Karten verschoben werden, landen die Events hier.';
+    return;
+  }
+  FEED.slice(-50).reverse().forEach(function (e) {
+    var row = el('div', 'feed-row', list);
+    el('div', 'dot', row);
+    var info = el('div', 'info', row);
+    var txt = el('div', 'txt', info);
+    var nameStrong = el('strong', null, txt);
+    nameStrong.textContent = e.cardName || 'Karte';
+    txt.appendChild(document.createTextNode(' ist jetzt in '));
+    var stageStrong = el('strong', null, txt);
+    stageStrong.textContent = e.toColLabel || '?';
+    if (e.fromColLabel) {
+      var fromSpan = el('span', null, txt);
+      fromSpan.style.color = 'var(--ink-dim)';
+      fromSpan.textContent = ' (vorher: ' + e.fromColLabel + ')';
+    }
+    var meta = el('div', 'meta', info);
+    meta.textContent = relTime(e.ts);
+  });
+}
+
+document.querySelectorAll('.outer-tab').forEach(function (t) {
+  t.addEventListener('click', function () {
+    document.querySelectorAll('.outer-tab').forEach(function (x) { x.classList.remove('on'); });
+    t.classList.add('on');
+    document.querySelectorAll('.tab-view').forEach(function (v) { v.classList.remove('on'); });
+    var name = t.dataset.tab;
+    document.getElementById('view-' + name).classList.add('on');
+    if (name === 'archiv') renderArchive();
+    if (name === 'feed') renderFeed();
+  });
+});
+
+function seedDefaultsIfEmpty(force) {
+  if (IS_CUSTOMER) return;
+  if (!force && Object.keys(COLUMNS).length > 0) return;
+  DEFAULT_COLUMNS.forEach(function (dc) {
+    COLUMNS[dc.id] = { label: dc.label, order: dc.order, isCustom: false };
+    persistColumn(dc.id);
+  });
+}
+
+if (!_R) {
+  connTag.textContent = '· lokal (kein Raum)';
+} else {
+  connTag.textContent = '· verbinde …';
+
+  var base = _D.ref('rooms/' + _R + '/production');
+  base.once('value').then(function (snap) {
+    var v = snap.val() || {};
+    COLUMNS = v.columns || {};
+    CARDS = v.cards || {};
+    var feedObj = v.feed || {};
+    FEED = Object.keys(feedObj).map(function (k) { return feedObj[k]; }).sort(function (a, b) { return (a.ts || 0) - (b.ts || 0); });
+    if (Object.keys(COLUMNS).length === 0 && !IS_CUSTOMER) {
+      seedDefaultsIfEmpty(false);
+    }
+    connTag.textContent = '· verbunden';
+    renderKanban();
+  }).catch(function (e) { connTag.textContent = '⚠ ' + (e.code || e.message); });
+
+  var _pendingRerender = false;
+  function _onBlur() {
+    document.removeEventListener('blur', _onBlur, true);
+    if (_pendingRerender) { _pendingRerender = false; renderKanban(); if (openCardId) renderCardDetail(); }
+  }
+  function _maybeRerender() {
+    var ae = document.activeElement;
+    var typing = ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA' || ae.isContentEditable);
+    if (typing) {
+      _pendingRerender = true;
+      document.addEventListener('blur', _onBlur, true);
+      return;
+    }
+    renderKanban();
+    if (openCardId) renderCardDetail();
+  }
+  base.child('columns').on('value', function (s) {
+    COLUMNS = s.val() || {};
+    _maybeRerender();
+  });
+  base.child('cards').on('value', function (s) {
+    CARDS = s.val() || {};
+    _maybeRerender();
+  });
+  base.child('feed').on('value', function (s) {
+    var v = s.val() || {};
+    FEED = Object.keys(v).map(function (k) { return v[k]; }).sort(function (a, b) { return (a.ts || 0) - (b.ts || 0); });
+    if (document.getElementById('view-feed').classList.contains('on')) renderFeed();
+  });
+}
+
+})();
+</script>
+</body>
+</html>

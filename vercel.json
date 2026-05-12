@@ -44,6 +44,25 @@
       ]
     },
     {
+      "source": "/firebase-messaging-sw.js",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-store, must-revalidate" },
+        { "key": "Service-Worker-Allowed", "value": "/" }
+      ]
+    },
+    {
+      "source": "/push-client.js",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-store, must-revalidate" }
+      ]
+    },
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-store, must-revalidate" }
+      ]
+    },
+    {
       "source": "/((?!_astro/|brand/|fonts/|tools/|manifest\\.webmanifest).*)",
       "headers": [
         { "key": "Cache-Control", "value": "no-store, must-revalidate" }
