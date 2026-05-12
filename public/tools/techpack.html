@@ -398,11 +398,6 @@ function pushToProduction(packId) {
     };
     return prodRef.child('cards/' + cardId).set(card);
   }).then(function(){
-    // 3. Pack-Status auto auf sample_1 setzen wenn noch finalized
-    if (pack.meta && pack.meta.status === 'finalized') {
-      return safeUpdate(fbPack(packId).child('meta'), { status: 'sample_1', updated: Date.now() });
-    }
-  }).then(function(){
     toast('„' + packName + '" → in Produktion ✓');
   }).catch(function(e){
     toast('Fehler: ' + (e.code || e.message));
@@ -593,9 +588,6 @@ function renderPackCard(id, pack){
 
   var meta = el('div', 'pack-card-meta');
   meta.appendChild(el('span', null, 'Aktualisiert ' + fmtDate(m.updated || m.created)));
-  var stEntry = STATUSES.find(function(s){return s.id === m.status;}) || STATUSES[0];
-  var stPill = el('span', 'pack-card-status ' + (m.status || 'draft'), stEntry.label);
-  meta.appendChild(stPill);
   c.appendChild(meta);
 
   var pgCount = (pack && pack.pageOrder) ? pack.pageOrder.length : 0;
@@ -607,6 +599,10 @@ function renderPackCard(id, pack){
   var openBtn = el('button', null, 'Öffnen');
   openBtn.onclick = function(e){ e.stopPropagation(); openPack(id); };
   actions.appendChild(openBtn);
+  var prodBtn = el('button', null, '→ Produktion');
+  prodBtn.title = 'Als neues Piece in Produktion anlegen';
+  prodBtn.onclick = function(e){ e.stopPropagation(); pushToProduction(id); };
+  actions.appendChild(prodBtn);
   var renameBtn = el('button', null, 'Umbenennen');
   renameBtn.onclick = function(e){ e.stopPropagation(); renamePack(id); };
   actions.appendChild(renameBtn);
@@ -862,10 +858,6 @@ function renderEditor(){
   titleInput.onblur = saveTitle;
   titleHost.appendChild(titleInput);
 
-  var stEntry = STATUSES.find(function(s){return s.id === (pack.meta && pack.meta.status);}) || STATUSES[0];
-  var statusPill = el('button', 'status-pill ' + ((pack.meta && pack.meta.status) || 'draft'), stEntry.label);
-  statusPill.onclick = function(){ openStatusModal(STATE.activePackId); };
-  $('hdrActions').appendChild(statusPill);
   // "+ Neuer Pack" auch im Editor-Header — direkter Zugriff ohne Zurueck-Navigation.
   var newBtn = el('button', 'btn');
   newBtn.textContent = '+ Neues';
@@ -876,14 +868,11 @@ function renderEditor(){
   pdfBtn.onclick = function(){ exportPdf(STATE.activePackId); };
   $('hdrActions').appendChild(pdfBtn);
 
-  // → in Produktion schieben — sichtbar wenn Pack nicht mehr im Draft ist
-  var packStatus = (pack.meta && pack.meta.status) || 'draft';
-  if (packStatus !== 'draft') {
-    var prodBtn = el('button', 'btn', '→ in Produktion');
-    prodBtn.title = 'Erzeugt eine Karte im Produktion-Tool (Techpack fertig)';
-    prodBtn.onclick = function(){ pushToProduction(STATE.activePackId); };
-    $('hdrActions').appendChild(prodBtn);
-  }
+  // → in Produktion schieben — immer sichtbar, erstellt jedesmal ein neues Piece
+  var prodBtn = el('button', 'btn', '→ in Produktion');
+  prodBtn.title = 'Als neues Piece in Produktion anlegen (Spalte „Techpack fertig")';
+  prodBtn.onclick = function(){ pushToProduction(STATE.activePackId); };
+  $('hdrActions').appendChild(prodBtn);
 
   var v = $('viewEditor');
   clearEl(v);

@@ -37,75 +37,68 @@ input:focus,textarea:focus,select:focus{outline:none;}
 .tab-view{display:none;}
 .tab-view.on{display:block;}
 
-/* Piece-Tabs */
-.piece-tabs-bar{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:14px;}
-.piece-tab{display:inline-flex;align-items:center;gap:7px;padding:8px 13px 8px 13px;border-radius:11px;background:var(--bg2);border:1px solid var(--line);font-weight:800;font-size:12px;color:var(--ink-mute);cursor:pointer;transition:all 0.15s;-webkit-tap-highlight-color:transparent;max-width:280px;}
-.piece-tab:hover{border-color:var(--brand-border);color:var(--brand);}
-.piece-tab.on{background:var(--ink);color:#fff;border-color:var(--ink);}
-.piece-tab .pt-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.piece-tab .pt-stage{font-size:9px;font-weight:700;padding:2px 6px;border-radius:5px;background:var(--brand-dim);color:var(--brand);letter-spacing:0.03em;text-transform:uppercase;flex-shrink:0;}
-.piece-tab.on .pt-stage{background:rgba(255,255,255,0.18);color:#fff;}
-.piece-tab-add{padding:8px 14px;border-radius:11px;border:1.5px dashed var(--line);background:transparent;font-weight:800;font-size:11px;color:var(--ink-mute);transition:all 0.15s;}
-.piece-tab-add:hover{border-color:var(--brand);color:var(--brand);}
+/* Kanban */
+.kanban-wrap{overflow-x:auto;overflow-y:visible;padding-bottom:6px;-webkit-overflow-scrolling:touch;}
+.kanban{display:inline-flex;gap:10px;min-width:100%;padding-bottom:4px;align-items:flex-start;}
+.col{flex:0 0 270px;background:var(--bg2);border:0.5px solid var(--line);border-radius:12px;display:flex;flex-direction:column;max-height:calc(100vh - 130px);box-shadow:var(--shadow);}
+.col.is-drop{border-color:var(--brand);background:var(--brand-dim);}
+.col.is-hidden{opacity:0.55;}
+.col-head{display:flex;align-items:center;gap:7px;padding:11px 12px 9px;border-bottom:0.5px solid var(--line);}
+.col-title{flex:1;min-width:0;font-weight:800;font-size:12px;color:var(--ink);outline:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;letter-spacing:-0.005em;}
+.col-title[contenteditable="true"]{cursor:text;}
+.col-count{font-size:10px;font-weight:800;background:var(--bg);color:var(--ink-mute);padding:2px 7px;border-radius:9px;letter-spacing:0.02em;flex-shrink:0;}
+.col-menu-btn{padding:2px 6px;color:var(--ink-dim);font-size:14px;border-radius:6px;line-height:1;}
+.col-menu-btn:hover{background:var(--bg);color:var(--ink);}
+.col-list{flex:1;overflow-y:auto;padding:8px 8px 4px;display:flex;flex-direction:column;gap:6px;min-height:60px;}
+.col-empty{font-size:10px;color:var(--ink-dim);font-style:italic;text-align:center;padding:18px 6px;}
+.col-add-card{margin:4px 8px 10px;padding:7px 10px;border:1px dashed var(--line);border-radius:8px;font-size:11px;font-weight:700;color:var(--ink-dim);transition:all 0.15s;}
+.col-add-card:hover{border-color:var(--brand-border);color:var(--brand);}
+.add-col-tile{flex:0 0 200px;background:var(--bg2);border:1.5px dashed var(--line);border-radius:12px;padding:14px 12px;display:flex;flex-direction:column;gap:7px;align-items:stretch;align-self:flex-start;}
+.add-col-tile button{padding:7px 10px;border-radius:8px;font-size:11px;font-weight:700;color:var(--ink-soft);border:1px solid var(--line);background:var(--bg);transition:all 0.15s;}
+.add-col-tile button:hover{border-color:var(--brand);color:var(--brand);}
 
-/* Piece-Header */
-.piece-header{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:12px 14px;background:var(--bg2);border:0.5px solid var(--line);border-radius:12px;margin-bottom:12px;box-shadow:var(--shadow);}
-.piece-name-input{flex:1;min-width:200px;font-weight:800;font-size:16px;background:transparent;border:1px solid transparent;border-radius:8px;padding:6px 9px;margin:-6px -9px;color:var(--ink);}
-.piece-name-input:hover{border-color:var(--line);}
-.piece-name-input:focus{border-color:var(--brand-border);background:var(--bg);}
-.piece-cur-stage{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:8px;background:var(--brand-dim);color:var(--brand);font-size:11px;font-weight:800;flex-shrink:0;}
-.piece-cur-stage .dot{width:8px;height:8px;border-radius:50%;background:var(--brand);}
-.piece-actions{display:flex;gap:5px;}
-.piece-quick{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap;}
-.piece-quick button{padding:8px 13px;border-radius:9px;border:1px solid var(--line);background:var(--bg2);font-weight:800;font-size:11px;color:var(--ink-soft);}
-.piece-quick button:hover{border-color:var(--brand);color:var(--brand);}
-.piece-quick button.primary{background:var(--brand);color:#fff;border-color:var(--brand);}
-.piece-quick button.primary:hover{background:#a82929;}
-.piece-quick button:disabled{opacity:0.4;cursor:not-allowed;}
+/* Card */
+.card{background:var(--bg);border:0.5px solid var(--line);border-radius:9px;padding:9px 10px;cursor:grab;transition:transform 0.1s,box-shadow 0.15s;user-select:none;}
+.card:hover{border-color:var(--brand-border);box-shadow:0 2px 6px rgba(0,0,0,0.05);}
+.card:active{cursor:grabbing;}
+.card.is-drag{opacity:0.4;}
+.card-title{font-weight:800;font-size:12.5px;color:var(--ink);margin-bottom:5px;line-height:1.3;}
+.card-meta{display:flex;align-items:center;gap:5px;flex-wrap:wrap;}
+.card-pill{font-size:9px;font-weight:800;padding:2px 6px;border-radius:5px;letter-spacing:0.04em;text-transform:uppercase;}
+.card-pill.techpack{background:var(--blue-soft);color:var(--blue);}
+.card-pill.assignee{background:var(--bg2);color:var(--ink-soft);border:0.5px solid var(--line);}
+.card-time{font-size:10px;color:var(--ink-dim);margin-left:auto;font-weight:600;}
 
-/* Multi-Row Kanban */
-.row{margin-bottom:11px;}
-.row-head{display:flex;align-items:center;gap:8px;padding:0 4px 6px;}
-.row-head .label{font-size:10px;font-weight:800;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink-mute);}
-.row-head .line{flex:1;height:1px;background:var(--line);}
-.row-head .row-menu{padding:2px 6px;font-size:12px;color:var(--ink-dim);border-radius:5px;line-height:1;}
-.row-head .row-menu:hover{background:var(--bg2);color:var(--ink);}
-.row-cells{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;}
-.cell{background:var(--bg2);border:1px solid var(--line);border-radius:10px;padding:11px 11px 11px;display:flex;flex-direction:column;gap:6px;cursor:pointer;transition:all 0.15s;position:relative;min-height:72px;}
-.cell:hover{border-color:var(--brand-border);}
-.cell.is-current{border-color:var(--brand);background:var(--brand-soft);box-shadow:0 0 0 3px var(--brand-dim);}
-.cell.is-drop{border-color:var(--brand);background:var(--brand-dim);}
-.cell.is-hidden{opacity:0.5;}
-.cell-label{font-weight:800;font-size:12px;color:var(--ink);line-height:1.3;}
-.cell-meta{font-size:10px;color:var(--ink-mute);font-weight:600;}
-.cell-meta.is-current{color:var(--brand);font-weight:800;}
-.cell-time{font-size:9px;color:var(--ink-dim);font-weight:600;margin-top:auto;}
-.cell.is-current .cell-time{color:var(--brand);}
-.add-sample-btn{margin-top:5px;padding:9px 13px;border:1.5px dashed var(--line);background:transparent;border-radius:9px;font-weight:800;font-size:11px;color:var(--ink-mute);width:100%;transition:all 0.15s;}
-.add-sample-btn:hover{border-color:var(--brand);color:var(--brand);}
-
-/* Detail / Notes inline */
-.piece-meta-section{margin-top:18px;padding:13px 14px;background:var(--bg2);border:0.5px solid var(--line);border-radius:12px;box-shadow:var(--shadow);}
-.piece-meta-section h4{font-size:10px;font-weight:800;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink-mute);margin:0 0 7px;}
-.piece-meta-section + .piece-meta-section{margin-top:10px;}
-.piece-textarea{width:100%;min-height:80px;padding:9px 11px;border:1px solid var(--line);border-radius:8px;background:var(--bg);font-size:12px;color:var(--ink);resize:vertical;line-height:1.4;box-sizing:border-box;}
-.piece-textarea:focus{border-color:var(--brand);background:var(--bg2);}
-.piece-input{padding:8px 11px;border:1px solid var(--line);border-radius:8px;background:var(--bg);font-size:12px;color:var(--ink);box-sizing:border-box;}
-.piece-input:focus{border-color:var(--brand);background:var(--bg2);}
+/* Detail modal */
+.detail-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.4);display:none;align-items:center;justify-content:center;z-index:1000;padding:14px;}
+.detail-overlay.on{display:flex;}
+.detail-modal{background:var(--bg2);border-radius:16px;width:100%;max-width:560px;max-height:90vh;display:flex;flex-direction:column;box-shadow:var(--shadow-lg);overflow:hidden;}
+.detail-head{display:flex;align-items:center;gap:8px;padding:14px 16px 11px;border-bottom:0.5px solid var(--line);}
+.detail-title-input{flex:1;min-width:0;font-weight:800;font-size:15px;background:transparent;border:1px solid transparent;border-radius:6px;padding:5px 7px;margin:-5px -7px;}
+.detail-title-input:hover{border-color:var(--line);}
+.detail-title-input:focus{border-color:var(--brand-border);background:var(--bg);}
+.detail-close{padding:5px 9px;font-size:18px;color:var(--ink-mute);border-radius:6px;line-height:1;flex-shrink:0;}
+.detail-close:hover{background:var(--bg);}
+.detail-body{flex:1;overflow-y:auto;padding:16px;}
+.detail-section{margin-bottom:18px;}
+.detail-section h4{font-size:10px;font-weight:800;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink-mute);margin:0 0 7px;}
+.detail-input,.detail-textarea{width:100%;padding:8px 11px;border:1px solid var(--line);border-radius:8px;background:var(--bg);font-size:12px;color:var(--ink);box-sizing:border-box;}
+.detail-input:focus,.detail-textarea:focus{border-color:var(--brand);background:var(--bg2);}
+.detail-textarea{min-height:90px;resize:vertical;line-height:1.4;}
+.move-row{display:flex;gap:7px;flex-wrap:wrap;}
+.move-row button{flex:1;min-width:140px;padding:10px 12px;border-radius:9px;font-weight:800;font-size:11.5px;border:1px solid var(--line);background:var(--bg2);color:var(--ink-soft);}
+.move-row button:hover{border-color:var(--brand);color:var(--brand);}
+.move-row button.primary{background:var(--brand);color:#fff;border-color:var(--brand);}
+.move-row button.primary:hover{background:#a82929;}
+.move-row button:disabled{opacity:0.4;cursor:not-allowed;}
+.detail-stage-info{font-size:11px;color:var(--ink-mute);margin-top:6px;font-weight:600;}
 .history-list{display:flex;flex-direction:column;gap:6px;}
 .history-row{display:flex;align-items:flex-start;gap:9px;padding:8px 10px;background:var(--bg);border-radius:7px;font-size:11px;}
 .history-row .dot{width:8px;height:8px;border-radius:50%;background:var(--brand);flex-shrink:0;margin-top:4px;}
 .history-row .info{flex:1;min-width:0;}
 .history-row .stage{font-weight:800;color:var(--ink);}
 .history-row .ts{font-size:10px;color:var(--ink-mute);font-weight:600;margin-top:1px;}
-
-/* Empty states */
-.empty-state{text-align:center;padding:50px 20px;color:var(--ink-mute);background:var(--bg2);border:0.5px solid var(--line);border-radius:14px;}
-.empty-state .icon{font-size:42px;margin-bottom:10px;}
-.empty-state h3{font-size:14px;font-weight:800;color:var(--ink);margin:0 0 6px;}
-.empty-state p{font-size:11px;color:var(--ink-mute);margin:0 0 14px;}
-.empty-state button{padding:9px 16px;border-radius:9px;background:var(--brand);color:#fff;font-weight:800;font-size:12px;border:none;}
-.empty-state button:hover{background:#a82929;}
+.history-empty{font-size:11px;color:var(--ink-dim);font-style:italic;text-align:center;padding:12px;}
 
 /* Activity Feed */
 .feed-list{display:flex;flex-direction:column;gap:8px;}
@@ -117,7 +110,7 @@ input:focus,textarea:focus,select:focus{outline:none;}
 .feed-row .meta{font-size:10px;color:var(--ink-mute);margin-top:3px;font-weight:600;}
 .feed-empty{font-size:12px;color:var(--ink-dim);font-style:italic;text-align:center;padding:30px 16px;}
 
-/* Custom modal (replaces window.prompt) */
+/* Custom modals */
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.4);display:none;align-items:center;justify-content:center;z-index:2500;padding:16px;}
 .modal-overlay.on{display:flex;}
 .modal-box{background:var(--bg2);border-radius:14px;width:100%;max-width:420px;padding:18px 20px;box-shadow:var(--shadow-lg);}
@@ -131,7 +124,18 @@ input:focus,textarea:focus,select:focus{outline:none;}
 .modal-row .ok{background:var(--brand);color:#fff;}
 .modal-row .ok:hover{background:#a82929;}
 
-/* Manage Modal — column visibility/order */
+/* Action sheet (Mobile move) */
+.sheet-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.5);display:none;align-items:flex-end;justify-content:center;z-index:2000;}
+.sheet-overlay.on{display:flex;}
+.sheet{background:var(--bg2);width:100%;max-width:480px;border-radius:18px 18px 0 0;padding:14px 16px 22px;max-height:80vh;overflow-y:auto;animation:slideUp 0.18s ease-out;}
+@keyframes slideUp{from{transform:translateY(100%);}to{transform:translateY(0);}}
+.sheet h3{font-size:12px;font-weight:800;letter-spacing:0.04em;text-transform:uppercase;color:var(--ink-mute);margin:0 0 12px;text-align:center;}
+.sheet-list{display:flex;flex-direction:column;gap:5px;}
+.sheet-list button{padding:11px 13px;background:var(--bg);border:0.5px solid var(--line);border-radius:9px;font-size:12.5px;font-weight:700;color:var(--ink-soft);text-align:left;}
+.sheet-list button:hover,.sheet-list button.current{background:var(--brand-dim);color:var(--brand);border-color:var(--brand-border);}
+.sheet-list button.current::after{content:" • aktuell";font-size:10px;opacity:0.7;}
+
+/* Manage Modal */
 .manage-list{display:flex;flex-direction:column;gap:5px;max-height:50vh;overflow-y:auto;}
 .manage-row{display:flex;align-items:center;gap:8px;padding:9px 11px;background:var(--bg);border:0.5px solid var(--line);border-radius:8px;}
 .manage-row .name{flex:1;font-size:12px;font-weight:700;color:var(--ink);}
@@ -141,7 +145,7 @@ input:focus,textarea:focus,select:focus{outline:none;}
 .manage-row .order-btn:hover{background:var(--bg2);color:var(--ink);}
 .manage-row.is-hidden .name{opacity:0.5;}
 
-/* Standalone Calculator */
+/* Calculator */
 .calc-wrap{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
 @media (max-width:680px){.calc-wrap{grid-template-columns:1fr;}}
 .calc-block{background:var(--bg2);border:0.5px solid var(--line);border-radius:12px;padding:14px 16px;box-shadow:var(--shadow);}
@@ -155,6 +159,11 @@ input:focus,textarea:focus,select:focus{outline:none;}
 .calc-row .v{font-size:13px;font-weight:800;color:#225a3a;text-align:right;min-width:110px;}
 .calc-row .unit{font-size:9px;color:var(--ink-dim);font-weight:700;width:14px;flex-shrink:0;}
 .calc-hint{font-size:11px;color:var(--ink-mute);line-height:1.5;padding:12px 14px;background:var(--bg2);border:0.5px solid var(--line);border-radius:10px;margin-top:14px;}
+
+.empty-state{text-align:center;padding:50px 20px;color:var(--ink-mute);}
+.empty-state .icon{font-size:42px;margin-bottom:10px;}
+.empty-state h3{font-size:14px;font-weight:800;color:var(--ink);margin:0 0 5px;}
+.empty-state p{font-size:11px;color:var(--ink-mute);margin:0;}
 
 .role-banner{background:var(--blue-soft);border:0.5px solid #bcd3f5;color:var(--blue);font-size:11px;font-weight:700;padding:8px 12px;border-radius:8px;margin-bottom:10px;}
 .danger{color:#a82929;}
@@ -172,6 +181,7 @@ input:focus,textarea:focus,select:focus{outline:none;}
   <span class="tag" id="connTag">· verbinde …</span>
   <div class="top-actions" id="ownerActions">
     <button class="act-btn" id="manageColsBtn" title="Spalten verwalten">⚙ Spalten</button>
+    <button class="act-btn primary" id="addCardBtn">+ Neue Karte</button>
   </div>
 </div>
 
@@ -179,13 +189,12 @@ input:focus,textarea:focus,select:focus{outline:none;}
   👁 Du siehst hier den Live-Status deiner Pieces. Bei „Fertig empfangen" kannst du selber bestätigen wenn dein Piece bei dir angekommen ist.
 </div>
 
-<!-- KANBAN -->
 <div class="tab-view on" id="view-kanban">
-  <div class="piece-tabs-bar" id="pieceTabsBar"></div>
-  <div id="pieceContent"></div>
+  <div class="kanban-wrap">
+    <div class="kanban" id="kanbanInner"></div>
+  </div>
 </div>
 
-<!-- KALKULATOR -->
 <div class="tab-view" id="view-calc">
   <div class="calc-wrap" id="calcWrap"></div>
   <div class="calc-hint">
@@ -194,14 +203,51 @@ input:focus,textarea:focus,select:focus{outline:none;}
   </div>
 </div>
 
-<!-- AKTIVITÄT -->
 <div class="tab-view" id="view-feed">
   <div class="feed-list" id="feedList"></div>
 </div>
 
-<!-- ARCHIV -->
 <div class="tab-view" id="view-archiv">
   <div id="archivList"></div>
+</div>
+
+<!-- Card-Detail Modal -->
+<div class="detail-overlay" id="detailOverlay">
+  <div class="detail-modal">
+    <div class="detail-head">
+      <input class="detail-title-input" id="detailTitleInput" type="text" placeholder="Piece-Name" />
+      <button class="detail-close" id="detailClose">×</button>
+    </div>
+    <div class="detail-body">
+      <div class="detail-section">
+        <h4>Stage</h4>
+        <div class="move-row">
+          <button id="detailPrevBtn">← Vorherige Stage</button>
+          <button id="detailNextBtn" class="primary">Nächste Stage →</button>
+        </div>
+        <div class="detail-stage-info" id="detailStageInfo"></div>
+      </div>
+      <div class="detail-section">
+        <h4>Notizen</h4>
+        <textarea class="detail-textarea" id="detailNotes" placeholder="Notizen zu diesem Piece …"></textarea>
+      </div>
+      <div class="detail-section">
+        <h4>Verlauf</h4>
+        <div class="history-list" id="historyList"></div>
+      </div>
+      <div class="detail-section" id="detailDeleteWrap">
+        <button class="act-btn" id="detailDelBtn" style="color:#a82929;border-color:#f0c5c5;">🗑 Karte löschen</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Move Action Sheet (Mobile) -->
+<div class="sheet-overlay" id="sheetOverlay">
+  <div class="sheet">
+    <h3 id="sheetTitle">Karte verschieben in …</h3>
+    <div class="sheet-list" id="sheetList"></div>
+  </div>
 </div>
 
 <!-- Custom Prompt Modal -->
@@ -269,18 +315,17 @@ var COLUMNS = {};
 var CARDS = {};
 var FEED = [];
 var CALC = null;
-var activePieceId = null;
+var openCardId = null;
 
-// Default columns — reduced: Techpack + Sample 1 + Final + Bulk + Versand + Empfangen
 var DEFAULT_COLUMNS = [
-  { id: 'col_techpack',    label: 'Techpack fertig',        groupKey: 'prep',       groupLabel: 'Vorbereitung', order: 100 },
-  { id: 'col_s1_proc',     label: 'Sample 1 im Prozess',    groupKey: 'sample1',    groupLabel: 'Sample 1',     order: 200 },
-  { id: 'col_s1_way',      label: 'Sample 1 auf dem Weg',   groupKey: 'sample1',    groupLabel: 'Sample 1',     order: 300 },
-  { id: 'col_s1_done',     label: 'Sample 1 fertig',        groupKey: 'sample1',    groupLabel: 'Sample 1',     order: 400 },
-  { id: 'col_finalchange', label: 'Final Change',           groupKey: 'sample1',    groupLabel: 'Sample 1',     order: 500 },
-  { id: 'col_bulk',        label: 'Bulk Produktion',        groupKey: 'produktion', groupLabel: 'Produktion',   order: 1200 },
-  { id: 'col_versand',     label: 'Versand',                groupKey: 'produktion', groupLabel: 'Produktion',   order: 1300 },
-  { id: 'col_done',        label: 'Fertig empfangen',       groupKey: 'produktion', groupLabel: 'Produktion',   order: 1400 },
+  { id: 'col_techpack',    label: 'Techpack fertig',       order: 100 },
+  { id: 'col_s1_proc',     label: 'Sample 1 im Prozess',   order: 200 },
+  { id: 'col_s1_way',      label: 'Sample 1 auf dem Weg',  order: 300 },
+  { id: 'col_s1_done',     label: 'Sample 1 fertig',       order: 400 },
+  { id: 'col_finalchange', label: 'Final Change',          order: 500 },
+  { id: 'col_bulk',        label: 'Bulk Produktion',       order: 1200 },
+  { id: 'col_versand',     label: 'Versand',               order: 1300 },
+  { id: 'col_done',        label: 'Fertig empfangen',      order: 1400 },
 ];
 var FINAL_COL_ID = 'col_done';
 
@@ -334,7 +379,7 @@ function showSaved() {
 }
 function setConn(t) { if (connTag) { connTag.textContent = t; connTag.dataset.base = t; } }
 
-// ─── Custom Prompt (iOS-PWA safe) ────────────────────────────
+// ─── Custom Modal helpers (iOS-PWA safe) ─────────────────────
 function customPrompt(opts) {
   return new Promise(function (resolve) {
     var ov = document.getElementById('promptOverlay');
@@ -391,32 +436,40 @@ function customConfirm(opts) {
   });
 }
 
-// ─── Sortierte Spalten ───────────────────────────────────────
+// ─── Sortierte Spalten + Karten ──────────────────────────────
 function sortedColumnIds(includeHidden) {
   return Object.keys(COLUMNS)
     .filter(function (k) { return includeHidden || !COLUMNS[k].hidden; })
     .sort(function (a, b) { return (COLUMNS[a].order || 0) - (COLUMNS[b].order || 0); });
 }
-function groupedColumns(includeHidden) {
-  // Return: [{groupKey, groupLabel, columns:[colId,...]}, ...]
-  var groups = [];
-  var byKey = {};
-  sortedColumnIds(includeHidden).forEach(function (cid) {
-    var c = COLUMNS[cid];
-    var gk = c.groupKey || 'extra';
-    var gl = c.groupLabel || 'Weiteres';
-    if (!byKey[gk]) {
-      byKey[gk] = { groupKey: gk, groupLabel: gl, columns: [] };
-      groups.push(byKey[gk]);
-    }
-    byKey[gk].columns.push(cid);
-  });
-  return groups;
-}
-function activePieceIds() {
+function cardsInColumn(colId) {
   return Object.keys(CARDS)
-    .filter(function (k) { return !CARDS[k].archived; })
+    .filter(function (k) { return CARDS[k].columnId === colId && !CARDS[k].archived; })
     .sort(function (a, b) { return (CARDS[a].createdAt || 0) - (CARDS[b].createdAt || 0); });
+}
+
+// ─── Pct ─────────────────────────────────────────────────────
+function updateProductionPct() {
+  if (!_R || !_D) return;
+  var ids = Object.keys(CARDS).filter(function (k) { return !CARDS[k].archived; });
+  var pipeline = sortedColumnIds(true);
+  var total = pipeline.length;
+  if (total === 0 || ids.length === 0) {
+    _D.ref('rooms/' + _R + '/production_pct').set(0).catch(function(){});
+    try { window.parent.postMessage({ type: 'productionPct', pct: 0 }, '*'); } catch(e){}
+    return;
+  }
+  var sum = 0;
+  ids.forEach(function (pid) {
+    var c = CARDS[pid];
+    var idx = pipeline.indexOf(c.columnId);
+    if (idx < 0) return;
+    sum += ((idx + 1) / total) * 100;
+  });
+  var pct = Math.round(sum / ids.length);
+  if (pct < 0) pct = 0; if (pct > 100) pct = 100;
+  _D.ref('rooms/' + _R + '/production_pct').set(pct).catch(function(){});
+  try { window.parent.postMessage({ type: 'productionPct', pct: pct }, '*'); } catch(e){}
 }
 
 // ─── Persist ─────────────────────────────────────────────────
@@ -452,31 +505,6 @@ function persistCalc() {
   _D.ref('rooms/' + _R + '/production/calculator').set(CALC)
     .then(showSaved).catch(function (e) { setConn('⚠ ' + (e.code || e.message)); });
 }
-function updateProductionPct() {
-  if (!_R || !_D) return;
-  var ids = activePieceIds();
-  var pipeline = sortedColumnIds(true); // include hidden — full pipeline order
-  var total = pipeline.length;
-  if (total === 0 || ids.length === 0) {
-    var pct0 = 0;
-    _D.ref('rooms/' + _R + '/production_pct').set(pct0).catch(function(){});
-    try { window.parent.postMessage({ type: 'productionPct', pct: pct0 }, '*'); } catch(e){}
-    return;
-  }
-  var sum = 0;
-  ids.forEach(function (pid) {
-    var c = CARDS[pid];
-    var idx = pipeline.indexOf(c.columnId);
-    if (idx < 0) return;
-    var p = ((idx + 1) / total) * 100;
-    sum += p;
-  });
-  var pct = Math.round(sum / ids.length);
-  if (pct < 0) pct = 0; if (pct > 100) pct = 100;
-  _D.ref('rooms/' + _R + '/production_pct').set(pct).catch(function(){});
-  try { window.parent.postMessage({ type: 'productionPct', pct: pct }, '*'); } catch(e){}
-}
-
 function logFeedEntry(entry) {
   if (!_R || !_D) return;
   var k = _D.ref('rooms/' + _R + '/production/feed').push();
@@ -511,341 +539,171 @@ document.querySelectorAll('.outer-tab').forEach(function (t) {
   });
 });
 
-// ─── Render Piece-Tabs + Content ─────────────────────────────
-var pieceTabsBar = document.getElementById('pieceTabsBar');
-var pieceContent = document.getElementById('pieceContent');
+// ─── Kanban Rendering (Notion-style: vertikale Spalten) ──────
+var kanbanInner = document.getElementById('kanbanInner');
+var dragCardId = null;
 
-function currentStageLabel(card) {
-  if (!card) return '—';
-  var c = COLUMNS[card.columnId];
-  if (!c) return '—';
-  return c.label;
-}
-
-function renderPieceTabs() {
-  clearEl(pieceTabsBar);
-  var ids = activePieceIds();
-  ids.forEach(function (pid) {
-    var card = CARDS[pid];
-    var tab = el('div', 'piece-tab' + (pid === activePieceId ? ' on' : ''), pieceTabsBar);
-    var nm = el('span', 'pt-name', tab);
-    nm.textContent = card.name || 'Unbenannt';
-    var st = el('span', 'pt-stage', tab);
-    var lbl = currentStageLabel(card);
-    st.textContent = lbl.length > 18 ? lbl.slice(0, 18) + '…' : lbl;
-    tab.onclick = function () {
-      activePieceId = pid;
-      renderPieceTabs();
-      renderPieceContent();
-    };
-    if (!IS_CUSTOMER) {
-      tab.draggable = true;
-      tab.addEventListener('dragstart', function (e) {
-        dragCardId = pid;
-        tab.style.opacity = '0.5';
-        try { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', pid); } catch(_){}
-      });
-      tab.addEventListener('dragend', function () {
-        dragCardId = null;
-        tab.style.opacity = '';
-        document.querySelectorAll('.cell.is-drop').forEach(function (x) { x.classList.remove('is-drop'); });
-      });
-    }
-  });
-  if (!IS_CUSTOMER) {
-    var add = el('button', 'piece-tab-add', pieceTabsBar);
-    add.textContent = '+ Neues Piece';
-    add.onclick = addNewPiece;
-  }
-}
-
-function renderPieceContent() {
-  clearEl(pieceContent);
-  var ids = activePieceIds();
-  if (ids.length === 0) {
-    var em = el('div', 'empty-state', pieceContent);
-    var ic = el('div', 'icon', em); ic.textContent = '🏭';
-    var h = el('h3', null, em); h.textContent = 'Noch keine Pieces';
+function renderKanban() {
+  clearEl(kanbanInner);
+  var visibleCols = sortedColumnIds(false);
+  if (visibleCols.length === 0) {
+    var em = el('div', 'empty-state', kanbanInner);
+    var ic = el('div', 'icon', em); ic.textContent = '🛠';
+    var h = el('h3', null, em); h.textContent = 'Noch keine Spalten';
     var p = el('p', null, em);
-    p.textContent = IS_CUSTOMER ? 'Sobald euer erstes Piece in Produktion geht, siehst du es hier.' : 'Leg dein erstes Piece an und tracke es durch die Produktion.';
-    if (!IS_CUSTOMER) {
-      var btn = el('button', null, em);
-      btn.textContent = '+ Neues Piece anlegen';
-      btn.onclick = addNewPiece;
-    }
+    p.textContent = IS_CUSTOMER ? 'Warte bis dein Brand-Manager die Spalten einrichtet.' : 'Klick „⚙ Spalten" oben um Defaults zu laden.';
     return;
   }
-  if (!activePieceId || !CARDS[activePieceId] || CARDS[activePieceId].archived) {
-    activePieceId = ids[0];
-  }
-  var card = CARDS[activePieceId];
-  if (!card) return;
-
-  // Header
-  var head = el('div', 'piece-header', pieceContent);
-  var nameInp = el('input', 'piece-name-input', head);
-  nameInp.type = 'text';
-  nameInp.value = card.name || '';
-  nameInp.placeholder = 'Piece-Name';
-  nameInp.disabled = IS_CUSTOMER;
-  var nameDeb;
-  nameInp.addEventListener('input', function () {
-    card.name = nameInp.value;
-    clearTimeout(nameDeb);
-    nameDeb = setTimeout(function () {
-      persistCardField(activePieceId, 'name');
-      renderPieceTabs();
-    }, 350);
+  visibleCols.forEach(function (colId) {
+    kanbanInner.appendChild(makeColumnEl(colId));
   });
-  var stagePill = el('span', 'piece-cur-stage', head);
-  el('span', 'dot', stagePill);
-  var stageText = document.createElement('span');
-  stageText.textContent = currentStageLabel(card);
-  stagePill.appendChild(stageText);
+  if (!IS_CUSTOMER) {
+    var addTile = el('div', 'add-col-tile', kanbanInner);
+    var b1 = el('button', null, addTile);
+    b1.textContent = '+ Custom-Spalte';
+    b1.onclick = addCustomColumn;
+    var b2 = el('button', null, addTile);
+    b2.textContent = '+ Sample-Gruppe (3 Spalten)';
+    b2.onclick = addSampleGroup;
+  }
+}
 
-  // Techpack-Origin Indicator
-  if (card.origin && card.origin.tool === 'techpack') {
-    var orig = el('span', 'piece-cur-stage', head);
-    orig.style.background = 'var(--blue-soft)';
-    orig.style.color = 'var(--blue)';
-    orig.title = 'Aus Techpack-Tool importiert';
-    var oDot = el('span', null, orig);
-    oDot.textContent = '📐';
-    var oTxt = document.createElement('span');
-    oTxt.textContent = 'aus Techpack';
-    orig.appendChild(oTxt);
+function makeColumnEl(colId) {
+  var col = COLUMNS[colId];
+  var cardIds = cardsInColumn(colId);
+  var d = el('div', 'col' + (col.hidden ? ' is-hidden' : ''));
+  d.dataset.colId = colId;
+
+  var head = el('div', 'col-head', d);
+  var title = el('div', 'col-title', head);
+  title.textContent = col.label || 'Spalte';
+  if (!IS_CUSTOMER && col.isCustom) {
+    title.contentEditable = 'true';
+    title.spellcheck = false;
+    title.addEventListener('input', function () {
+      COLUMNS[colId].label = title.textContent.trim() || 'Spalte';
+    });
+    title.addEventListener('blur', function () {
+      persistColumn(colId);
+    });
+    title.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') { e.preventDefault(); title.blur(); }
+    });
+  }
+  var count = el('span', 'col-count', head);
+  count.textContent = cardIds.length;
+
+  if (!IS_CUSTOMER) {
+    var menuBtn = el('button', 'col-menu-btn', head);
+    menuBtn.textContent = '⋯';
+    menuBtn.title = 'Spalten-Optionen';
+    menuBtn.onclick = function (e) { e.stopPropagation(); colMenu(colId); };
+  }
+
+  var list = el('div', 'col-list', d);
+  list.dataset.colDrop = colId;
+  if (cardIds.length === 0) {
+    var em = el('div', 'col-empty', list);
+    em.textContent = 'Leer';
+  } else {
+    cardIds.forEach(function (cardId) {
+      list.appendChild(makeCardEl(cardId));
+    });
   }
 
   if (!IS_CUSTOMER) {
-    var actWrap = el('div', 'piece-actions', head);
-    var dup = el('button', 'act-btn', actWrap);
-    dup.textContent = '⧉';
-    dup.title = 'Piece duplizieren';
-    dup.onclick = function () { duplicatePiece(activePieceId); };
-    var del = el('button', 'act-btn danger', actWrap);
-    del.textContent = '🗑';
-    del.title = 'Piece löschen';
-    del.onclick = function () { deletePiece(activePieceId); };
+    var addBtn = el('button', 'col-add-card', d);
+    addBtn.textContent = '+ Karte in dieser Spalte';
+    addBtn.onclick = function () { addNewCard(colId); };
   }
 
-  // Quick actions: prev / next
-  var vis = sortedColumnIds(false);
-  var idx = vis.indexOf(card.columnId);
-  var quick = el('div', 'piece-quick', pieceContent);
-  var prev = el('button', null, quick);
-  prev.textContent = '← Vorherige Stage';
-  prev.disabled = idx <= 0 || IS_CUSTOMER;
-  prev.onclick = function () {
-    if (idx > 0) moveCard(activePieceId, vis[idx - 1]);
-  };
-  if (IS_CUSTOMER) {
-    var next = el('button', 'primary', quick);
-    var nextIdx = idx >= 0 ? idx + 1 : -1;
-    var canConfirm = nextIdx >= 0 && nextIdx < vis.length && vis[nextIdx] === FINAL_COL_ID;
-    next.textContent = canConfirm ? 'Empfangen bestätigen ✓' : 'Nur „Empfangen bestätigen" verfügbar';
-    next.disabled = !canConfirm;
-    next.onclick = function () { if (canConfirm) moveCard(activePieceId, FINAL_COL_ID); };
-  } else {
-    var next2 = el('button', 'primary', quick);
-    next2.textContent = 'Nächste Stage →';
-    next2.disabled = idx < 0 || idx >= vis.length - 1;
-    next2.onclick = function () {
-      if (idx >= 0 && idx < vis.length - 1) moveCard(activePieceId, vis[idx + 1]);
-    };
-  }
+  setupColumnDropZone(list, colId);
+  return d;
+}
 
-  // Multi-row Kanban
-  var groups = groupedColumns(false);
-  groups.forEach(function (grp) {
-    var row = el('div', 'row', pieceContent);
-    var rh = el('div', 'row-head', row);
-    var rl = el('div', 'label', rh);
-    rl.textContent = grp.groupLabel;
-    el('div', 'line', rh);
-    var cells = el('div', 'row-cells', row);
-    grp.columns.forEach(function (cid) {
-      var col = COLUMNS[cid];
-      if (!col) return;
-      var c = el('div', 'cell' + (card.columnId === cid ? ' is-current' : '') + (col.hidden ? ' is-hidden' : ''), cells);
-      c.dataset.colId = cid;
-      var lbl = el('div', 'cell-label', c);
-      lbl.textContent = col.label;
-      if (card.columnId === cid) {
-        // Current stage — show duration since entered
-        var lastEntry = (card.history || []).slice().reverse().find(function (h) { return h.col === cid && !h.leftAt; });
-        var enteredAt = lastEntry ? lastEntry.enteredAt : card.createdAt;
-        var t = el('div', 'cell-time', c);
-        t.textContent = 'Aktuell · ' + relTime(enteredAt);
-        var m = el('div', 'cell-meta is-current', c);
-        m.textContent = '✓ Hier';
-        // Drag-source: active piece can be dragged from its current cell
-        if (!IS_CUSTOMER) {
-          c.draggable = true;
-          c.style.cursor = 'grab';
-          c.addEventListener('dragstart', function (e) {
-            dragCardId = activePieceId;
-            c.style.opacity = '0.5';
-            try { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', activePieceId); } catch(_){}
-          });
-          c.addEventListener('dragend', function () {
-            dragCardId = null;
-            c.style.opacity = '';
-            document.querySelectorAll('.cell.is-drop').forEach(function (x) { x.classList.remove('is-drop'); });
-          });
-        }
-      }
-      var canMove = !IS_CUSTOMER || cid === FINAL_COL_ID;
-      if (canMove && card.columnId !== cid) {
-        c.onclick = function () { moveCard(activePieceId, cid); };
-      } else if (!canMove) {
-        c.style.cursor = 'default';
-      }
-      // Drag-target (Desktop only, owner)
-      if (!IS_CUSTOMER) {
-        c.addEventListener('dragover', function (e) {
-          if (!dragCardId) return;
-          e.preventDefault();
-          c.classList.add('is-drop');
-        });
-        c.addEventListener('dragleave', function () { c.classList.remove('is-drop'); });
-        c.addEventListener('drop', function (e) {
-          e.preventDefault();
-          c.classList.remove('is-drop');
-          if (!dragCardId) return;
-          moveCard(dragCardId, cid);
-        });
-      }
-    });
+function makeCardEl(cardId) {
+  var c = CARDS[cardId] || {};
+  var d = el('div', 'card');
+  d.dataset.cardId = cardId;
+  if (!IS_CUSTOMER) d.draggable = true;
+
+  var t = el('div', 'card-title', d);
+  t.textContent = c.name || 'Unbenannt';
+
+  var meta = el('div', 'card-meta', d);
+  if (c.origin && c.origin.tool === 'techpack') {
+    var tp = el('span', 'card-pill techpack', meta);
+    tp.textContent = '📐 Techpack';
+  }
+  if (c.assignee && c.assignee.trim()) {
+    var ap = el('span', 'card-pill assignee', meta);
+    ap.textContent = c.assignee.trim();
+  }
+  var lastMove = (c.history && c.history.length) ? c.history[c.history.length - 1].enteredAt : c.createdAt;
+  var tm = el('span', 'card-time', meta);
+  tm.textContent = relTime(lastMove);
+
+  d.addEventListener('click', function () {
+    if (d.dataset.wasDrag === '1') { d.dataset.wasDrag = ''; return; }
+    openCardDetail(cardId);
   });
 
-  // + Add Sample N row
   if (!IS_CUSTOMER) {
-    var existingSampleNumbers = [];
-    Object.keys(COLUMNS).forEach(function (k) {
-      var m = /Sample\s+(\d+)/i.exec(COLUMNS[k].label || '');
-      if (m) {
-        var n = parseInt(m[1], 10);
-        if (existingSampleNumbers.indexOf(n) < 0) existingSampleNumbers.push(n);
-      }
+    var pressTimer = null;
+    d.addEventListener('touchstart', function () {
+      pressTimer = setTimeout(function () {
+        pressTimer = null;
+        d.dataset.wasDrag = '1';
+        openMoveSheet(cardId);
+      }, 450);
+    }, {passive:true});
+    d.addEventListener('touchend', function () {
+      if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
     });
-    var nextSampleN = (existingSampleNumbers.length === 0 ? 2 : Math.max.apply(null, existingSampleNumbers) + 1);
-    if (nextSampleN <= 8) {
-      var addRow = el('button', 'add-sample-btn', pieceContent);
-      addRow.textContent = '+ Sample ' + nextSampleN + ' Reihe hinzufügen';
-      addRow.onclick = function () { addSampleGroup(nextSampleN); };
-    }
-  }
-
-  // Notes section
-  var notesSec = el('div', 'piece-meta-section', pieceContent);
-  var nh = el('h4', null, notesSec); nh.textContent = '📝 Notizen';
-  var nt = el('textarea', 'piece-textarea', notesSec);
-  nt.value = card.notes || '';
-  nt.placeholder = 'Notizen zu diesem Piece …';
-  var notesDeb;
-  nt.addEventListener('input', function () {
-    card.notes = nt.value;
-    clearTimeout(notesDeb);
-    notesDeb = setTimeout(function () { persistCardField(activePieceId, 'notes'); }, 400);
-  });
-
-  // History section
-  var histSec = el('div', 'piece-meta-section', pieceContent);
-  var hh = el('h4', null, histSec); hh.textContent = '📜 Verlauf';
-  var hl = el('div', 'history-list', histSec);
-  var h = (card.history || []).slice().reverse();
-  if (h.length === 0) {
-    var em2 = el('div', null, hl);
-    em2.style.fontSize = '11px';
-    em2.style.color = 'var(--ink-dim)';
-    em2.style.fontStyle = 'italic';
-    em2.textContent = 'Noch keine Stage-Wechsel.';
-  } else {
-    h.forEach(function (entry) {
-      var row = el('div', 'history-row', hl);
-      el('div', 'dot', row);
-      var info = el('div', 'info', row);
-      var stg = el('div', 'stage', info);
-      var colName = (COLUMNS[entry.col] && COLUMNS[entry.col].label) || '(gelöschte Spalte)';
-      stg.textContent = '→ ' + colName;
-      var ts = el('div', 'ts', info);
-      var dur = '';
-      if (entry.leftAt) dur = ' · Dauer ' + fmtDuration(entry.leftAt - entry.enteredAt);
-      ts.textContent = fmtDateTime(entry.enteredAt) + dur;
+    d.addEventListener('touchmove', function () {
+      if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
     });
+    setupCardDrag(d, cardId);
   }
+  return d;
 }
 
-// ─── Piece Actions ───────────────────────────────────────────
-function addNewPiece() {
-  if (IS_CUSTOMER) return;
-  customPrompt({
-    title: 'Neues Piece',
-    description: 'Wie heißt das Piece? (z.B. Schwarzer Hoodie, Beige Sweatpants …)',
-    placeholder: 'Piece-Name',
-  }).then(function (name) {
-    if (!name) return;
-    var id = newId('card');
-    var firstCol = sortedColumnIds(false)[0];
-    var now = tsNow();
-    CARDS[id] = {
-      name: name,
-      columnId: firstCol,
-      notes: '',
-      createdAt: now,
-      history: [{ col: firstCol, enteredAt: now, byUid: (window.ME && window.ME.uid) || null }],
-    };
-    persistCard(id);
-    activePieceId = id;
-    renderPieceTabs();
-    renderPieceContent();
+function setupCardDrag(d, cardId) {
+  d.addEventListener('dragstart', function (e) {
+    dragCardId = cardId;
+    d.classList.add('is-drag');
+    d.dataset.wasDrag = '1';
+    try { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', cardId); } catch(_){}
+  });
+  d.addEventListener('dragend', function () {
+    d.classList.remove('is-drag');
+    dragCardId = null;
+    document.querySelectorAll('.col.is-drop').forEach(function (l) { l.classList.remove('is-drop'); });
+    setTimeout(function(){ d.dataset.wasDrag = ''; }, 50);
   });
 }
-function duplicatePiece(pid) {
-  if (IS_CUSTOMER) return;
-  var src = CARDS[pid]; if (!src) return;
-  customPrompt({
-    title: 'Piece duplizieren',
-    description: 'Name fürs Duplikat:',
-    defaultValue: (src.name || '') + ' (Kopie)',
-    placeholder: 'Piece-Name',
-  }).then(function (name) {
-    if (!name) return;
-    var id = newId('card');
-    var firstCol = sortedColumnIds(false)[0];
-    var now = tsNow();
-    CARDS[id] = {
-      name: name,
-      columnId: firstCol,
-      notes: src.notes || '',
-      createdAt: now,
-      history: [{ col: firstCol, enteredAt: now, byUid: (window.ME && window.ME.uid) || null }],
-    };
-    persistCard(id);
-    activePieceId = id;
-    renderPieceTabs();
-    renderPieceContent();
+function setupColumnDropZone(list, colId) {
+  var col = list.parentElement;
+  list.addEventListener('dragover', function (e) {
+    if (!dragCardId) return;
+    e.preventDefault();
+    if (col) col.classList.add('is-drop');
+  });
+  list.addEventListener('dragleave', function (e) {
+    if (e.relatedTarget && list.contains(e.relatedTarget)) return;
+    if (col) col.classList.remove('is-drop');
+  });
+  list.addEventListener('drop', function (e) {
+    e.preventDefault();
+    if (col) col.classList.remove('is-drop');
+    if (!dragCardId) return;
+    moveCard(dragCardId, colId);
   });
 }
-function deletePiece(pid) {
-  if (IS_CUSTOMER) return;
-  var c = CARDS[pid]; if (!c) return;
-  customConfirm({
-    title: 'Piece löschen?',
-    description: '„' + (c.name || '?') + '" wird endgültig entfernt — der Verlauf geht verloren.',
-    okLabel: 'Endgültig löschen',
-    danger: true,
-  }).then(function (ok) {
-    if (!ok) return;
-    delete CARDS[pid];
-    persistCardDelete(pid);
-    activePieceId = null;
-    renderPieceTabs();
-    renderPieceContent();
-  });
-}
-function moveCard(pid, toColId) {
-  var c = CARDS[pid]; if (!c) return;
+
+function moveCard(cardId, toColId) {
+  var c = CARDS[cardId];
+  if (!c) return;
   var fromColId = c.columnId;
   if (fromColId === toColId) return;
   var now = tsNow();
@@ -856,9 +714,9 @@ function moveCard(pid, toColId) {
   }
   c.history.push({ col: toColId, enteredAt: now, byUid: (window.ME && window.ME.uid) || null });
   c.columnId = toColId;
-  persistCard(pid);
+  persistCard(cardId);
   logFeedEntry({
-    cardId: pid, cardName: c.name || '',
+    cardId: cardId, cardName: c.name || '',
     fromCol: fromColId,
     fromColLabel: (COLUMNS[fromColId] && COLUMNS[fromColId].label) || '',
     toCol: toColId,
@@ -866,32 +724,33 @@ function moveCard(pid, toColId) {
     byUid: (window.ME && window.ME.uid) || null,
     ts: now,
   });
-  renderPieceTabs();
-  renderPieceContent();
+  renderKanban();
+  if (openCardId === cardId) renderCardDetail();
 }
-function addSampleGroup(n) {
+
+// ─── Add Card / Column ───────────────────────────────────────
+function addNewCard(colId) {
   if (IS_CUSTOMER) return;
-  var labels = [
-    { lbl: 'Sample ' + n + ' im Prozess',  order: 100 },
-    { lbl: 'Sample ' + n + ' auf dem Weg', order: 200 },
-    { lbl: 'Sample ' + n + ' fertig',       order: 300 },
-    { lbl: 'Final Change ' + n,             order: 400 },
-  ];
-  // Insert order: between existing sampleN and "produktion" group
-  // Find max order of non-produktion groups + base
-  var baseOrder = 500 + (n - 1) * 500; // sample 2 starts at 1000, sample 3 at 1500, etc.
-  labels.forEach(function (it) {
-    var id = newId('col');
-    COLUMNS[id] = {
-      label: it.lbl,
-      order: baseOrder + it.order,
-      groupKey: 'sample' + n,
-      groupLabel: 'Sample ' + n,
-      isCustom: false,
+  customPrompt({
+    title: 'Neues Piece',
+    description: 'Wie heißt das Piece? (z.B. Schwarzer Hoodie, Beige Sweatpants)',
+    placeholder: 'Piece-Name',
+  }).then(function (name) {
+    if (!name) return;
+    var id = newId('card');
+    var firstCol = colId || sortedColumnIds(false)[0];
+    var now = tsNow();
+    CARDS[id] = {
+      name: name,
+      columnId: firstCol,
+      notes: '',
+      assignee: '',
+      createdAt: now,
+      history: [{ col: firstCol, enteredAt: now, byUid: (window.ME && window.ME.uid) || null }],
     };
-    persistColumn(id);
+    persistCard(id);
+    renderKanban();
   });
-  renderPieceContent();
 }
 function addCustomColumn() {
   if (IS_CUSTOMER) return;
@@ -903,18 +762,49 @@ function addCustomColumn() {
     if (!label) return;
     var maxOrder = Object.keys(COLUMNS).reduce(function (m, k) { return Math.max(m, COLUMNS[k].order || 0); }, 0);
     var id = newId('col');
-    COLUMNS[id] = { label: label, order: maxOrder + 100, groupKey: 'extra', groupLabel: 'Weiteres', isCustom: true };
+    COLUMNS[id] = { label: label, order: maxOrder + 100, isCustom: true };
     persistColumn(id);
-    renderPieceContent();
-    openManageModal();
+    renderKanban();
+  });
+}
+function addSampleGroup() {
+  if (IS_CUSTOMER) return;
+  var maxN = 1;
+  Object.keys(COLUMNS).forEach(function (k) {
+    var m = /Sample\s+(\d+)/i.exec(COLUMNS[k].label || '');
+    if (m) maxN = Math.max(maxN, parseInt(m[1], 10) || 0);
+  });
+  var nextN = maxN + 1;
+  if (nextN > 12) { return; }
+  var maxOrder = Object.keys(COLUMNS).reduce(function (m, k) { return Math.max(m, COLUMNS[k].order || 0); }, 0);
+  var labels = ['Sample ' + nextN + ' im Prozess', 'Sample ' + nextN + ' auf dem Weg', 'Sample ' + nextN + ' fertig'];
+  labels.forEach(function (lbl, i) {
+    var id = newId('col');
+    COLUMNS[id] = { label: lbl, order: maxOrder + (i + 1) * 100, isCustom: false };
+    persistColumn(id);
+  });
+  renderKanban();
+}
+
+function colMenu(colId) {
+  var c = COLUMNS[colId];
+  if (!c) return;
+  customConfirm({
+    title: 'Spalte: ' + c.label,
+    description: (c.hidden ? '✓ Aktuell für Kunden versteckt.\n\n' : '') +
+                 'Aktion auswählen — Verstecken/Sichtbar wechseln, oder Spalte löschen?\n\nFür „Umbenennen" siehe ⚙ Spalten oben.',
+    okLabel: c.hidden ? 'Wieder sichtbar machen' : 'Für Kunde verstecken',
+    cancelLabel: 'Schließen',
+  }).then(function (ok) {
+    if (ok) {
+      c.hidden = !c.hidden;
+      persistColumn(colId);
+      renderKanban();
+    }
   });
 }
 
-// ─── Drag (Owner only) — Pieces sind keine Cards, also Drag macht weniger Sinn.
-// Aber: wir behalten Drag für den Fall dass Owner mit Maus zieht statt zu klicken
-var dragCardId = null;
-
-// ─── Column Manage Modal ─────────────────────────────────────
+// ─── Manage Modal ────────────────────────────────────────────
 var manageOverlay = document.getElementById('manageOverlay');
 var manageList = document.getElementById('manageList');
 document.getElementById('manageClose').onclick = function () { manageOverlay.classList.remove('on'); };
@@ -924,17 +814,18 @@ document.getElementById('addCustomColBtn').onclick = addCustomColumn;
 document.getElementById('resetColsBtn').onclick = function () {
   customConfirm({
     title: 'Spalten zurücksetzen?',
-    description: 'Alle Custom-Spalten + extra Sample-Reihen werden gelöscht. Pieces bleiben (landen aber evtl. in „verwaisten" Stages).',
+    description: 'Custom-Spalten + Hide-States werden gelöscht. Pieces bleiben.',
     okLabel: 'Ja, zurücksetzen',
     danger: true,
   }).then(function (ok) {
     if (!ok) return;
     Object.keys(COLUMNS).forEach(function (k) { persistColumnDelete(k); delete COLUMNS[k]; });
     seedDefaultsIfEmpty(true);
-    renderPieceContent();
+    renderKanban();
     openManageModal();
   });
 };
+document.getElementById('addCardBtn').onclick = function () { addNewCard(null); };
 
 function openManageModal() {
   clearEl(manageList);
@@ -952,7 +843,7 @@ function openManageModal() {
       COLUMNS[cid].order = COLUMNS[prev].order || 0;
       COLUMNS[prev].order = tmp;
       persistColumn(cid); persistColumn(prev);
-      renderPieceContent();
+      renderKanban();
       openManageModal();
     };
     var dn = el('button', 'order-btn', row);
@@ -965,20 +856,20 @@ function openManageModal() {
       COLUMNS[cid].order = COLUMNS[nxt].order || 0;
       COLUMNS[nxt].order = tmp;
       persistColumn(cid); persistColumn(nxt);
-      renderPieceContent();
+      renderKanban();
       openManageModal();
     };
     var nm = el('div', 'name', row);
-    nm.textContent = c.label + (c.isCustom ? ' · Custom' : '') + ' · ' + (c.groupLabel || '');
+    nm.textContent = c.label + (c.isCustom ? ' · Custom' : '');
     var tog = el('button', 'toggle' + (!c.hidden ? ' on' : ''), row);
     tog.textContent = c.hidden ? 'Versteckt' : 'Sichtbar';
     tog.onclick = function () {
       c.hidden = !c.hidden;
       persistColumn(cid);
       openManageModal();
-      renderPieceContent();
+      renderKanban();
     };
-    if (c.isCustom || c.groupKey && c.groupKey.indexOf('sample') === 0 && c.groupKey !== 'sample1') {
+    if (c.isCustom) {
       var rm = el('button', 'order-btn danger', row);
       rm.textContent = '✕';
       rm.title = 'Löschen';
@@ -993,12 +884,160 @@ function openManageModal() {
           delete COLUMNS[cid];
           persistColumnDelete(cid);
           openManageModal();
-          renderPieceContent();
+          renderKanban();
         });
       };
     }
   });
   manageOverlay.classList.add('on');
+}
+
+// ─── Move Action Sheet (Mobile) ──────────────────────────────
+var sheetOverlay = document.getElementById('sheetOverlay');
+var sheetList = document.getElementById('sheetList');
+sheetOverlay.addEventListener('click', function (e) { if (e.target === sheetOverlay) sheetOverlay.classList.remove('on'); });
+
+function openMoveSheet(cardId) {
+  var c = CARDS[cardId];
+  if (!c) return;
+  clearEl(sheetList);
+  document.getElementById('sheetTitle').textContent = 'Verschieben: ' + (c.name || 'Karte');
+  sortedColumnIds(false).forEach(function (cid) {
+    var b = el('button', cid === c.columnId ? 'current' : '', sheetList);
+    b.textContent = COLUMNS[cid].label;
+    b.onclick = function () {
+      if (cid !== c.columnId) moveCard(cardId, cid);
+      sheetOverlay.classList.remove('on');
+    };
+  });
+  sheetOverlay.classList.add('on');
+}
+
+// ─── Card Detail Modal ───────────────────────────────────────
+var detailOverlay = document.getElementById('detailOverlay');
+var detailTitleInput = document.getElementById('detailTitleInput');
+var detailNotes = document.getElementById('detailNotes');
+var detailStageInfo = document.getElementById('detailStageInfo');
+var detailPrevBtn = document.getElementById('detailPrevBtn');
+var detailNextBtn = document.getElementById('detailNextBtn');
+var detailDelBtn = document.getElementById('detailDelBtn');
+
+document.getElementById('detailClose').onclick = closeCardDetail;
+detailOverlay.addEventListener('click', function (e) { if (e.target === detailOverlay) closeCardDetail(); });
+
+function openCardDetail(cardId) {
+  if (!CARDS[cardId]) return;
+  openCardId = cardId;
+  renderCardDetail();
+  detailOverlay.classList.add('on');
+}
+function closeCardDetail() {
+  openCardId = null;
+  detailOverlay.classList.remove('on');
+}
+
+function renderCardDetail() {
+  if (!openCardId) return;
+  var c = CARDS[openCardId];
+  if (!c) { closeCardDetail(); return; }
+  detailTitleInput.value = c.name || '';
+  detailNotes.value = c.notes || '';
+  var curCol = COLUMNS[c.columnId];
+  detailStageInfo.textContent = 'Aktuell: ' + (curCol ? curCol.label : '—');
+
+  var customerReadOnly = IS_CUSTOMER;
+  detailTitleInput.disabled = customerReadOnly;
+  detailNotes.disabled = false;
+  detailDelBtn.style.display = customerReadOnly ? 'none' : '';
+
+  var vis = sortedColumnIds(false);
+  var idx = vis.indexOf(c.columnId);
+  detailPrevBtn.disabled = idx <= 0;
+  detailNextBtn.disabled = idx >= vis.length - 1 || idx < 0;
+  if (IS_CUSTOMER) {
+    detailPrevBtn.disabled = true;
+    var nxt = vis[idx + 1];
+    detailNextBtn.disabled = !(nxt === FINAL_COL_ID);
+    detailNextBtn.textContent = (nxt === FINAL_COL_ID) ? 'Empfangen bestätigen ✓' : 'Nur „Empfangen bestätigen" verfügbar';
+  } else {
+    detailNextBtn.textContent = 'Nächste Stage →';
+  }
+
+  renderHistory();
+}
+
+var detTitleDeb;
+detailTitleInput.addEventListener('input', function () {
+  if (!openCardId) return;
+  CARDS[openCardId].name = detailTitleInput.value;
+  clearTimeout(detTitleDeb);
+  detTitleDeb = setTimeout(function () {
+    persistCardField(openCardId, 'name');
+    renderKanban();
+  }, 400);
+});
+var detNotesDeb;
+detailNotes.addEventListener('input', function () {
+  if (!openCardId) return;
+  CARDS[openCardId].notes = detailNotes.value;
+  clearTimeout(detNotesDeb);
+  detNotesDeb = setTimeout(function () { persistCardField(openCardId, 'notes'); }, 400);
+});
+detailPrevBtn.onclick = function () {
+  if (!openCardId) return;
+  var c = CARDS[openCardId];
+  var vis = sortedColumnIds(false);
+  var idx = vis.indexOf(c.columnId);
+  if (idx > 0) moveCard(openCardId, vis[idx - 1]);
+};
+detailNextBtn.onclick = function () {
+  if (!openCardId) return;
+  var c = CARDS[openCardId];
+  var vis = sortedColumnIds(false);
+  var idx = vis.indexOf(c.columnId);
+  if (idx >= 0 && idx < vis.length - 1) moveCard(openCardId, vis[idx + 1]);
+};
+detailDelBtn.onclick = function () {
+  if (!openCardId) return;
+  if (IS_CUSTOMER) return;
+  var c = CARDS[openCardId];
+  customConfirm({
+    title: 'Karte löschen?',
+    description: '„' + (c.name || '?') + '" wird endgültig entfernt.',
+    okLabel: 'Löschen',
+    danger: true,
+  }).then(function (ok) {
+    if (!ok) return;
+    delete CARDS[openCardId];
+    persistCardDelete(openCardId);
+    closeCardDetail();
+    renderKanban();
+  });
+};
+
+function renderHistory() {
+  var list = document.getElementById('historyList');
+  clearEl(list);
+  if (!openCardId) return;
+  var c = CARDS[openCardId];
+  var h = (c.history || []).slice().reverse();
+  if (h.length === 0) {
+    var em = el('div', 'history-empty', list);
+    em.textContent = 'Noch keine Stage-Wechsel.';
+    return;
+  }
+  h.forEach(function (entry) {
+    var row = el('div', 'history-row', list);
+    el('div', 'dot', row);
+    var info = el('div', 'info', row);
+    var stg = el('div', 'stage', info);
+    var colName = (COLUMNS[entry.col] && COLUMNS[entry.col].label) || '(gelöschte Spalte)';
+    stg.textContent = '→ ' + colName;
+    var ts = el('div', 'ts', info);
+    var dur = '';
+    if (entry.leftAt) dur = ' · Dauer ' + fmtDuration(entry.leftAt - entry.enteredAt);
+    ts.textContent = fmtDateTime(entry.enteredAt) + dur;
+  });
 }
 
 // ─── Standalone Kalkulator ───────────────────────────────────
@@ -1047,7 +1086,7 @@ function renderCalc() {
   clearEl(wrap);
 
   var inB = el('div', 'calc-block', wrap);
-  var h1 = el('h5', null, inB); h1.textContent = 'Eingaben (blau editierbar)';
+  var h1 = el('h5', null, inB); h1.textContent = 'Eingaben';
   var inputs = [
     { k:'menge',       label:'Menge (Pieces)',           unit:'', step:1, min:1 },
     { k:'ek',          label:'Einkauf (EK) pro Piece',   unit:'€', step:0.1, min:0 },
@@ -1111,13 +1150,12 @@ function renderCalc() {
   updateOutputs();
 }
 
-// ─── Aktivitäts-Feed ─────────────────────────────────────────
 function renderFeed() {
   var list = document.getElementById('feedList');
   clearEl(list);
   if (FEED.length === 0) {
     var em = el('div', 'feed-empty', list);
-    em.textContent = 'Noch keine Aktivität. Sobald Pieces verschoben werden, landen die Events hier.';
+    em.textContent = 'Noch keine Aktivität. Sobald Karten verschoben werden, landen die Events hier.';
     return;
   }
   FEED.slice(-50).reverse().forEach(function (e) {
@@ -1140,7 +1178,6 @@ function renderFeed() {
   });
 }
 
-// ─── Archiv ──────────────────────────────────────────────────
 function renderArchive() {
   var list = document.getElementById('archivList');
   clearEl(list);
@@ -1149,7 +1186,7 @@ function renderArchive() {
     var em = el('div', 'empty-state', list);
     var ic = el('div', 'icon', em); ic.textContent = '📦';
     var h = el('h3', null, em); h.textContent = 'Archiv ist leer';
-    var p = el('p', null, em); p.textContent = 'Archivierte Pieces landen hier.';
+    var p = el('p', null, em); p.textContent = 'Archivierte Karten landen hier.';
     return;
   }
   archIds.forEach(function (cid) {
@@ -1164,26 +1201,19 @@ function renderArchive() {
   });
 }
 
-// ─── Seed Defaults ───────────────────────────────────────────
 function seedDefaultsIfEmpty(force) {
   if (IS_CUSTOMER) return;
   if (!force && Object.keys(COLUMNS).length > 0) return;
   DEFAULT_COLUMNS.forEach(function (dc) {
-    COLUMNS[dc.id] = {
-      label: dc.label, order: dc.order,
-      groupKey: dc.groupKey, groupLabel: dc.groupLabel,
-      isCustom: false,
-    };
+    COLUMNS[dc.id] = { label: dc.label, order: dc.order, isCustom: false };
     persistColumn(dc.id);
   });
 }
 
-// ─── Init + Listeners ────────────────────────────────────────
 if (!_R) {
   setConn('· lokal (kein Raum)');
 } else {
   setConn('· verbinde …');
-
   var base = _D.ref('rooms/' + _R + '/production');
   base.once('value').then(function (snap) {
     var v = snap.val() || {};
@@ -1196,24 +1226,8 @@ if (!_R) {
     if (Object.keys(COLUMNS).length === 0 && !IS_CUSTOMER) {
       seedDefaultsIfEmpty(false);
     }
-    // Migration: existing columns without groupKey → derive from label
-    Object.keys(COLUMNS).forEach(function (cid) {
-      var c = COLUMNS[cid];
-      if (!c.groupKey) {
-        if (/techpack/i.test(c.label)) { c.groupKey = 'prep'; c.groupLabel = 'Vorbereitung'; }
-        else if (/Bulk|Versand|empfangen|Fertig empf/i.test(c.label)) { c.groupKey = 'produktion'; c.groupLabel = 'Produktion'; }
-        else {
-          var m = /Sample\s+(\d+)/i.exec(c.label || '');
-          if (m) { c.groupKey = 'sample' + m[1]; c.groupLabel = 'Sample ' + m[1]; }
-          else if (/Final\s+Change/i.test(c.label)) { c.groupKey = 'sample1'; c.groupLabel = 'Sample 1'; }
-          else { c.groupKey = 'extra'; c.groupLabel = 'Weiteres'; }
-        }
-        if (!IS_CUSTOMER) persistColumn(cid);
-      }
-    });
     setConn('· verbunden');
-    renderPieceTabs();
-    renderPieceContent();
+    renderKanban();
     updateProductionPct();
   }).catch(function (e) { setConn('⚠ ' + (e.code || e.message)); });
 
@@ -1222,7 +1236,8 @@ if (!_R) {
     document.removeEventListener('blur', _onBlur, true);
     if (_pendingRerender) {
       _pendingRerender = false;
-      renderPieceTabs(); renderPieceContent();
+      renderKanban();
+      if (openCardId) renderCardDetail();
       if (document.getElementById('view-calc').classList.contains('on')) renderCalc();
     }
   }
@@ -1234,8 +1249,8 @@ if (!_R) {
       document.addEventListener('blur', _onBlur, true);
       return;
     }
-    renderPieceTabs(); renderPieceContent();
-    if (document.getElementById('view-calc').classList.contains('on')) renderCalc();
+    renderKanban();
+    if (openCardId) renderCardDetail();
   }
   base.child('columns').on('value', function (s) {
     COLUMNS = s.val() || {};
