@@ -10,11 +10,10 @@ window.UWPush = (function () {
   // ─── KONFIGURATION ────────────────────────────────────────
   // VAPID Public Key (aus Firebase Console -> Cloud Messaging -> Web Push)
   var VAPID_KEY = 'BLhQElVSG_tl3STNtC034BZLYkQ_P4laQ_S3-fnvrzFxzqgoMs7JBlIR5zABMvKoQivhJPGZU6mUspsc-yHEoZg';
-  // Cloud Messaging Sender-ID (aus Firebase Console -> Project Settings -> General)
-  // !!! TODO: Hier den Sender-ID Wert einsetzen (ist die "Project number") !!!
-  var MESSAGING_SENDER_ID = 'TODO_SENDER_ID';
-  // App-ID (auch aus Project Settings -> Allgemein, am Ende des Snippets)
-  var APP_ID = 'TODO_APP_ID';
+  // Cloud Messaging Sender-ID (= Project Number)
+  var MESSAGING_SENDER_ID = '144491079509';
+  // App-ID aus Firebase Console -> Project Settings -> General -> Web-App
+  var APP_ID = '1:144491079509:web:c7dcc1c14b8daf404231dc';
 
   // ─── State ────────────────────────────────────────────────
   var _ready = false;
@@ -57,10 +56,11 @@ window.UWPush = (function () {
     return loadFirebaseSDK().then(function () {
       if (!firebase.apps || firebase.apps.length === 0) {
         firebase.initializeApp({
-          apiKey: 'AIzaSyBsbWPNZ_lUVHsZA5fEGEsZTbAuO6kPmHM',
+          apiKey: 'AIzaSyDJqdh3apGM4fcsjRYI7vZ4VrT1_A6L92U',
           authDomain: 'unsignedworkspace.firebaseapp.com',
           databaseURL: 'https://unsignedworkspace-default-rtdb.europe-west1.firebasedatabase.app',
           projectId: 'unsignedworkspace',
+          storageBucket: 'unsignedworkspace.firebasestorage.app',
           messagingSenderId: MESSAGING_SENDER_ID,
           appId: APP_ID,
         });
@@ -98,9 +98,6 @@ window.UWPush = (function () {
     if (!isSupported()) {
       return Promise.reject(new Error('Browser unterstuetzt keine Push-Notifications.'));
     }
-    if (MESSAGING_SENDER_ID === 'TODO_SENDER_ID') {
-      return Promise.reject(new Error('Setup unvollstaendig: messagingSenderId fehlt in push-client.js.'));
-    }
     return ensureInit()
       .then(registerSW)
       .then(function () {
@@ -123,7 +120,6 @@ window.UWPush = (function () {
   function refresh(room) {
     if (!isSupported()) return Promise.resolve(null);
     if (permState() !== 'granted') return Promise.resolve(null);
-    if (MESSAGING_SENDER_ID === 'TODO_SENDER_ID') return Promise.resolve(null);
     return ensureInit()
       .then(registerSW)
       .then(function () {

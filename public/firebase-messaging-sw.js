@@ -6,14 +6,13 @@ importScripts('https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js'
 importScripts('https://www.gstatic.com/firebasejs/9.22.0/firebase-messaging-compat.js');
 
 firebase.initializeApp({
-  apiKey: 'AIzaSyBsbWPNZ_lUVHsZA5fEGEsZTbAuO6kPmHM',
+  apiKey: 'AIzaSyDJqdh3apGM4fcsjRYI7vZ4VrT1_A6L92U',
   authDomain: 'unsignedworkspace.firebaseapp.com',
   databaseURL: 'https://unsignedworkspace-default-rtdb.europe-west1.firebasedatabase.app',
   projectId: 'unsignedworkspace',
-  // messagingSenderId wird beim getToken-Call vom Frontend dynamisch geliefert
-  // (oder aus diesem SW-File ergänzt sobald der User die Sender-ID einträgt).
-  messagingSenderId: 'TODO_SENDER_ID',
-  appId: 'TODO_APP_ID',
+  storageBucket: 'unsignedworkspace.firebasestorage.app',
+  messagingSenderId: '144491079509',
+  appId: '1:144491079509:web:c7dcc1c14b8daf404231dc',
 });
 
 const messaging = firebase.messaging();
