@@ -584,10 +584,12 @@ body { font-family: 'Montserrat', sans-serif; background: var(--bg); color: var(
       var deb;
       inputEl.addEventListener('input', function () {
         dataObj[it.k] = inputEl.value;
+        if (refsBag[it.k]) refsBag[it.k]._pending = true;
         if (onChange) onChange();
         clearTimeout(deb);
         deb = setTimeout(function () {
           onPersist(it.k);
+          if (refsBag[it.k]) refsBag[it.k]._pending = false;
           updateProgress();
         }, 350);
       });
@@ -758,6 +760,9 @@ body { font-family: 'Montserrat', sans-serif; background: var(--bg); color: var(
     titleInput.addEventListener('input', function () {
       if (!STRATEGIES[stratId]) STRATEGIES[stratId] = {};
       STRATEGIES[stratId].name = titleInput.value;
+      if (STRATEGY_REFS[stratId] && STRATEGY_REFS[stratId].name) {
+        STRATEGY_REFS[stratId].name._pending = true;
+      }
       // Chip-Text live mit-updaten
       if (strategyChipsEl) {
         var chipName = strategyChipsEl.querySelector('.fchip[data-id="' + stratId + '"] .fchip-name');
@@ -766,6 +771,9 @@ body { font-family: 'Montserrat', sans-serif; background: var(--bg); color: var(
       clearTimeout(titleDeb);
       titleDeb = setTimeout(function () {
         persistStrategyField(stratId, 'name');
+        if (STRATEGY_REFS[stratId] && STRATEGY_REFS[stratId].name) {
+          STRATEGY_REFS[stratId].name._pending = false;
+        }
       }, 350);
     });
     var typPill = el('span', 'slot-typ-pill', head);
@@ -855,9 +863,15 @@ body { font-family: 'Montserrat', sans-serif; background: var(--bg); color: var(
     titleInput.addEventListener('input', function () {
       if (!VIDEOS[videoId]) VIDEOS[videoId] = {};
       VIDEOS[videoId].title = titleInput.value;
+      if (VIDEO_REFS[videoId] && VIDEO_REFS[videoId].title) {
+        VIDEO_REFS[videoId].title._pending = true;
+      }
       clearTimeout(titleDeb);
       titleDeb = setTimeout(function () {
         persistVideoField(videoId, 'title');
+        if (VIDEO_REFS[videoId] && VIDEO_REFS[videoId].title) {
+          VIDEO_REFS[videoId].title._pending = false;
+        }
         updateProgress();
       }, 350);
     });
@@ -1170,12 +1184,17 @@ body { font-family: 'Montserrat', sans-serif; background: var(--bg); color: var(
           detailNeedsRerender = true;
         }
       } else if (id === activeStrategyId) {
-        // Aktiv: Felder via REFs syncen (preserves focus)
+        // Aktiv: Felder via REFs syncen (preserves focus + pending writes)
         STRATEGIES[id] = STRATEGIES[id] || {};
         Object.keys(STRATEGY_REFS[id] || {}).forEach(function (k) {
           var ref = STRATEGY_REFS[id][k];
           if (!ref) return;
           if (ref.isFocused && ref.isFocused()) {
+            STRATEGIES[id][k] = ref.input ? ref.input.value : STRATEGIES[id][k];
+            return;
+          }
+          if (ref._pending) {
+            // un-saved local edit pending → keep local value, skip overwrite
             STRATEGIES[id][k] = ref.input ? ref.input.value : STRATEGIES[id][k];
             return;
           }
@@ -1236,6 +1255,11 @@ body { font-family: 'Montserrat', sans-serif; background: var(--bg); color: var(
           var ref = VIDEO_REFS[id][k];
           if (!ref) return;
           if (ref.isFocused && ref.isFocused()) {
+            VIDEOS[id][k] = ref.input ? ref.input.value : VIDEOS[id][k];
+            return;
+          }
+          if (ref._pending) {
+            // un-saved local edit pending → keep local value, skip overwrite
             VIDEOS[id][k] = ref.input ? ref.input.value : VIDEOS[id][k];
             return;
           }

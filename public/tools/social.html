@@ -611,9 +611,11 @@ body { font-family: 'Montserrat', sans-serif; background: var(--bg); color: var(
       var deb;
       inputEl.addEventListener('input', function () {
         STATE[s.id][it.k] = inputEl.value;
+        if (FIELD_REFS[s.id][it.k]) FIELD_REFS[s.id][it.k]._pending = true;
         clearTimeout(deb);
         deb = setTimeout(function () {
           persist(s.id, it.k);
+          if (FIELD_REFS[s.id][it.k]) FIELD_REFS[s.id][it.k]._pending = false;
           updateProgress();
         }, 350);
       });
@@ -716,6 +718,11 @@ body { font-family: 'Montserrat', sans-serif; background: var(--bg); color: var(
           if (!ref) return;
           if (ref.isFocused && ref.isFocused()) {
             // user typing — keep state in sync without overwriting
+            STATE[s.id][it.k] = ref.input ? ref.input.value : STATE[s.id][it.k];
+            return;
+          }
+          if (ref._pending) {
+            // un-saved local edit pending — keep local value, skip overwrite
             STATE[s.id][it.k] = ref.input ? ref.input.value : STATE[s.id][it.k];
             return;
           }
