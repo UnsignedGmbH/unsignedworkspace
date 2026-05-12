@@ -110,6 +110,35 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 </BaseLayout>
 
 <script is:inline>
+  // ─── PWA: Customer-Redirect ──────────────────────────────────
+  // Wenn die App im standalone-Mode öffnet (vom Homescreen) UND ein
+  // customer_room in localStorage liegt UND der User NICHT eingeloggt ist
+  // (= genuiner Customer, kein Owner) → ins Portal mit gespeichertem Raum.
+  (function () {
+    try {
+      var isStandalone = (window.navigator.standalone === true) ||
+                         (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+      var hasRoom = new URLSearchParams(location.search).get("room");
+      var savedRoom = localStorage.getItem("uw.customerRoom");
+      if (!isStandalone || hasRoom || !savedRoom) return;
+      // Auth-Check: wenn Owner/Team eingeloggt → NICHT redirecten
+      function tryRedirect() {
+        if (!window.firebase || !window.firebase.auth) return setTimeout(tryRedirect, 80);
+        var unsub = window.firebase.auth().onAuthStateChanged(function (u) {
+          unsub();
+          if (u) return; // Owner ist eingeloggt → AuthGuard kümmert sich um Dashboard
+          location.replace("/portal?room=" + encodeURIComponent(savedRoom) + "&pwa=1");
+        });
+        // Sicherheits-Timeout: wenn Auth nicht reagiert binnen 1.2s → annehmen nicht eingeloggt → redirecten
+        setTimeout(function () {
+          try { unsub(); } catch (e) {}
+          location.replace("/portal?room=" + encodeURIComponent(savedRoom) + "&pwa=1");
+        }, 1200);
+      }
+      tryRedirect();
+    } catch (e) {}
+  })();
+
   (function () {
     var mode = "login";
     var tabs = document.querySelectorAll(".auth-tab");

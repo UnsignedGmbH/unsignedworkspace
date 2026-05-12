@@ -237,6 +237,37 @@ import BrandworkTimeline from "../components/BrandworkTimeline.astro";
 <script is:inline>
   (function () {
     var room = new URLSearchParams(location.search).get("room");
+
+    // ─── PWA: Dynamisches Manifest + Room in localStorage merken ──
+    // Damit das Homescreen-Icon nach „Zum Home-Bildschirm" beim Customer
+    // das Portal mit dem RICHTIGEN Raum öffnet (statt der Owner-Wurzel).
+    if (room) {
+      try { localStorage.setItem("uw.customerRoom", room); } catch (e) {}
+      // Manifest-Link dynamisch updaten — iOS Safari nimmt das für PWA-Install
+      var mfLink = document.querySelector('link[rel="manifest"]');
+      if (mfLink) {
+        mfLink.href = "/api/manifest?room=" + encodeURIComponent(room);
+      } else {
+        var lk = document.createElement("link");
+        lk.rel = "manifest";
+        lk.href = "/api/manifest?room=" + encodeURIComponent(room);
+        document.head.appendChild(lk);
+      }
+      // Apple-Web-App-Title pro Customer (falls Brand-Name verfügbar später)
+      var apTitle = document.querySelector('meta[name="apple-mobile-web-app-title"]');
+      if (apTitle) apTitle.setAttribute("content", "Unsigned · " + room.slice(0, 6).toUpperCase());
+    } else {
+      // Kein room im URL — Fallback: aus localStorage holen (wenn vom PWA-Icon kommend)
+      try {
+        var savedRoom = localStorage.getItem("uw.customerRoom");
+        if (savedRoom) {
+          // Redirect mit dem gespeicherten Raum — saubere URL
+          location.replace("/portal?room=" + encodeURIComponent(savedRoom) + "&pwa=1");
+          return;
+        }
+      } catch (e) {}
+    }
+
     var liveSlot = document.getElementById("portalLiveSlot");
     var frame = document.getElementById("portalFrame");
     var emptyMsg = document.getElementById("portalEmpty");
