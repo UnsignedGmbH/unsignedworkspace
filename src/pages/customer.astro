@@ -258,7 +258,9 @@ import BrandworkTimeline from "../components/BrandworkTimeline.astro";
       { id: "social", file: "social", label: "Social Media", icon: "💬",
         desc: "Profile · Highlights · Captions · WhatsApp" },
       { id: "production", file: "production", label: "Produktion", icon: "🏭",
-        desc: "Kanban · Stages · Kalkulator" },
+        desc: "Kanban · Stages" },
+      { id: "calculator", file: "calculator", label: "Kalkulator", icon: "💰",
+        desc: "VK-Preis pro Piece" },
     ];
     var TOOL_BY_FILE = {};
     TOOLS.forEach(function (t) { TOOL_BY_FILE[t.file] = t; });
@@ -290,6 +292,12 @@ import BrandworkTimeline from "../components/BrandworkTimeline.astro";
         return;
       }
       var d = e.data || {};
+      if (d.type === "openTool" && d.tool && customer) {
+        var url = "/customer?id=" + encodeURIComponent(customerId) + "&tool=" + encodeURIComponent(d.tool);
+        if (d.packId) url += "&pack=" + encodeURIComponent(d.packId);
+        location.href = url;
+        return;
+      }
       if (!customer) return;
       if (d.type === "shPct") {
         var p = clamp(d.pct);
@@ -598,9 +606,14 @@ import BrandworkTimeline from "../components/BrandworkTimeline.astro";
       showToolLoading();
       if (toolLoadTimer) clearTimeout(toolLoadTimer);
       toolLoadTimer = setTimeout(showToolError, TOOL_LOAD_TIMEOUT_MS);
-      $("toolFrame").src =
-        "/tools/" + t.file + ".html?room=" +
+      var srcUrl = "/tools/" + t.file + ".html?room=" +
         encodeURIComponent(customer.room) + "&owner=1";
+      // Pack-Auto-Open für Techpack: ?tool=techpack&pack=<id> in der Customer-URL → wird an iframe weitergereicht
+      var urlPack = new URLSearchParams(location.search).get("pack");
+      if (urlPack && t.file === "techpack") {
+        srcUrl += "&openPack=" + encodeURIComponent(urlPack);
+      }
+      $("toolFrame").src = srcUrl;
     }
     $("toolFrame").addEventListener("load", function () {
       var src = $("toolFrame").src;

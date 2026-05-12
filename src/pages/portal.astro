@@ -271,7 +271,9 @@ import BrandworkTimeline from "../components/BrandworkTimeline.astro";
       { id: "social", icon: "💬", label: "Social Media",
         desc: "Profile · Highlights · Captions · WhatsApp" },
       { id: "production", icon: "🏭", label: "Produktion",
-        desc: "Status & Stages deiner Pieces · Kalkulator" },
+        desc: "Status & Stages deiner Pieces" },
+      { id: "calculator", icon: "💰", label: "Kalkulator",
+        desc: "VK-Preis pro Piece kalkulieren" },
     ];
 
     if (!room) {
@@ -537,17 +539,33 @@ import BrandworkTimeline from "../components/BrandworkTimeline.astro";
       });
     }
 
-    function openTool(toolId) {
+    function openTool(toolId, extraParams) {
       var t = TOOLS.find(function (x) { return x.id === toolId; });
       if (!t) return;
       currentTool = toolId;
       document.getElementById("overviewView").classList.add("hidden");
       document.getElementById("toolView").classList.remove("hidden");
       document.getElementById("toolCrumb").textContent = t.icon + " " + t.label;
-      frame.src =
-        "/tools/" + toolId + ".html?room=" + encodeURIComponent(room) + "&owner=1&role=customer";
+      var url = "/tools/" + toolId + ".html?room=" + encodeURIComponent(room) + "&owner=1&role=customer";
+      if (extraParams && typeof extraParams === 'object') {
+        Object.keys(extraParams).forEach(function (k) {
+          if (extraParams[k] != null) url += '&' + k + '=' + encodeURIComponent(extraParams[k]);
+        });
+      }
+      frame.src = url;
       pingFn(toolId);
     }
+
+    // Cross-iframe Tool-Switch via postMessage (z.B. von Production → Techpack)
+    window.addEventListener('message', function (e) {
+      if (typeof e.origin === 'string' && e.origin !== window.location.origin) return;
+      var d = e.data || {};
+      if (d.type === 'openTool' && d.tool) {
+        var extras = {};
+        if (d.packId) extras.openPack = d.packId;
+        openTool(d.tool, extras);
+      }
+    });
 
     function backToOverview() {
       currentTool = null;

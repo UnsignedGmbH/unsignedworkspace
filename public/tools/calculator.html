@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Kalkulator · Unsigned Workspace</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" crossorigin />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,600;0,700;0,800;0,900;1,800&display=swap" />
+<style>
+:root{
+  --bg:#fafaf6; --bg2:#fff; --line:rgba(0,0,0,0.08);
+  --ink:#0a0a0a; --ink-soft:#3a3a3a; --ink-mute:#666; --ink-dim:#999;
+  --brand:#c13030; --brand-dim:rgba(193,48,48,0.08); --brand-border:rgba(193,48,48,0.25);
+  --green:#3a9a6e; --green-soft:#e8f5ee;
+  --shadow:0 1px 3px rgba(0,0,0,0.05); --shadow-lg:0 8px 30px rgba(0,0,0,0.12);
+}
+*,*::before,*::after{box-sizing:border-box;}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:'Montserrat',sans-serif;font-size:13px;font-weight:500;-webkit-font-smoothing:antialiased;}
+body{padding:14px 16px 80px;min-height:100vh;}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit;-webkit-tap-highlight-color:transparent;}
+input,textarea{font-family:inherit;font-size:inherit;color:inherit;}
+input:focus,textarea:focus{outline:none;}
+
+.top-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px;}
+.title{font-weight:900;font-size:16px;letter-spacing:-0.01em;color:var(--ink);}
+.tag{font-size:10px;color:var(--ink-dim);font-weight:700;letter-spacing:0.04em;}
+.top-actions{margin-left:auto;display:flex;gap:6px;flex-wrap:wrap;}
+.act-btn{padding:7px 12px;border-radius:9px;border:1px solid var(--line);background:var(--bg2);font-weight:700;font-size:11px;color:var(--ink-soft);transition:all 0.15s;}
+.act-btn:hover{border-color:var(--brand-border);color:var(--brand);}
+.act-btn.primary{background:var(--brand);color:#fff;border-color:var(--brand);}
+.act-btn.primary:hover{background:#a82929;color:#fff;}
+
+/* Piece-Tabs */
+.tabs-bar{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:14px;}
+.tab-chip{display:inline-flex;align-items:center;gap:6px;padding:8px 13px;border-radius:11px;background:var(--bg2);border:1px solid var(--line);font-weight:800;font-size:12px;color:var(--ink-mute);cursor:pointer;transition:all 0.15s;-webkit-tap-highlight-color:transparent;max-width:260px;}
+.tab-chip:hover{border-color:var(--brand-border);color:var(--brand);}
+.tab-chip.on{background:var(--ink);color:#fff;border-color:var(--ink);}
+.tab-chip .name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.tab-chip .price{font-size:10px;font-weight:700;padding:2px 6px;border-radius:5px;background:var(--green-soft);color:#225a3a;flex-shrink:0;}
+.tab-chip.on .price{background:rgba(255,255,255,0.18);color:#fff;}
+.tab-add{padding:8px 14px;border-radius:11px;border:1.5px dashed var(--line);background:transparent;font-weight:800;font-size:11px;color:var(--ink-mute);transition:all 0.15s;}
+.tab-add:hover{border-color:var(--brand);color:var(--brand);}
+
+/* Tab header */
+.tab-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:14px;padding:12px 14px;background:var(--bg2);border:0.5px solid var(--line);border-radius:12px;box-shadow:var(--shadow);}
+.tab-name-input{flex:1;min-width:200px;font-weight:800;font-size:15px;background:transparent;border:1px solid transparent;border-radius:8px;padding:6px 9px;margin:-6px -9px;color:var(--ink);}
+.tab-name-input:hover{border-color:var(--line);}
+.tab-name-input:focus{border-color:var(--brand-border);background:var(--bg);}
+
+/* Calculator Grid */
+.calc-wrap{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+@media (max-width:680px){.calc-wrap{grid-template-columns:1fr;}}
+.calc-block{background:var(--bg2);border:0.5px solid var(--line);border-radius:12px;padding:14px 16px;box-shadow:var(--shadow);}
+.calc-block.out{background:var(--green-soft);border-color:#bfdfcc;}
+.calc-block h5{font-size:10px;font-weight:800;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink-mute);margin:0 0 10px;}
+.calc-row{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:7px 0;border-bottom:0.5px solid var(--line);}
+.calc-row:last-child{border-bottom:none;}
+.calc-row label{font-size:12px;font-weight:600;color:var(--ink-soft);flex:1;min-width:0;line-height:1.2;}
+.calc-row input{width:110px;padding:7px 10px;border:1px solid var(--line);border-radius:7px;background:var(--bg);font-size:12.5px;text-align:right;font-weight:700;flex-shrink:0;}
+.calc-row input:focus{border-color:var(--brand);background:var(--bg2);}
+.calc-row .v{font-size:13px;font-weight:800;color:#225a3a;text-align:right;min-width:110px;}
+.calc-row .unit{font-size:9px;color:var(--ink-dim);font-weight:700;width:14px;flex-shrink:0;}
+.calc-hint{font-size:11px;color:var(--ink-mute);line-height:1.5;padding:12px 14px;background:var(--bg2);border:0.5px solid var(--line);border-radius:10px;margin-top:14px;}
+
+/* Empty state */
+.empty-state{text-align:center;padding:50px 20px;color:var(--ink-mute);background:var(--bg2);border:0.5px solid var(--line);border-radius:14px;}
+.empty-state .icon{font-size:42px;margin-bottom:10px;}
+.empty-state h3{font-size:14px;font-weight:800;color:var(--ink);margin:0 0 5px;}
+.empty-state p{font-size:11px;color:var(--ink-mute);margin:0 0 14px;}
+.empty-state button{padding:9px 16px;border-radius:9px;background:var(--brand);color:#fff;font-weight:800;font-size:12px;border:none;}
+.empty-state button:hover{background:#a82929;}
+
+/* Modals */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.4);display:none;align-items:center;justify-content:center;z-index:2500;padding:16px;}
+.modal-overlay.on{display:flex;}
+.modal-box{background:var(--bg2);border-radius:14px;width:100%;max-width:420px;padding:18px 20px;box-shadow:var(--shadow-lg);}
+.modal-box h3{font-size:14px;font-weight:800;margin:0 0 7px;color:var(--ink);}
+.modal-box p{font-size:12px;color:var(--ink-mute);margin:0 0 14px;line-height:1.4;}
+.modal-box input{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:9px;background:var(--bg);font-size:14px;font-weight:700;color:var(--ink);box-sizing:border-box;margin-bottom:14px;}
+.modal-box input:focus{border-color:var(--brand);background:var(--bg2);}
+.modal-row{display:flex;gap:8px;justify-content:flex-end;}
+.modal-row button{padding:9px 16px;border-radius:9px;font-weight:800;font-size:12px;}
+.modal-row .cancel{background:var(--bg);color:var(--ink-mute);border:1px solid var(--line);}
+.modal-row .ok{background:var(--brand);color:#fff;}
+.modal-row .ok:hover{background:#a82929;}
+</style>
+</head>
+<body>
+
+<div class="top-bar">
+  <span class="title">💰 VK-Preiskalkulator</span>
+  <span class="tag" id="connTag">· verbinde …</span>
+  <div class="top-actions">
+    <button class="act-btn" id="renameTabBtn">✏ Tab umbenennen</button>
+    <button class="act-btn" id="deleteTabBtn" style="color:#a82929;">🗑 Tab löschen</button>
+  </div>
+</div>
+
+<div class="tabs-bar" id="tabsBar"></div>
+<div id="content"></div>
+
+<!-- Custom Modals -->
+<div class="modal-overlay" id="promptOverlay">
+  <div class="modal-box">
+    <h3 id="promptTitle">Eingabe</h3>
+    <p id="promptDesc"></p>
+    <input id="promptInput" type="text" />
+    <div class="modal-row">
+      <button class="cancel" id="promptCancel">Abbrechen</button>
+      <button class="ok" id="promptOk">OK</button>
+    </div>
+  </div>
+</div>
+<div class="modal-overlay" id="confirmOverlay">
+  <div class="modal-box">
+    <h3 id="confirmTitle">Bestätigen</h3>
+    <p id="confirmDesc"></p>
+    <div class="modal-row">
+      <button class="cancel" id="confirmCancel">Abbrechen</button>
+      <button class="ok" id="confirmOk">Bestätigen</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+<script src="/tools/_shared/iframe-resilience.js"></script>
+
+<script>
+(function () {
+'use strict';
+
+var _R = new URLSearchParams(location.search).get('room');
+firebase.initializeApp({
+  apiKey: 'AIzaSyDJqdh3apGM4fcsjRYI7vZ4VrT1_A6L92U',
+  authDomain: 'unsignedworkspace.firebaseapp.com',
+  databaseURL: 'https://unsignedworkspace-default-rtdb.europe-west1.firebasedatabase.app',
+  projectId: 'unsignedworkspace',
+});
+var _D = firebase.database();
+var connTag = document.getElementById('connTag');
+
+var TABS = {};   // { tabId: { name, order, ek, verpackung, versand, retoure, zahlung, marketing, sonstiges, wunschMarge, menge } }
+var activeTabId = null;
+
+function el(tag, cls, parent) {
+  var d = document.createElement(tag);
+  if (cls) d.className = cls;
+  if (parent) parent.appendChild(d);
+  return d;
+}
+function clearEl(n) { while (n.firstChild) n.removeChild(n.firstChild); }
+function newId() { return 't_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+function showSaved() {
+  if (!connTag) return;
+  var old = connTag.dataset.base || '· verbunden';
+  connTag.textContent = '· gespeichert';
+  clearTimeout(connTag._t);
+  connTag._t = setTimeout(function () { connTag.textContent = old; }, 1400);
+}
+function setConn(t) { if (connTag) { connTag.textContent = t; connTag.dataset.base = t; } }
+
+// ─── Custom Modals (iOS-PWA safe) ────────────────────────────
+function customPrompt(opts) {
+  return new Promise(function (resolve) {
+    var ov = document.getElementById('promptOverlay');
+    document.getElementById('promptTitle').textContent = opts.title || 'Eingabe';
+    document.getElementById('promptDesc').textContent = opts.description || '';
+    var inp = document.getElementById('promptInput');
+    inp.value = opts.defaultValue || '';
+    inp.placeholder = opts.placeholder || '';
+    var ok = document.getElementById('promptOk');
+    var cancel = document.getElementById('promptCancel');
+    function close(v) {
+      ov.classList.remove('on');
+      ok.onclick = null; cancel.onclick = null; inp.onkeydown = null;
+      ov.removeEventListener('click', outside);
+      resolve(v);
+    }
+    function outside(e) { if (e.target === ov) close(null); }
+    ok.onclick = function () { close(inp.value.trim() || null); };
+    cancel.onclick = function () { close(null); };
+    inp.onkeydown = function (e) {
+      if (e.key === 'Enter') { e.preventDefault(); ok.click(); }
+      if (e.key === 'Escape') { e.preventDefault(); cancel.click(); }
+    };
+    ov.addEventListener('click', outside);
+    ov.classList.add('on');
+    setTimeout(function () { inp.focus(); inp.select(); }, 50);
+  });
+}
+function customConfirm(opts) {
+  return new Promise(function (resolve) {
+    var ov = document.getElementById('confirmOverlay');
+    document.getElementById('confirmTitle').textContent = opts.title || 'Bestätigen';
+    document.getElementById('confirmDesc').textContent = opts.description || '';
+    var ok = document.getElementById('confirmOk');
+    var cancel = document.getElementById('confirmCancel');
+    ok.textContent = opts.okLabel || 'Bestätigen';
+    cancel.textContent = opts.cancelLabel || 'Abbrechen';
+    if (opts.danger) ok.style.background = '#a82929'; else ok.style.background = '';
+    function close(v) {
+      ov.classList.remove('on');
+      ok.onclick = null; cancel.onclick = null;
+      ov.removeEventListener('click', outside);
+      resolve(v);
+    }
+    function outside(e) { if (e.target === ov) close(false); }
+    ok.onclick = function () { close(true); };
+    cancel.onclick = function () { close(false); };
+    ov.addEventListener('click', outside);
+    ov.classList.add('on');
+  });
+}
+
+// ─── Calculator Logic ────────────────────────────────────────
+function defaultCalc(name) {
+  return {
+    name: name || 'Piece 1',
+    order: 100,
+    menge: 1, ek: 9, verpackung: 1.5, versand: 4.5,
+    retoure: 8, zahlung: 2, marketing: 2, sonstiges: 0.5, wunschMarge: 47,
+  };
+}
+function computeCalc(c) {
+  var r = (c.retoure || 0) / 100;
+  var z = (c.zahlung || 0) / 100;
+  var m = (c.wunschMarge || 0) / 100;
+  var direkt = (c.ek || 0) + (c.verpackung || 0) + (c.versand || 0);
+  var retoureBuf = direkt * r;
+  var denom = (1 - z - m);
+  var preBrutto = denom > 0 ? (direkt + retoureBuf + (c.marketing || 0) + (c.sonstiges || 0)) / denom : 0;
+  var vkBrutto = preBrutto * 1.19;
+  var vkNetto = vkBrutto / 1.19;
+  var mwst = vkBrutto - vkNetto;
+  var zahlAbs = vkNetto * z;
+  var gesKost = direkt + zahlAbs + retoureBuf + (c.marketing || 0) + (c.sonstiges || 0);
+  var beVk = gesKost * 1.19;
+  var gewinn = vkNetto - gesKost;
+  var margeReal = vkNetto > 0 ? gewinn / vkNetto : 0;
+  var roi = (c.ek || 0) > 0 ? gewinn / c.ek : 0;
+  return {
+    vkBrutto: vkBrutto, vkNetto: vkNetto, mwst: mwst, zahlAbs: zahlAbs,
+    retoureBuf: retoureBuf, gesKost: gesKost, beVk: beVk, gewinn: gewinn,
+    margeReal: margeReal * 100, roi: roi * 100,
+    gesamtPreis: vkBrutto * (c.menge || 1),
+    gesamtGewinn: gewinn * (c.menge || 1),
+  };
+}
+function fmtEUR(v) { return (typeof v === 'number' && isFinite(v)) ? v.toFixed(2) + ' €' : '—'; }
+function fmtPct(v) { return (typeof v === 'number' && isFinite(v)) ? v.toFixed(1) + ' %' : '—'; }
+
+// ─── Persist ─────────────────────────────────────────────────
+function persistTab(tabId) {
+  if (!_R || !_D || !TABS[tabId]) return;
+  _D.ref('rooms/' + _R + '/calculator/tabs/' + tabId).set(TABS[tabId])
+    .then(showSaved).catch(function (e) { setConn('⚠ ' + (e.code || e.message)); });
+}
+function persistTabDelete(tabId) {
+  if (!_R || !_D) return;
+  _D.ref('rooms/' + _R + '/calculator/tabs/' + tabId).remove()
+    .then(showSaved).catch(function (e) { setConn('⚠ ' + (e.code || e.message)); });
+}
+
+// ─── Tabs ────────────────────────────────────────────────────
+function sortedTabIds() {
+  return Object.keys(TABS).sort(function (a, b) {
+    return (TABS[a].order || 0) - (TABS[b].order || 0);
+  });
+}
+
+var tabsBar = document.getElementById('tabsBar');
+var content = document.getElementById('content');
+
+function renderTabs() {
+  clearEl(tabsBar);
+  sortedTabIds().forEach(function (tid) {
+    var t = TABS[tid];
+    var chip = el('div', 'tab-chip' + (tid === activeTabId ? ' on' : ''), tabsBar);
+    var nm = el('span', 'name', chip);
+    nm.textContent = t.name || 'Piece';
+    var res = computeCalc(t);
+    var price = el('span', 'price', chip);
+    price.textContent = fmtEUR(res.vkBrutto);
+    chip.onclick = function () {
+      activeTabId = tid;
+      renderTabs();
+      renderContent();
+    };
+  });
+  var add = el('button', 'tab-add', tabsBar);
+  add.textContent = '+ Neuer Piece-Tab';
+  add.onclick = addNewTab;
+}
+
+function renderContent() {
+  clearEl(content);
+  if (Object.keys(TABS).length === 0) {
+    var em = el('div', 'empty-state', content);
+    var ic = el('div', 'icon', em); ic.textContent = '💰';
+    var h = el('h3', null, em); h.textContent = 'Noch kein Piece kalkuliert';
+    var p = el('p', null, em); p.textContent = 'Leg deinen ersten Piece-Tab an und gib EK/Versand/Marge ein. Der Preis wird live berechnet.';
+    var btn = el('button', null, em);
+    btn.textContent = '+ Neuer Piece-Tab';
+    btn.onclick = addNewTab;
+    return;
+  }
+  if (!activeTabId || !TABS[activeTabId]) {
+    activeTabId = sortedTabIds()[0];
+  }
+  var t = TABS[activeTabId];
+  if (!t) return;
+
+  // Header
+  var head = el('div', 'tab-head', content);
+  var nameInp = el('input', 'tab-name-input', head);
+  nameInp.type = 'text';
+  nameInp.value = t.name || '';
+  nameInp.placeholder = 'Piece-Name (z.B. Schwarzer Hoodie)';
+  var nameDeb;
+  nameInp.addEventListener('input', function () {
+    t.name = nameInp.value;
+    clearTimeout(nameDeb);
+    nameDeb = setTimeout(function () {
+      persistTab(activeTabId);
+      renderTabs();
+    }, 350);
+  });
+
+  var wrap = el('div', 'calc-wrap', content);
+
+  // Inputs
+  var inB = el('div', 'calc-block', wrap);
+  var h1 = el('h5', null, inB); h1.textContent = 'Eingaben';
+  var inputs = [
+    { k:'menge',       label:'Menge (Pieces)',           unit:'', step:1, min:1 },
+    { k:'ek',          label:'Einkauf (EK) pro Piece',   unit:'€', step:0.1, min:0 },
+    { k:'verpackung',  label:'Verpackung pro Piece',     unit:'€', step:0.1, min:0 },
+    { k:'versand',     label:'Versand pro Piece',        unit:'€', step:0.1, min:0 },
+    { k:'retoure',     label:'Retourenquote',            unit:'%', step:0.5, min:0 },
+    { k:'zahlung',     label:'Zahlungsgebühr',           unit:'%', step:0.1, min:0 },
+    { k:'marketing',   label:'Marketing pro Piece',      unit:'€', step:0.1, min:0 },
+    { k:'sonstiges',   label:'Sonstiges / Buffer',       unit:'€', step:0.1, min:0 },
+    { k:'wunschMarge', label:'Wunsch-Marge',             unit:'%', step:1, min:0 },
+  ];
+  var outRefs = {};
+  inputs.forEach(function (it) {
+    var r = el('div', 'calc-row', inB);
+    var lb = el('label', null, r); lb.textContent = it.label;
+    var inp = el('input', null, r);
+    inp.type = 'number'; inp.step = it.step; inp.min = it.min;
+    inp.value = t[it.k];
+    inp.addEventListener('input', function () {
+      var v = parseFloat(inp.value);
+      if (!isFinite(v)) v = 0;
+      t[it.k] = v;
+      updateOutputs();
+      clearTimeout(inp._t);
+      inp._t = setTimeout(function () { persistTab(activeTabId); renderTabs(); }, 350);
+    });
+    var u = el('span', 'unit', r); u.textContent = it.unit;
+  });
+
+  // Outputs
+  var outB = el('div', 'calc-block out', wrap);
+  var h2 = el('h5', null, outB); h2.textContent = 'Auto-Berechnung';
+  var outFields = [
+    { k:'vkBrutto',     label:'Empfohlener VK Brutto',  fmt:'eur', bold:true },
+    { k:'vkNetto',      label:'VK Netto',               fmt:'eur' },
+    { k:'mwst',         label:'MwSt (19%)',             fmt:'eur' },
+    { k:'zahlAbs',      label:'Zahlungsgebühr abs.',    fmt:'eur' },
+    { k:'retoureBuf',   label:'Retouren-Buffer',        fmt:'eur' },
+    { k:'gesKost',      label:'Gesamtkosten / Piece',   fmt:'eur' },
+    { k:'beVk',         label:'Break-even VK',          fmt:'eur' },
+    { k:'gewinn',       label:'Gewinn / Piece',         fmt:'eur', bold:true },
+    { k:'margeReal',    label:'Tatsächliche Marge',     fmt:'pct' },
+    { k:'roi',          label:'ROI (Gewinn / EK)',      fmt:'pct' },
+    { k:'gesamtPreis',  label:'Gesamtumsatz × Menge',   fmt:'eur', bold:true },
+    { k:'gesamtGewinn', label:'Gesamtgewinn × Menge',   fmt:'eur', bold:true },
+  ];
+  outFields.forEach(function (it) {
+    var r = el('div', 'calc-row', outB);
+    var lb = el('label', null, r); lb.textContent = it.label;
+    var v = el('div', 'v', r);
+    if (it.bold) v.style.fontSize = '14px';
+    outRefs[it.k] = { el: v, fmt: it.fmt };
+  });
+
+  function updateOutputs() {
+    var res = computeCalc(t);
+    Object.keys(outRefs).forEach(function (k) {
+      var ref = outRefs[k];
+      ref.el.textContent = ref.fmt === 'pct' ? fmtPct(res[k]) : fmtEUR(res[k]);
+    });
+  }
+  updateOutputs();
+
+  var hint = el('div', 'calc-hint', content);
+  hint.textContent = 'Werte werden live berechnet und im Raum gespeichert. ' +
+    'Ziel-Marge: 35% solide · 40% gut · 50%+ premium. ' +
+    'Retouren Fashion: 8–15% (Online bis 30%). ' +
+    'Shopify Payments: ~1.5–2% · PayPal: ~2.49% + 0.35 € Fixum.';
+}
+
+// ─── Actions ─────────────────────────────────────────────────
+function addNewTab() {
+  customPrompt({
+    title: 'Neuer Piece-Tab',
+    description: 'Wie heißt dieses Piece? (z.B. Schwarzer Hoodie, Beige Sweatpants)',
+    placeholder: 'Piece-Name',
+  }).then(function (name) {
+    if (!name) return;
+    var maxOrder = Object.keys(TABS).reduce(function (m, k) { return Math.max(m, TABS[k].order || 0); }, 0);
+    var id = newId();
+    TABS[id] = defaultCalc(name);
+    TABS[id].order = maxOrder + 100;
+    persistTab(id);
+    activeTabId = id;
+    renderTabs();
+    renderContent();
+  });
+}
+
+document.getElementById('renameTabBtn').onclick = function () {
+  if (!activeTabId || !TABS[activeTabId]) return;
+  customPrompt({
+    title: 'Tab umbenennen',
+    defaultValue: TABS[activeTabId].name,
+    placeholder: 'Piece-Name',
+  }).then(function (name) {
+    if (!name) return;
+    TABS[activeTabId].name = name;
+    persistTab(activeTabId);
+    renderTabs();
+    renderContent();
+  });
+};
+document.getElementById('deleteTabBtn').onclick = function () {
+  if (!activeTabId || !TABS[activeTabId]) return;
+  var name = TABS[activeTabId].name || 'Tab';
+  customConfirm({
+    title: 'Tab löschen?',
+    description: '„' + name + '" + alle Werte werden endgültig entfernt.',
+    okLabel: 'Löschen',
+    danger: true,
+  }).then(function (ok) {
+    if (!ok) return;
+    var tid = activeTabId;
+    delete TABS[tid];
+    persistTabDelete(tid);
+    activeTabId = null;
+    renderTabs();
+    renderContent();
+  });
+};
+
+// ─── Init ────────────────────────────────────────────────────
+if (!_R) {
+  setConn('· lokal (kein Raum)');
+  renderTabs(); renderContent();
+} else {
+  setConn('· verbinde …');
+  var base = _D.ref('rooms/' + _R + '/calculator/tabs');
+  base.once('value').then(function (snap) {
+    TABS = snap.val() || {};
+    setConn('· verbunden');
+    // Falls keine Tabs aber alter Single-Calc existiert → migrieren
+    if (Object.keys(TABS).length === 0) {
+      return _D.ref('rooms/' + _R + '/calculator').once('value').then(function (s) {
+        var v = s.val();
+        if (v && (v.ek != null || v.menge != null)) {
+          var id = newId();
+          TABS[id] = {
+            name: 'Piece 1', order: 100,
+            menge: v.menge || 1, ek: v.ek || 9, verpackung: v.verpackung || 1.5, versand: v.versand || 4.5,
+            retoure: v.retoure || 8, zahlung: v.zahlung || 2, marketing: v.marketing || 2,
+            sonstiges: v.sonstiges || 0.5, wunschMarge: v.wunschMarge || 47,
+          };
+          return _D.ref('rooms/' + _R + '/calculator/tabs/' + id).set(TABS[id]);
+        }
+      });
+    }
+  }).then(function () {
+    renderTabs();
+    renderContent();
+  }).catch(function (e) { setConn('⚠ ' + (e.code || e.message)); });
+
+  base.on('value', function (s) {
+    TABS = s.val() || {};
+    var ae = document.activeElement;
+    var typing = ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA');
+    if (!typing) {
+      renderTabs();
+      renderContent();
+    }
+  });
+}
+
+})();
+</script>
+</body>
+</html>

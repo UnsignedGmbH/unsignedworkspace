@@ -474,11 +474,17 @@ window.addEventListener('beforeunload', trackOff);
     return;
   }
   if (!_DB){ setTimeout(boot, 200); return; }
-  // localStorage zuerst — damit der initial-render direkt evtl. den Editor öffnet.
-  try {
-    var lastPackId = localStorage.getItem(STORAGE_KEY);
-    if (lastPackId) STATE.activePackId = lastPackId;
-  } catch (e) {}
+  // openPack URL-Param hat Vorrang (z.B. Cross-Tool-Link aus Production-Tool)
+  var urlPack = new URLSearchParams(location.search).get('openPack');
+  if (urlPack) {
+    STATE.activePackId = urlPack;
+  } else {
+    // localStorage zuerst — damit der initial-render direkt evtl. den Editor öffnet.
+    try {
+      var lastPackId = localStorage.getItem(STORAGE_KEY);
+      if (lastPackId) STATE.activePackId = lastPackId;
+    } catch (e) {}
+  }
   // Initial-Render SOFORT (zeigt Empty-State / Pack-Liste-Skeleton während Firebase lädt)
   // damit User nie eine leere Fläche sieht. Der Listener-Callback ersetzt das später.
   try { renderRoute(); } catch (e) { console.error('[techpack] initial render', e); }

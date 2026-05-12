@@ -174,7 +174,6 @@ input:focus,textarea:focus,select:focus{outline:none;}
 <div class="top-bar">
   <div class="outer-tabs">
     <div class="outer-tab on" data-tab="kanban">Kanban</div>
-    <div class="outer-tab" data-tab="calc">Kalkulator</div>
     <div class="outer-tab" data-tab="feed">Aktivität</div>
     <div class="outer-tab" data-tab="archiv">Archiv</div>
   </div>
@@ -192,14 +191,6 @@ input:focus,textarea:focus,select:focus{outline:none;}
 <div class="tab-view on" id="view-kanban">
   <div class="kanban-wrap">
     <div class="kanban" id="kanbanInner"></div>
-  </div>
-</div>
-
-<div class="tab-view" id="view-calc">
-  <div class="calc-wrap" id="calcWrap"></div>
-  <div class="calc-hint">
-    Werte werden live berechnet, sobald du tippst, und sind im Raum gespeichert. <br>
-    <strong>Ziel-Marge:</strong> 35% solide · 40% gut · 50%+ premium · <strong>Retouren Fashion:</strong> 8–15% (Online bis 30%) · <strong>Shopify Payments:</strong> ~1.5–2% · <strong>PayPal:</strong> ~2.49% + 0.35 € Fixum.
   </div>
 </div>
 
@@ -869,25 +860,26 @@ function openManageModal() {
       openManageModal();
       renderKanban();
     };
-    if (c.isCustom) {
-      var rm = el('button', 'order-btn danger', row);
-      rm.textContent = '✕';
-      rm.title = 'Löschen';
-      rm.onclick = function () {
-        customConfirm({
-          title: 'Spalte löschen?',
-          description: '„' + c.label + '" wird entfernt.',
-          okLabel: 'Löschen',
-          danger: true,
-        }).then(function (ok) {
-          if (!ok) return;
-          delete COLUMNS[cid];
-          persistColumnDelete(cid);
-          openManageModal();
-          renderKanban();
-        });
-      };
-    }
+    var rm = el('button', 'order-btn danger', row);
+    rm.textContent = '✕';
+    rm.title = 'Löschen';
+    rm.onclick = function () {
+      var cardsHere = cardsInColumn(cid).length;
+      var desc = '„' + c.label + '" wird entfernt.';
+      if (cardsHere > 0) desc += ' Es sind noch ' + cardsHere + ' Karte(n) in dieser Spalte — die bleiben aber sichtbar als „verwaiste Spalte".';
+      customConfirm({
+        title: 'Spalte löschen?',
+        description: desc,
+        okLabel: 'Löschen',
+        danger: true,
+      }).then(function (ok) {
+        if (!ok) return;
+        delete COLUMNS[cid];
+        persistColumnDelete(cid);
+        openManageModal();
+        renderKanban();
+      });
+    };
   });
   manageOverlay.classList.add('on');
 }
@@ -944,6 +936,33 @@ function renderCardDetail() {
   detailNotes.value = c.notes || '';
   var curCol = COLUMNS[c.columnId];
   detailStageInfo.textContent = 'Aktuell: ' + (curCol ? curCol.label : '—');
+
+  // Techpack-Origin-Link
+  var oldLink = document.getElementById('detailTechpackLink');
+  if (oldLink) oldLink.remove();
+  if (c.origin && c.origin.tool === 'techpack' && c.origin.packId) {
+    var linkSec = el('div', 'detail-section');
+    linkSec.id = 'detailTechpackLink';
+    var lh = el('h4', null, linkSec); lh.textContent = '📐 Aus Techpack';
+    var btn = el('button', 'act-btn', linkSec);
+    btn.textContent = '→ Techpack öffnen / PDF herunterladen';
+    btn.style.width = '100%';
+    btn.onclick = function () {
+      // postMessage an Parent → wechsel zu techpack-Tool mit packId
+      try {
+        window.parent.postMessage({
+          type: 'openTool',
+          tool: 'techpack',
+          packId: c.origin.packId,
+        }, '*');
+      } catch(e){}
+    };
+    // Einfuegen nach Stage-Section (am Anfang nach Title)
+    var body = document.querySelector('.detail-body');
+    var firstSec = body.querySelector('.detail-section');
+    if (firstSec) firstSec.parentNode.insertBefore(linkSec, firstSec);
+    else body.appendChild(linkSec);
+  }
 
   var customerReadOnly = IS_CUSTOMER;
   detailTitleInput.disabled = customerReadOnly;
