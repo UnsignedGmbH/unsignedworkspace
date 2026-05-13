@@ -800,15 +800,26 @@ function fbLoad(){
   }
   _DB.ref('rooms/'+_ROOM+'/ads').on('value',function(snap){
     var d=snap.val();
-    // State IMMER aus Firebase ableiten -- auch bei null. Lazy-Migration aus
-    // Legacy-Feldern wenn neue Folder-Struktur fehlt. Aliase auf aktiven Folder
-    // werden durch syncCurFolders() neu gesetzt.
     if(d){
       d=migrateLegacy(d);
       moods=d.moods||[];mocks=d.mocks||[];sketches=d.sketches||[];cols=d.cols||[];
       syncCurFolders();
     } else {
-      _clearDesignState();
+      // Firebase ist leer. Wenn wir aber lokal Daten haben (z.B. weil ein
+      // vorheriger Save silent gefailt ist), NICHT wipen → stattdessen lokale
+      // Daten zurueck nach Firebase migrieren.
+      var hasLocal = (moods.length||mocks.length||sketches.length||cols.length) &&
+        (moods.some(function(m){return m&&m.cats&&Object.keys(m.cats).some(function(k){return (m.cats[k]||[]).length;});}) ||
+         mocks.some(function(m){return m&&((m.testing||[]).length+(m.improve||[]).length+(m.final||[]).length);}) ||
+         sketches.some(function(s){return s&&((s.testing||[]).length+(s.improve||[]).length+(s.final||[]).length);}) ||
+         cols.some(function(c){return c&&(c.products||[]).length;}));
+      if (hasLocal) {
+        console.warn('[ads] Firebase leer, aber lokale Daten vorhanden — auto-restore.');
+        toast('🔄 Wiederherstellung läuft …');
+        setTimeout(fbSave, 100);
+      } else {
+        _clearDesignState();
+      }
     }
     applyRenderIfIdle();
     document.getElementById('liveStatus').style.display='flex';
