@@ -638,7 +638,9 @@ function showLinkModal(card,board){
 
 // ═══════════ PRODUCTS ═══════════
 function renderProducts(){
-  var grid=document.getElementById('pcGrid');grid.innerHTML='';
+  var grid=document.getElementById('pcGrid');
+  if(!grid)return;
+  while(grid.firstChild)grid.removeChild(grid.firstChild);
   products.forEach(function(p,idx){
     var card=document.createElement('div');card.className='pc';
     if(p.img){var img=document.createElement('img');img.className='pc-img';img.src=p.img;img.onclick=function(){lbImgs=[p];lbIdx=0;openLb();};card.appendChild(img);}
