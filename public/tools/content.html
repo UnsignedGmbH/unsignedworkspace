@@ -1123,37 +1123,84 @@ body { font-family: 'Montserrat', sans-serif; background: var(--bg); color: var(
 
   // ── Persistence ────────────────────────────────────────────
   function showSaved() {
+    savedTag.textContent = '✓ Gespeichert';
+    savedTag.style.color = '';
     savedTag.classList.add('show');
     clearTimeout(savedTag._t);
-    savedTag._t = setTimeout(function () { savedTag.classList.remove('show'); }, 1400);
+    savedTag._t = setTimeout(function () { savedTag.classList.remove('show'); }, 2200);
+  }
+  function showSaveError(code) {
+    savedTag.textContent = '⚠ ' + (code || 'Fehler');
+    savedTag.style.color = '#a73e3e';
+    savedTag.classList.add('show');
+    // Error bleibt sichtbar bis nächster erfolgreicher Save (kein auto-fade)
+  }
+  function showSaving() {
+    savedTag.textContent = '⏳ Speichere …';
+    savedTag.style.color = '#a06314';
+    savedTag.classList.add('show');
+  }
+  var _SAVE_TIMEOUT_MS = 12000;
+  function setWithTimeout(ref, value) {
+    return new Promise(function (resolve, reject) {
+      var settled = false;
+      var to = setTimeout(function () {
+        if (settled) return; settled = true; reject(new Error('timeout'));
+      }, _SAVE_TIMEOUT_MS);
+      ref.set(value).then(function (v) {
+        if (settled) return; settled = true; clearTimeout(to); resolve(v);
+      }).catch(function (e) {
+        if (settled) return; settled = true; clearTimeout(to); reject(e);
+      });
+    });
+  }
+  function forceReconnect() {
+    try {
+      if (!_D) return;
+      _D.goOffline();
+      setTimeout(function () { try { _D.goOnline(); } catch (e) {} }, 250);
+    } catch (e) {}
+  }
+  // Generischer Save-Wrapper mit Timeout + auto-retry bei Zombie
+  function safeSet(path, value, onSuccess, onError, retryCount) {
+    if (!_R || !_D) { if (onSuccess) onSuccess(); return; }
+    showSaving();
+    setWithTimeout(_D.ref(path), value).then(function () {
+      showSaved();
+      console.log('[content] save success:', path);
+      if (onSuccess) onSuccess();
+    }).catch(function (err) {
+      var code = (err && (err.code || err.message)) || 'unbekannt';
+      console.error('[content] save failed:', path, code);
+      if ((code === 'timeout' || code === 'unbekannt') && (retryCount || 0) < 2) {
+        console.warn('[content] timeout → reconnect + retry');
+        forceReconnect();
+        setTimeout(function () { safeSet(path, value, onSuccess, onError, (retryCount || 0) + 1); }, 1500);
+      } else {
+        showSaveError(code);
+        if (onError) onError(err);
+      }
+    });
   }
   function persistStrategy(id) {
     if (!_R || !_D) { showSaved(); return; }
     var v = STRATEGIES[id]; if (!v) return;
-    _D.ref('rooms/' + _R + '/content/strategies/' + id)
-      .set(v).then(function () { showSaved(); })
-      .catch(function (e) { connTag.textContent = '⚠ ' + (e.code || e.message); });
+    safeSet('rooms/' + _R + '/content/strategies/' + id, v);
   }
   function persistStrategyField(id, key) {
     if (!_R || !_D) { showSaved(); return; }
     var v = STRATEGIES[id]; if (!v) return;
-    _D.ref('rooms/' + _R + '/content/strategies/' + id + '/' + key)
-      .set(v[key] || '').then(function () { showSaved(); })
-      .catch(function (e) { connTag.textContent = '⚠ ' + (e.code || e.message); });
+    safeSet('rooms/' + _R + '/content/strategies/' + id + '/' + key, v[key] || '');
   }
   function persistVideo(id) {
     if (!_R || !_D) { showSaved(); return; }
     var v = VIDEOS[id]; if (!v) return;
-    _D.ref('rooms/' + _R + '/content/videos/' + id)
-      .set(v).then(function () { showSaved(); })
-      .catch(function (e) { connTag.textContent = '⚠ ' + (e.code || e.message); });
+    safeSet('rooms/' + _R + '/content/videos/' + id, v);
   }
   function persistVideoField(id, key) {
     if (!_R || !_D) { showSaved(); return; }
     var v = VIDEOS[id]; if (!v) return;
-    _D.ref('rooms/' + _R + '/content/videos/' + id + '/' + key)
-      .set(v[key] || '').then(function () { showSaved(); })
-      .catch(function (e) { connTag.textContent = '⚠ ' + (e.code || e.message); });
+    safeSet('rooms/' + _R + '/content/videos/' + id + '/' + key, v[key] || '');
   }
 
   // ── Apply remote state ────────────────────────────────────

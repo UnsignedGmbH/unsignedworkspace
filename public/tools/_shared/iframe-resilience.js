@@ -26,12 +26,12 @@
   window.__UW_IFRAME_RESILIENCE = true;
 
   var KEY_RELOADS = 'uw.iframe_reload_attempts';
-  var WINDOW_MS = 5 * 60 * 1000;
-  var MAX_RELOADS = 2;
-  var PROBE_TIMEOUT_MS = 5000;
-  var PROBE_INTERVAL_MS = 60 * 1000;
-  var BOOT_WATCHDOG_MS = 8000;
-  var HIDDEN_RECOVER_MS = 20 * 1000;
+  var WINDOW_MS = 10 * 60 * 1000;
+  var MAX_RELOADS = 0;            // 0 = kein Auto-Reload mehr (zerstoert Userarbeit)
+  var PROBE_TIMEOUT_MS = 8000;    // Probe mehr Zeit geben
+  var PROBE_INTERVAL_MS = 120 * 1000; // 2min statt 1min
+  var BOOT_WATCHDOG_MS = 20000;   // 20s statt 8s — selten unter realer Netzlast
+  var HIDDEN_RECOVER_MS = 30 * 1000; // 30s im Hintergrund vor Recovery
 
   function recentReloads() {
     try {
@@ -104,14 +104,10 @@
   }
 
   function hardReload() {
-    var attempts = recentReloads();
-    if (attempts.length >= MAX_RELOADS) {
-      console.warn('[iframe-resilience] reload-Limit erreicht (' + attempts.length + '/' + MAX_RELOADS + ' in 5min) — gebe auf');
-      return;
-    }
-    recordReload();
-    console.warn('[iframe-resilience] zombie WebSocket → reload (Versuch ' + (attempts.length + 1) + '/' + MAX_RELOADS + ')');
-    location.reload();
+    // Auto-Reload deaktiviert — zu destruktiv für laufende User-Eingaben.
+    // Tools sollten via eigener setWithTimeout + forceReconnect die
+    // Recovery selbst handhaben.
+    console.warn('[iframe-resilience] zombie WebSocket erkannt — Reload deaktiviert, Tool muss selbst recoveren');
   }
 
   // Recovery-Kette: probe → softReconnect → re-probe → hardReload

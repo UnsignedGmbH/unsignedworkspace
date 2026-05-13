@@ -431,8 +431,8 @@ const { title = "Unsigned Workspace" } = Astro.props;
         // recyceln via goOffline+goOnline. Wenn DAS auch nicht hilft (5s)
         // → location.reload als letzter Ausweg (max 2 pro 5 Min).
         var ZOMBIE_KEY = "uw.zombie_recovery_attempts";
-        var RECOVER_WINDOW_MS = 5 * 60 * 1000;
-        var MAX_RECOVERIES = 2;
+        var RECOVER_WINDOW_MS = 10 * 60 * 1000;
+        var MAX_RECOVERIES = 0; // Auto-Reload deaktiviert — zerstoert User-Eingaben
         function recoveryAttempts() {
           try {
             var raw = sessionStorage.getItem(ZOMBIE_KEY);
@@ -559,19 +559,17 @@ const { title = "Unsigned Workspace" } = Astro.props;
         //   - Wenn User aus Hintergrund zurueckkommt (>20s weg)
         //   - Bei bfcache-Restore IMMER reload (sicherster Fix)
 
-        // bfcache-Restore = Browser stellt page aus Memory wieder her, WS
-        // ist da garantiert stale → Reload ist der zuverlaessigste Fix.
-        // Counter limitiert Loops bei echten Outages.
+        // bfcache-Restore: statt aggressivem Reload → soft reconnect via goOffline/goOnline.
+        // Vorher loeschte das User-Eingaben bei jedem Tab-Wechsel zurueck.
         window.addEventListener("pageshow", function (e) {
           if (!e.persisted) return;
-          var attempts = recoveryAttempts();
-          if (attempts.length >= MAX_RECOVERIES) {
-            console.warn("[health] bfcache restore but reload-limit hit, leaving as-is");
-            return;
-          }
-          recordRecovery();
-          console.warn("[health] bfcache restore → fresh reload");
-          location.reload();
+          console.warn("[health] bfcache restore → soft reconnect (kein reload)");
+          try {
+            if (window.firebase && window.firebase.database) {
+              window.firebase.database().goOffline();
+              setTimeout(function () { try { window.firebase.database().goOnline(); } catch (e2) {} }, 250);
+            }
+          } catch (e3) {}
         });
 
         // Visibility-Change: Wenn User aus Hintergrund kommt (>20s),

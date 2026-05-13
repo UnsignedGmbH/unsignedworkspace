@@ -709,6 +709,39 @@ var _lastSavedAt = 0;
 var _lastError = '';
 var _saveInFlight = false;
 var _saveQueued = false;
+var _SAVE_TIMEOUT_MS = 12000;
+
+// Set mit Timeout — wenn Firebase nicht in N ms antwortet, gilt der Write als
+// hängend (Zombie-WebSocket o.ä.). Wir reseten + forcen Reconnect.
+function setWithTimeout(ref, value, timeoutMs) {
+  return new Promise(function (resolve, reject) {
+    var settled = false;
+    var to = setTimeout(function () {
+      if (settled) return;
+      settled = true;
+      reject(new Error('timeout'));
+    }, timeoutMs || _SAVE_TIMEOUT_MS);
+    ref.set(value).then(function (v) {
+      if (settled) return;
+      settled = true;
+      clearTimeout(to);
+      resolve(v);
+    }).catch(function (err) {
+      if (settled) return;
+      settled = true;
+      clearTimeout(to);
+      reject(err);
+    });
+  });
+}
+function forceReconnect() {
+  try {
+    var db = (window.firebase && window.firebase.database) ? window.firebase.database() : null;
+    if (!db) return;
+    db.goOffline();
+    setTimeout(function () { try { db.goOnline(); } catch (e) {} }, 250);
+  } catch (e) {}
+}
 function setSavePill(state, msg) {
   var p = document.getElementById('savePill');
   if (!p) return;
@@ -784,7 +817,7 @@ function fbSave(){
       }
       _saveInFlight = true;
       setSavePill('saving');
-      _DB.ref('rooms/'+_ROOM+'/ads').set(data).then(function(){
+      setWithTimeout(_DB.ref('rooms/'+_ROOM+'/ads'), data, _SAVE_TIMEOUT_MS).then(function(){
         _saveInFlight = false;
         setSavePill('saved');
         console.log('[ads] firebase set success');
@@ -797,6 +830,12 @@ function fbSave(){
         var code = (err && (err.code || err.message)) || 'unbekannt';
         setSavePill('error', code);
         console.error('[ads] save failed:',err,'size:',jsonSize);
+        // Bei Timeout: WebSocket re-cyceln + automatisch retry nach 1s
+        if (code === 'timeout' || code === 'unbekannt') {
+          console.warn('[ads] save timed out → force reconnect + retry in 1.5s');
+          forceReconnect();
+          setTimeout(function(){ fbSave(); }, 1500);
+        }
       });
       // Progress: Items über ALLE Folders zählen (5%/Item, gecappt 100)
       var total=0;
