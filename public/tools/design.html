@@ -203,7 +203,8 @@ button.lb-btn{outline:none;}
     <button class="htab" onclick="switchSec('sketch')">Sketches</button>
     <button class="htab" onclick="switchSec('plan')">Kollektion</button>
   </div>
-  <button id="shareBtn" onclick="shareBoard()" style="margin-left:auto;background:var(--a);color:#fff;border:none;border-radius:8px;padding:7px 16px;font-family:'Montserrat',sans-serif;font-size:11px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px;">🔗 Teilen</button>
+  <span id="savePill" style="margin-left:auto;display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border-radius:999px;background:#f1f1f1;color:#555;font-size:11px;font-weight:700;font-family:'Montserrat',sans-serif;letter-spacing:0.02em;white-space:nowrap;">💾 Bereit</span>
+  <button id="shareBtn" onclick="shareBoard()" style="margin-left:8px;background:var(--a);color:#fff;border:none;border-radius:8px;padding:7px 16px;font-family:'Montserrat',sans-serif;font-size:11px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px;">🔗 Teilen</button>
   <div class="hdr-live" id="liveStatus" style="display:none;margin-left:8px;"><div class="live-dot"></div>Live</div>
 </div>
 
@@ -709,6 +710,47 @@ function _clearDesignState(){
   syncCurFolders();
 }
 
+// ─── Save-Status-Pill ──────────────────────────────────────
+var _saveState = 'idle';
+var _lastSavedAt = 0;
+var _lastError = '';
+var _saveInFlight = false;
+var _saveQueued = false;
+function setSavePill(state, msg) {
+  var p = document.getElementById('savePill');
+  if (!p) return;
+  _saveState = state;
+  if (state === 'saving') {
+    p.textContent = '⏳ Speichere …';
+    p.style.background = '#fff4d6';
+    p.style.color = '#a06314';
+  } else if (state === 'saved') {
+    _lastSavedAt = Date.now();
+    p.textContent = '✅ Gespeichert';
+    p.style.background = '#e7f3ec';
+    p.style.color = '#1d6f4f';
+  } else if (state === 'error') {
+    _lastError = msg || '?';
+    p.textContent = '⚠ Fehler: ' + (msg || '?');
+    p.style.background = '#fde7e7';
+    p.style.color = '#a73e3e';
+  } else {
+    p.textContent = '💾 Bereit';
+    p.style.background = '#f1f1f1';
+    p.style.color = '#555';
+  }
+}
+function refreshSavePill() {
+  if (_saveState !== 'saved') return;
+  var p = document.getElementById('savePill');
+  if (!p) return;
+  var sec = Math.round((Date.now() - _lastSavedAt) / 1000);
+  if (sec < 5) p.textContent = '✅ Gespeichert';
+  else if (sec < 60) p.textContent = '✅ Gespeichert vor ' + sec + 's';
+  else p.textContent = '✅ Gespeichert vor ' + Math.round(sec / 60) + ' Min';
+}
+setInterval(refreshSavePill, 5000);
+
 function fbSave(){
   // Neue Folder-Strukturen + Legacy-Felder als Rückwärtskompatibilität.
   // Legacy-Felder spiegeln den AKTIVEN Folder, damit alter Code (falls noch
@@ -728,21 +770,31 @@ function fbSave(){
   // Per-Room localStorage-Backup
   var k=_lsKey();
   if(k){try{localStorage.setItem(k,JSON.stringify(data));}catch(e){}}
+  console.log('[design] fbSave called', { _ROOM: _ROOM, hasDB: !!_DB });
   // Firebase
   if(_DB&&_ROOM){
+    if (_saveInFlight) { _saveQueued = true; console.log('[design] save in-flight, queued'); return; }
     clearTimeout(saveTO);
     saveTO=setTimeout(function(){
       var jsonSize=0;
       try{jsonSize=JSON.stringify(data).length;}catch(e){}
+      console.log('[design] firebase set started, size:', jsonSize);
       if(jsonSize>5*1024*1024){
-        toast('⚠ Zu groß ('+Math.round(jsonSize/1024/1024)+'MB) — Firebase-Limit 10MB. Bilder löschen!');
+        setSavePill('error', 'zu groß ' + Math.round(jsonSize/1024/1024) + 'MB');
         console.warn('[design] payload too large:',jsonSize);
         return;
       }
+      _saveInFlight = true;
+      setSavePill('saving');
       _DB.ref('rooms/'+_ROOM+'/design').set(data).then(function(){
-        toast('Gespeichert ✓');
+        _saveInFlight = false;
+        setSavePill('saved');
+        console.log('[design] firebase set success');
+        if (_saveQueued) { _saveQueued = false; setTimeout(fbSave, 50); }
       }).catch(function(err){
-        toast('⚠ Save-Fehler: '+(err&&(err.code||err.message))||'unbekannt');
+        _saveInFlight = false;
+        var code = (err && (err.code || err.message)) || 'unbekannt';
+        setSavePill('error', code);
         console.error('[design] save failed:',err,'size:',jsonSize);
       });
       // Progress: Items über ALLE Folders zählen (5%/Item, gecappt 100)
@@ -754,7 +806,8 @@ function fbSave(){
       window.parent.postMessage({type:'dsPct',pct:Math.min(100,total*3)},'*');
     },300);
   } else {
-    toast('Lokal gespeichert ✓');
+    setSavePill('saved');
+    console.log('[design] localStorage-only save (no room)');
   }
 }
 function fbLoad(){
@@ -805,20 +858,20 @@ function fbLoad(){
   }
   _DB.ref('rooms/'+_ROOM+'/design').on('value',function(snap){
     var d=snap.val();
+    var hasContent = function(arr, fn) { return arr && arr.some && arr.some(fn); };
+    var hasLocal = (moods.length||mocks.length||sketches.length||cols.length) &&
+      (hasContent(moods, function(m){return m&&m.cats&&Object.keys(m.cats).some(function(k){return (m.cats[k]||[]).length;});}) ||
+       hasContent(mocks, function(m){return m&&((m.testing||[]).length+(m.improve||[]).length+(m.final||[]).length);}) ||
+       hasContent(sketches, function(s){return s&&((s.testing||[]).length+(s.improve||[]).length+(s.final||[]).length);}) ||
+       hasContent(cols, function(c){return c&&(c.products||[]).length;}));
+    console.log('[design] listener fired', { hasFirebaseData: !!d, hasLocal: hasLocal });
     if(d){
       d=migrateLegacy(d);
       moods=d.moods||[];mocks=d.mocks||[];sketches=d.sketches||[];cols=d.cols||[];
       syncCurFolders();
     } else {
-      // Firebase leer aber lokale Daten vorhanden → restore statt wipe
-      var hasLocal = (moods.length||mocks.length||sketches.length||cols.length) &&
-        (moods.some(function(m){return m&&m.cats&&Object.keys(m.cats).some(function(k){return (m.cats[k]||[]).length;});}) ||
-         mocks.some(function(m){return m&&((m.testing||[]).length+(m.improve||[]).length+(m.final||[]).length);}) ||
-         sketches.some(function(s){return s&&((s.testing||[]).length+(s.improve||[]).length+(s.final||[]).length);}) ||
-         cols.some(function(c){return c&&(c.products||[]).length;}));
       if (hasLocal) {
-        console.warn('[design] Firebase leer, aber lokale Daten vorhanden — auto-restore.');
-        toast('🔄 Wiederherstellung läuft …');
+        console.warn('[design] Firebase leer aber lokale Daten — auto-restore');
         setTimeout(fbSave, 100);
       } else {
         _clearDesignState();
@@ -826,6 +879,9 @@ function fbLoad(){
     }
     applyRenderIfIdle();
     document.getElementById('liveStatus').style.display='flex';
+  }, function(err){
+    console.error('[design] listener error:', err);
+    setSavePill('error', 'read: ' + (err && (err.code || err.message)));
   });
   // Beim Verlassen eines Eingabefelds: pending Render einlösen.
   // setTimeout damit ein neuer Focus zuerst greifen kann (z.B. Tab zum naechsten Feld).
