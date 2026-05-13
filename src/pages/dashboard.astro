@@ -1,20 +1,28 @@
 ---
 import AppLayout from "../layouts/AppLayout.astro";
 
+// Tools nach BrandWork-Roadmap-Phasen sortiert
 const tools = [
-  { href: "/ai-guide", label: "Ai Guide", icon: "🤖", desc: "Moodboard & Prompts" },
+  // Phase 1: Branding
   { href: "/brand-identity", label: "Brand Identity", icon: "🪪", desc: "Logos · Farben · Vibe" },
-  { href: "/shooting", label: "Shooting", icon: "📸", desc: "Checkliste · Moodboard" },
-  { href: "/creator", label: "Creator Guide", icon: "📋", desc: "Briefings & Skripte" },
+  // Phase 2: Design
   { href: "/design", label: "Design", icon: "🎨", desc: "Layouts & Visuals" },
   { href: "/techpack", label: "Techpack", icon: "📐", desc: "Produktions-Specs pro Garment" },
-  { href: "/marketing", label: "Marketing Plan", icon: "📈", desc: "Personal Brand · Ads" },
+  // Phase 3: Produktion
+  { href: "/production", label: "Produktion", icon: "🏭", desc: "Kanban · Stages" },
+  { href: "/calculator", label: "Kalkulator", icon: "💰", desc: "VK-Preis pro Piece" },
+  // Phase 4: Shooting
+  { href: "/shooting", label: "Shooting", icon: "📸", desc: "Checkliste · Moodboard" },
+  { href: "/creator", label: "Creator Guide", icon: "📋", desc: "Briefings & Skripte" },
+  // Phase 5: Shop
   { href: "/shop", label: "Shop", icon: "🛒", desc: "Shop · Drop-Planung" },
+  // Phase 6: Marketing
+  { href: "/marketing", label: "Marketing Plan", icon: "📈", desc: "Personal Brand · Ads" },
   { href: "/content", label: "Content", icon: "🎬", desc: "Strategie · Hooks · Videos" },
   { href: "/ads", label: "Ads", icon: "📈", desc: "Moodboard · 1:1 · 9:16" },
   { href: "/social", label: "Social Media", icon: "💬", desc: "Profile · Highlights · Captions" },
-  { href: "/production", label: "Produktion", icon: "🏭", desc: "Kanban · Stages" },
-  { href: "/calculator", label: "Kalkulator", icon: "💰", desc: "VK-Preis pro Piece" },
+  // Phase 7: AI Guide
+  { href: "/ai-guide", label: "Ai Guide", icon: "🤖", desc: "Moodboard & Prompts" },
 ];
 
 const customerActions = [

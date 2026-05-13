@@ -234,33 +234,41 @@ import BrandworkTimeline from "../components/BrandworkTimeline.astro";
     window.addEventListener("beforeunload", cleanupListeners);
 
     // Tool-Definitionen mit Files & Render-Logik
+    // Reihenfolge nach BrandWork-Roadmap-Phasen (1 Branding → 7 AI Guide)
     var TOOLS = [
-      { id: "ai_guide", file: "ai_guide", label: "Ai Guide", icon: "🤖",
-        desc: "Moodboard, Prompts & Planung" },
+      // Phase 1: Branding
       { id: "bi", file: "bi", label: "Brand Identity", icon: "🪪",
         desc: "Logos, Farben, Typo & Vibe" },
-      { id: "sh", file: "sh", label: "Shooting", icon: "📸",
-        desc: "Checkliste · Moodboard · Archiv" },
-      { id: "cr", file: "cr", label: "Creator Guide", icon: "📋",
-        desc: "Briefing & Skripts" },
+      // Phase 2: Design (+ Techpack als Spec-Output)
       { id: "dn", file: "design", label: "Design", icon: "🎨",
         desc: "Layouts & Visuals" },
       { id: "tp", file: "techpack", label: "Techpack", icon: "📐",
         desc: "Produktions-Specs pro Garment" },
-      { id: "mk", file: "mk", label: "Marketing Plan", icon: "📈",
-        desc: "Personal Brand · Ads · Flows" },
+      // Phase 3: Produktion (+ Kalkulator als Helfer)
+      { id: "production", file: "production", label: "Produktion", icon: "🏭",
+        desc: "Kanban · Stages" },
+      { id: "calculator", file: "calculator", label: "Kalkulator", icon: "💰",
+        desc: "VK-Preis pro Piece" },
+      // Phase 4: Shooting (+ Creator Guide für Content-Production)
+      { id: "sh", file: "sh", label: "Shooting", icon: "📸",
+        desc: "Checkliste · Moodboard · Archiv" },
+      { id: "cr", file: "cr", label: "Creator Guide", icon: "📋",
+        desc: "Briefing & Skripts" },
+      // Phase 5: Shop
       { id: "shop", file: "shop", label: "Shop", icon: "🛒",
         desc: "Shop-Optimierung & Drop-Planung" },
+      // Phase 6: Marketing (mk + content + social → Ø in Roadmap; ads als Begleiter)
+      { id: "mk", file: "mk", label: "Marketing Plan", icon: "📈",
+        desc: "Personal Brand · Ads · Flows" },
       { id: "content", file: "content", label: "Content", icon: "🎬",
         desc: "Strategie · Hooks · Video-Ideen" },
       { id: "ads", file: "ads", label: "Ads", icon: "📈",
         desc: "Moodboard · 1:1 · 9:16" },
       { id: "social", file: "social", label: "Social Media", icon: "💬",
         desc: "Profile · Highlights · Captions · WhatsApp" },
-      { id: "production", file: "production", label: "Produktion", icon: "🏭",
-        desc: "Kanban · Stages" },
-      { id: "calculator", file: "calculator", label: "Kalkulator", icon: "💰",
-        desc: "VK-Preis pro Piece" },
+      // Phase 7: AI Guide
+      { id: "ai_guide", file: "ai_guide", label: "Ai Guide", icon: "🤖",
+        desc: "Moodboard, Prompts & Planung" },
     ];
     var TOOL_BY_FILE = {};
     TOOLS.forEach(function (t) { TOOL_BY_FILE[t.file] = t; });
@@ -519,9 +527,24 @@ import BrandworkTimeline from "../components/BrandworkTimeline.astro";
       var pm = progressMap(c);
       var totalDone = 0;
       var grid = $("toolGrid");
+      // Tools ohne Pct-Bar (nicht in Roadmap → Pct macht keinen Sinn)
+      var NO_PCT_TOOLS = { tp: '→ Pro Garment ein Techpack', calculator: '→ Multi-Tab pro Piece', cr: '→ Briefings · Skripts · Vorlagen', ads: '→ Moodboard · 1:1 · 9:16' };
+      function _noPctCard(t, hint) {
+        var url = "/customer?id=" + encodeURIComponent(customerId) + "&tool=" + encodeURIComponent(t.file);
+        var parts = [];
+        parts.push('<a href="' + url + '" class="bg-card border-[0.5px] border-line rounded-xl p-4 no-underline hover:border-brand-border hover:bg-brand-dim transition-colors block">');
+        parts.push('<div class="flex items-center gap-3 mb-3">');
+        parts.push('<span class="w-10 h-10 rounded-lg bg-brand-dim flex items-center justify-center text-[20px] shrink-0">' + t.icon + '</span>');
+        parts.push('<div class="flex-1 min-w-0">');
+        parts.push('<div class="text-[13px] font-extrabold text-ink truncate">' + ui.escapeHtml(t.label) + '</div>');
+        parts.push('<div class="text-[10px] text-ink-mute truncate">' + ui.escapeHtml(t.desc) + '</div>');
+        parts.push('</div></div>');
+        parts.push('<div class="text-[10px] text-ink-mute">' + ui.escapeHtml(hint) + '</div>');
+        parts.push('</a>');
+        return parts.join("");
+      }
       grid.innerHTML = TOOLS.map(function (t) {
-        if (t.id === "tp") return _tpCard(t, customerId);
-        if (t.id === "calculator") return _calcCard(t, customerId);
+        if (NO_PCT_TOOLS[t.id]) return _noPctCard(t, NO_PCT_TOOLS[t.id]);
         var pct = pm[t.id] || 0;
         totalDone += pct;
         var pctTxt = pct + "% ausgefüllt";
@@ -568,7 +591,7 @@ import BrandworkTimeline from "../components/BrandworkTimeline.astro";
       if (btnPrint) btnPrint.addEventListener("click", function () { window.print(); });
 
       // Update meta line with avg progress (Techpack vom Schnitt ausgenommen, da kein einzelner %-Wert).
-      var progressTools = TOOLS.filter(function (t) { return t.id !== "tp" && t.id !== "calculator"; });
+      var progressTools = TOOLS.filter(function (t) { return !NO_PCT_TOOLS[t.id] && t.id !== "production"; });
       var avg = progressTools.length ? Math.round(totalDone / progressTools.length) : 0;
       $("cMeta").textContent =
         "Raum " + (c.room || "—") +

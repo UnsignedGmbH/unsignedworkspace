@@ -265,33 +265,41 @@ import BrandworkTimeline from "../components/BrandworkTimeline.astro";
     var brandInput = document.getElementById("onbBrand");
     var STORAGE_KEY = "uw.portal.profile." + (room || "_");
 
+    // Reihenfolge nach BrandWork-Roadmap-Phasen
     var TOOLS = [
-      { id: "ai_guide", icon: "🤖", label: "Ai Guide",
-        desc: "Moodboard, Prompts & Planung für dein Shooting" },
+      // Phase 1: Branding
       { id: "bi", icon: "🪪", label: "Brand Identity",
         desc: "Logos, Farben, Typo & Vibe deiner Marke" },
-      { id: "sh", icon: "📸", label: "Shooting",
-        desc: "Checkliste · Moodboard · Archiv" },
-      { id: "cr", icon: "📋", label: "Creator Guide",
-        desc: "Briefing & Skripts für deine Inhalte" },
+      // Phase 2: Design
       { id: "design", icon: "🎨", label: "Design",
         desc: "Layouts & Visuals planen" },
       { id: "techpack", icon: "📐", label: "Techpack",
         desc: "Produktions-Specs pro Garment" },
-      { id: "mk", icon: "📈", label: "Marketing Plan",
-        desc: "Personal Brand · Ads · Email-Flows" },
+      // Phase 3: Produktion
+      { id: "production", icon: "🏭", label: "Produktion",
+        desc: "Status & Stages deiner Pieces" },
+      { id: "calculator", icon: "💰", label: "Kalkulator",
+        desc: "VK-Preis pro Piece kalkulieren" },
+      // Phase 4: Shooting
+      { id: "sh", icon: "📸", label: "Shooting",
+        desc: "Checkliste · Moodboard · Archiv" },
+      { id: "cr", icon: "📋", label: "Creator Guide",
+        desc: "Briefing & Skripts für deine Inhalte" },
+      // Phase 5: Shop
       { id: "shop", icon: "🛒", label: "Shop",
         desc: "Shop-Optimierung & Drop-Planung" },
+      // Phase 6: Marketing
+      { id: "mk", icon: "📈", label: "Marketing Plan",
+        desc: "Personal Brand · Ads · Email-Flows" },
       { id: "content", icon: "🎬", label: "Content",
         desc: "Strategie · Hooks · Video-Ideen" },
       { id: "ads", icon: "📈", label: "Ads",
         desc: "Moodboard · 1:1 · 9:16" },
       { id: "social", icon: "💬", label: "Social Media",
         desc: "Profile · Highlights · Captions · WhatsApp" },
-      { id: "production", icon: "🏭", label: "Produktion",
-        desc: "Status & Stages deiner Pieces" },
-      { id: "calculator", icon: "💰", label: "Kalkulator",
-        desc: "VK-Preis pro Piece kalkulieren" },
+      // Phase 7: AI Guide
+      { id: "ai_guide", icon: "🤖", label: "Ai Guide",
+        desc: "Moodboard, Prompts & Planung für dein Shooting" },
     ];
 
     if (!room) {
@@ -494,11 +502,27 @@ import BrandworkTimeline from "../components/BrandworkTimeline.astro";
       return parts.join("");
     }
 
+    // Tools ohne Pct (nicht in Roadmap) — gleicher Look wie Techpack/Calc
+    var PORTAL_NO_PCT = { techpack: '→ Pro Garment ein Techpack', calculator: '→ Multi-Tab pro Piece', cr: '→ Briefings · Skripts · Vorlagen', ads: '→ Moodboard · 1:1 · 9:16' };
+    function _noPctPortalCard(t, hint) {
+      var parts = [];
+      parts.push('<button type="button" data-tool="' + t.id + '"');
+      parts.push(' class="tool-card group bg-card border-[0.5px] border-line rounded-xl p-3 md:p-[14px] flex flex-col gap-2 hover:border-brand-border hover:bg-brand-dim hover:shadow-[0_4px_16px_rgba(193,48,48,0.08)] transition-all text-left cursor-pointer min-w-0">');
+      parts.push('<div class="flex items-start gap-3 min-w-0">');
+      parts.push('<span class="w-9 h-9 md:w-10 md:h-10 rounded-lg bg-brand-dim flex items-center justify-center text-[18px] md:text-[20px] shrink-0 group-hover:bg-brand group-hover:text-white transition-colors">' + t.icon + '</span>');
+      parts.push('<div class="flex-1 min-w-0">');
+      parts.push('<div class="text-[12px] md:text-[13px] font-extrabold text-ink truncate">' + t.label + '</div>');
+      parts.push('<div class="text-[10px] md:text-[11px] text-ink-mute mt-[1px] truncate">' + t.desc + '</div>');
+      parts.push('</div></div>');
+      parts.push('<div class="text-[10px] text-ink-soft mt-1">' + hint + '</div>');
+      parts.push('</button>');
+      return parts.join("");
+    }
+
     function renderGrid() {
       var grid = document.getElementById("ovGrid");
       grid.innerHTML = TOOLS.map(function (t) {
-        if (t.id === "techpack") return _tpPortalCard(t);
-        if (t.id === "calculator") return _calcPortalCard(t);
+        if (PORTAL_NO_PCT[t.id]) return _noPctPortalCard(t, PORTAL_NO_PCT[t.id]);
         var pct = TOOL_PROGRESS[t.id] || 0;
         return (
           '<button type="button" data-tool="' + t.id + '"' +
