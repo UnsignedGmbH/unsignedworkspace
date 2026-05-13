@@ -725,7 +725,20 @@ function fbSave(){
   if(_DB&&_ROOM){
     clearTimeout(saveTO);
     saveTO=setTimeout(function(){
-      _DB.ref('rooms/'+_ROOM+'/ads').set(data);
+      // Größe prüfen + Warnung wenn nahe Firebase-Write-Limit
+      var jsonSize=0;
+      try{jsonSize=JSON.stringify(data).length;}catch(e){}
+      if(jsonSize>5*1024*1024){
+        toast('⚠ Zu groß ('+Math.round(jsonSize/1024/1024)+'MB) — Firebase-Limit 10MB. Bilder löschen!');
+        console.warn('[ads] payload too large:',jsonSize);
+        return;
+      }
+      _DB.ref('rooms/'+_ROOM+'/ads').set(data).then(function(){
+        toast('Gespeichert ✓');
+      }).catch(function(err){
+        toast('⚠ Save-Fehler: '+(err&&(err.code||err.message))||'unbekannt');
+        console.error('[ads] save failed:',err,'size:',jsonSize);
+      });
       // Progress: Items über ALLE Folders zählen (5%/Item, gecappt 100)
       var total=0;
       moods.forEach(function(m){if(m&&m.cats)Object.keys(m.cats).forEach(function(c){if(Array.isArray(m.cats[c]))total+=m.cats[c].length;});});
@@ -734,8 +747,10 @@ function fbSave(){
       cols.forEach(function(c){if(c)total+=(c.products||[]).length;});
       window.parent.postMessage({type:'dsPct',pct:Math.min(100,total*3)},'*');
     },300);
+  } else {
+    // Lokal-Only (kein Raum) — sofort Erfolgs-Toast
+    toast('Lokal gespeichert ✓');
   }
-  toast('Gespeichert ✓');
 }
 function fbLoad(){
   // Per-Room localStorage als Initial-Cache (Instant-UI). Firebase überschreibt
