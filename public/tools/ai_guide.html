@@ -7,7 +7,10 @@
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,700;1,900&family=Dancing+Script:wght@700&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
 <script src="/tools/_shared/iframe-resilience.js"></script>
+<script src="/tools/_shared/img-utils.js"></script>
+<script src="/tools/_shared/storage-utils.js"></script>
 <script>
 var _ROOM = new URLSearchParams(location.search).get('room');
 var _IS_OWNER = new URLSearchParams(location.search).get('owner') === '1';
@@ -503,9 +506,28 @@ function compress(file, cb, maxW){
   r.readAsDataURL(file);
 }
 
+// uploadOrCompress: zu Storage hochladen, bei Fehler base64-Fallback
+function uploadOrCompress(file, cb) {
+  if (!file || !cb) return;
+  var path = 'rooms/' + (_ROOM || 'unknown') + '/ai_guide/mb/' +
+    (window.storageUtils ? window.storageUtils.uniqId() : Date.now().toString(36)) + '.jpg';
+  if (window.storageUtils && _ROOM && _DB) {
+    compress(file, function (dataUrl) {
+      window.storageUtils.uploadDataUrl(dataUrl, path).then(function (url) {
+        cb(url);
+      }).catch(function (err) {
+        console.warn('[ai_guide] storage upload failed, fallback base64:', err && err.message);
+        cb(dataUrl);
+      });
+    });
+  } else {
+    compress(file, cb);
+  }
+}
+
 document.getElementById('fileInput').addEventListener('change', function(e){
   Array.from(e.target.files).forEach(function(file){
-    compress(file, function(src){ addImage(src, ''); });
+    uploadOrCompress(file, function(src){ addImage(src, ''); });
   });
   e.target.value = '';
 });
@@ -548,7 +570,7 @@ var mbSection = document.getElementById('sec-mood');
     var result = extractImgUrl(e.dataTransfer);
     if(!result){ toast('❌ Kein Bild erkannt — versuche es mit Upload'); return; }
     if(result.file){
-      compress(result.file, function(src){ addImage(src, ''); });
+      uploadOrCompress(result.file, function(src){ addImage(src, ''); });
     } else if(result.url){
       addImageFromUrl(result.url);
     }
@@ -721,7 +743,7 @@ document.addEventListener('paste', function(e){
   for(var i=0; i<items.length; i++){
     if(items[i].type.startsWith('image/')){
       var file = items[i].getAsFile();
-      if(file) compress(file, function(src){ addImage(src, ''); });
+      if(file) uploadOrCompress(file, function(src){ addImage(src, ''); });
       return;
     }
     if(items[i].type === 'text/plain'){

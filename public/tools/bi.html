@@ -370,7 +370,10 @@ body.client .idel{display:flex !important;}
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
 <script src="/tools/_shared/iframe-resilience.js"></script>
+<script src="/tools/_shared/img-utils.js"></script>
+<script src="/tools/_shared/storage-utils.js"></script>
 <script>
 // ── Init Firebase ──
 firebase.initializeApp(FB);
@@ -397,6 +400,25 @@ function setS(s){ var d=document.getElementById('sdot'),t=document.getElementByI
 // ── Image compress ──
 function compress(file,cb){ var r=new FileReader(); r.onload=function(e){ var img=new Image(); img.onload=function(){ var M=900,q=0.65,w=img.width,h=img.height; if(w>M||h>M){if(w>h){h=Math.round(h*M/w);w=M;}else{w=Math.round(w*M/h);h=M;}} var c=document.createElement('canvas'); c.width=w;c.height=h; c.getContext('2d').drawImage(img,0,0,w,h); cb(c.toDataURL('image/jpeg',q)); }; img.src=e.target.result; }; r.readAsDataURL(file); }
 
+// uploadOrCompress: zu Storage hochladen, bei Fehler base64-Fallback
+function uploadOrCompress(file, cb){
+  if(!file || !cb) return;
+  var path = 'rooms/' + (_ROOM || 'unknown') + '/bi/' +
+    (window.storageUtils ? window.storageUtils.uniqId() : Date.now().toString(36)) + '.jpg';
+  if(window.storageUtils && _ROOM && window.firebase && window.firebase.database){
+    compress(file, function(dataUrl){
+      window.storageUtils.uploadDataUrl(dataUrl, path).then(function(url){
+        cb(url);
+      }).catch(function(err){
+        console.warn('[bi] storage upload failed, fallback base64:', err && err.message);
+        cb(dataUrl);
+      });
+    });
+  } else {
+    compress(file, cb);
+  }
+}
+
 // ── Add thumbnail ──
 function addThumb(cont,src){ var w=document.createElement('div'); w.className='iw'; var i=document.createElement('img'); i.src=src; i.addEventListener('click',function(){ document.getElementById('lbImg').src=src; document.getElementById('lb').classList.add('open'); }); var d=document.createElement('button'); d.className='idel'; d.textContent='✕'; d.addEventListener('click',function(){ w.remove(); save(); }); w.appendChild(i); w.appendChild(d); cont.appendChild(w); }
 
@@ -413,7 +435,7 @@ function clearFields(){ document.querySelectorAll('.fc').forEach(function(fc){ v
 function makeField(fid,colId,label,text,images){ var col=document.getElementById('col-'+colId); if(!col) return; var ab=col.querySelector('.addfbtn'); var fc=document.createElement('div'); fc.className='fc'; fc.id='fc-'+fid; fc.innerHTML= '<div class="fl'+(IS_CLIENT?'':' el')+'"'+(IS_CLIENT?'':' contenteditable="true" spellcheck="false"')+' data-fid="'+fid+'">'+(label||'Neues Feld')+'</div>'+ '<div class="ft" id="ft-'+fid+'" contenteditable="true" spellcheck="false" data-placeholder="Notizen, Ideen…">'+(text||'')+'</div>'+ '<div class="fimgs" id="fi-'+fid+'"></div>'+ '<div class="ffoot">'+ '<label class="imgbtn'+(IS_CLIENT?' el':'')+'">+ Bild<input type="file" accept="image/*" multiple class="ii" data-fid="'+fid+'" style="display:none"></label>'+ '<button class="clearbtn'+(IS_CLIENT?' el':'')+'" data-fid="'+fid+'">Leeren</button>'+ '<button class="delbtn'+(IS_CLIENT?' el':'')+'" data-fid="'+fid+'">✕ Feld</button>'+ '</div>'; if(ab) col.insertBefore(fc,ab); else col.appendChild(fc); (images||[]).forEach(function(s){ addThumb(document.getElementById('fi-'+fid),s); }); bindFC(fc,fid); }
 
 // ── Bind field card ──
-function bindFC(fc,fid){ var ft=fc.querySelector('.ft'); var fl=fc.querySelector('.fl'); var ii=fc.querySelector('.ii'); var cb=fc.querySelector('.clearbtn'); var db_=fc.querySelector('.delbtn'); if(ft) ft.addEventListener('input',scheduleSave); if(fl&&!IS_CLIENT) fl.addEventListener('input',scheduleSave); if(ii) ii.addEventListener('change',function(e){ var files=Array.from(e.target.files),fi=document.getElementById('fi-'+fid),rem=files.length; files.forEach(function(f){ compress(f,function(s){ addThumb(fi,s); rem--; if(!rem) scheduleSave(); }); }); e.target.value=''; }); if(cb) cb.addEventListener('click',function(){ if(!confirm('Feld leeren?')) return; var ft2=document.getElementById('ft-'+fid); var fi=document.getElementById('fi-'+fid); if(ft2) ft2.innerText=''; if(fi) fi.innerHTML=''; scheduleSave(); }); if(db_) db_.addEventListener('click',function(){ if(!confirm('Feld löschen?')) return; fc.remove(); scheduleSave(); }); }
+function bindFC(fc,fid){ var ft=fc.querySelector('.ft'); var fl=fc.querySelector('.fl'); var ii=fc.querySelector('.ii'); var cb=fc.querySelector('.clearbtn'); var db_=fc.querySelector('.delbtn'); if(ft) ft.addEventListener('input',scheduleSave); if(fl&&!IS_CLIENT) fl.addEventListener('input',scheduleSave); if(ii) ii.addEventListener('change',function(e){ var files=Array.from(e.target.files),fi=document.getElementById('fi-'+fid),rem=files.length; files.forEach(function(f){ uploadOrCompress(f,function(s){ addThumb(fi,s); rem--; if(!rem) scheduleSave(); }); }); e.target.value=''; }); if(cb) cb.addEventListener('click',function(){ if(!confirm('Feld leeren?')) return; var ft2=document.getElementById('ft-'+fid); var fi=document.getElementById('fi-'+fid); if(ft2) ft2.innerText=''; if(fi) fi.innerHTML=''; scheduleSave(); }); if(db_) db_.addEventListener('click',function(){ if(!confirm('Feld löschen?')) return; fc.remove(); scheduleSave(); }); }
 
 function escapeHtmlBI(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function makeColumn(colId,label,order){ if(document.getElementById('col-'+colId)) return document.getElementById('col-'+colId); var grid=document.querySelector('.grid'); var addBtn=document.getElementById('addColBtn'); var col=document.createElement('div'); col.className='col'; col.id='col-'+colId; col.dataset.custom='1'; if(order!=null) col.dataset.order=order; col.innerHTML='<div class="colhead"><span class="colhead-text" data-col="'+colId+'"'+(IS_CLIENT?'':' contenteditable="true" spellcheck="false"')+'>'+escapeHtmlBI(label||'Neue Spalte')+'</span><button class="col-del el" data-col="'+colId+'" title="Spalte löschen">✕</button></div><button class="addfbtn el" data-col="'+colId+'"><span>+</span> Feld hinzufügen</button>'; grid.insertBefore(col,addBtn); bindCol(col); return col; }
@@ -426,7 +448,7 @@ document.querySelectorAll('.fc').forEach(function(fc){ bindFC(fc,fc.id.slice(3))
 document.querySelectorAll('.addfbtn').forEach(function(btn){ btn.addEventListener('click',function(){ var fid='cx'+Date.now(); makeField(fid,btn.dataset.col,'Neues Feld','',[]); var fl=document.querySelector('#fc-'+fid+' .fl'); if(fl){ fl.focus(); var r=document.createRange(); r.selectNodeContents(fl); var s=window.getSelection(); s.removeAllRanges(); s.addRange(r); } scheduleSave(); }); });
 
 // ── Image input for initial fields ──
-document.querySelectorAll('.ii').forEach(function(inp){ var fid=inp.dataset.fid; inp.addEventListener('change',function(e){ var files=Array.from(e.target.files),fi=document.getElementById('fi-'+fid),rem=files.length; files.forEach(function(f){ compress(f,function(s){ addThumb(fi,s); rem--; if(!rem) scheduleSave(); }); }); e.target.value=''; }); });
+document.querySelectorAll('.ii').forEach(function(inp){ var fid=inp.dataset.fid; inp.addEventListener('change',function(e){ var files=Array.from(e.target.files),fi=document.getElementById('fi-'+fid),rem=files.length; files.forEach(function(f){ uploadOrCompress(f,function(s){ addThumb(fi,s); rem--; if(!rem) scheduleSave(); }); }); e.target.value=''; }); });
 // Clear + Delete for initial fields
 document.querySelectorAll('.clearbtn').forEach(function(btn){ var fid=btn.dataset.fid; btn.addEventListener('click',function(){ if(!confirm('Feld leeren?')) return; var ft=document.getElementById('ft-'+fid); var fi=document.getElementById('fi-'+fid); if(ft) ft.innerText=''; if(fi) fi.innerHTML=''; scheduleSave(); }); });
 document.querySelectorAll('.delbtn').forEach(function(btn){ btn.addEventListener('click',function(){ if(!confirm('Feld löschen?')) return; var fc=document.getElementById('fc-'+btn.dataset.fid); if(fc) fc.remove(); scheduleSave(); }); });

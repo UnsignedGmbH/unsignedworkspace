@@ -7,8 +7,10 @@
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900&family=Dancing+Script:wght@700&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
 <script src="/tools/_shared/iframe-resilience.js"></script>
 <script src="/tools/_shared/img-utils.js"></script>
+<script src="/tools/_shared/storage-utils.js"></script>
 <script src="/tools/_shared/techpack-render.js"></script>
 <script>
 var _ROOM = new URLSearchParams(location.search).get('room'), _DB = null;
@@ -1125,13 +1127,36 @@ function buildRenderOpts(pid, page){
     onField: function(path, value){ debouncedSavePageField(pid, path, value); },
     onImage: function(slot, file){
       toast('Komprimiere…');
-      window.imgUtils.compress(file, function(dataURL){
-        if (!dataURL){ toast('Bild konnte nicht gelesen werden'); return; }
+      var packId = STATE.activePackId;
+      var storagePath = 'rooms/' + (ROOM || 'unknown') + '/techpack/' + packId + '/' + pid + '/' + slot + '_' +
+        (window.storageUtils ? window.storageUtils.uniqId() : Date.now().toString(36)) + '.jpg';
+      function persist(srcOrUrl, isUrl){
         var u = {};
-        u['pages/' + pid + '/images/' + slot] = dataURL;
+        u['pages/' + pid + '/images/' + slot] = srcOrUrl;
         u['meta/updated'] = Date.now();
-        safeUpdate(fbPack(STATE.activePackId), u).then(function(){ toast('Hochgeladen ✓'); });
-      }, { maxWidth: 2000, quality: 0.9 });
+        safeUpdate(fbPack(packId), u).then(function(){
+          toast(isUrl ? 'Hochgeladen ✓' : 'Hochgeladen (lokal) ✓');
+        });
+      }
+      if (window.storageUtils && ROOM && _DB) {
+        window.storageUtils.compressAndUpload(file, storagePath, { maxWidth: 2000, quality: 0.9 }).then(function(url){
+          persist(url, true);
+        }).catch(function(err){
+          if (err && err._dataUrl) { persist(err._dataUrl, false); }
+          else if (window.imgUtils) {
+            window.imgUtils.compress(file, function(dataURL){
+              if (!dataURL){ toast('Bild konnte nicht gelesen werden'); return; }
+              persist(dataURL, false);
+            }, { maxWidth: 2000, quality: 0.9 });
+          }
+          console.warn('[techpack] storage upload failed, fallback base64:', err && err.message);
+        });
+      } else {
+        window.imgUtils.compress(file, function(dataURL){
+          if (!dataURL){ toast('Bild konnte nicht gelesen werden'); return; }
+          persist(dataURL, false);
+        }, { maxWidth: 2000, quality: 0.9 });
+      }
     },
     onImageRm: function(slot){
       var u = {};
