@@ -1286,6 +1286,20 @@ document.getElementById('deleteProductBtn').addEventListener('click',deleteCurre
   }
   initMb();
 })();
+
+// Lazy-Migration: alte base64-Bilder im Raum → Storage. Idempotent + safe.
+(function(){
+  var _R=new URLSearchParams(location.search).get('room');
+  var _D=(window.firebase&&window.firebase.database)?window.firebase.database():null;
+  if(!_R||!_D||!window.storageUtils||!window.storageUtils.migrateRoom)return;
+  setTimeout(function(){
+    window.storageUtils.migrateRoom(_D,_R,'sh',{maxConcurrent:2,onProgress:function(p){
+      if(p.phase==='start')console.log('[sh:mig] start',p.total,'images');
+      else if(p.phase==='empty')console.log('[sh:mig] nothing to migrate');
+      else if(p.done===p.total||p.done%5===0)console.log('[sh:mig]',p.done+'/'+p.total,'('+p.failed+' failed)');
+    }}).then(function(r){if(r&&r.migrated>0)console.log('[sh:mig] complete:',r);});
+  },15000);
+})();
 </script>
 </body>
 </html>

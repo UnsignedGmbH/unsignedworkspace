@@ -493,7 +493,20 @@ window.addEventListener('beforeunload', trackOff);
   // damit User nie eine leere Fläche sieht. Der Listener-Callback ersetzt das später.
   try { renderRoute(); } catch (e) { console.error('[techpack] initial render', e); }
   attachPackListListener();
+  _lazyMigrate();
 })();
+
+// Lazy-Migration: alte base64-Bilder im Raum → Storage. Idempotent + safe.
+function _lazyMigrate(){
+  if(!_DB||!ROOM||!window.storageUtils||!window.storageUtils.migrateRoom)return;
+  setTimeout(function(){
+    window.storageUtils.migrateRoom(_DB,ROOM,'techpack',{maxConcurrent:2,onProgress:function(p){
+      if(p.phase==='start')console.log('[techpack:mig] start',p.total,'images');
+      else if(p.phase==='empty')console.log('[techpack:mig] nothing to migrate');
+      else if(p.done===p.total||p.done%5===0)console.log('[techpack:mig]',p.done+'/'+p.total,'('+p.failed+' failed)');
+    }}).then(function(r){if(r&&r.migrated>0)console.log('[techpack:mig] complete:',r);});
+  },15000);
+}
 
 /* ════════════════════════════════════════════════════════════════════
    PACK-LIST LISTENER

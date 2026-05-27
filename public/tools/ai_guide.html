@@ -794,9 +794,22 @@ function toast(msg){
   setTimeout(function(){ el.classList.remove('show'); }, 2000);
 }
 
+// Lazy-Migration: alte base64-Bilder im Raum → Storage. Idempotent + safe.
+function _lazyMigrate(){
+  if(!_DB||!_ROOM||!window.storageUtils||!window.storageUtils.migrateRoom)return;
+  setTimeout(function(){
+    window.storageUtils.migrateRoom(_DB,_ROOM,'ai_guide',{maxConcurrent:2,onProgress:function(p){
+      if(p.phase==='start')console.log('[ai_guide:mig] start',p.total,'images');
+      else if(p.phase==='empty')console.log('[ai_guide:mig] nothing to migrate');
+      else if(p.done===p.total||p.done%5===0)console.log('[ai_guide:mig]',p.done+'/'+p.total,'('+p.failed+' failed)');
+    }}).then(function(r){if(r&&r.migrated>0)console.log('[ai_guide:mig] complete:',r);});
+  },15000);
+}
+
 initTextEditing();
 loadTextsFromFirebase();
 loadMoodboardFromFirebase();
+_lazyMigrate();
 if(_ROOM) document.getElementById('liveStatus').style.display = 'flex';
 </script>
 </body>

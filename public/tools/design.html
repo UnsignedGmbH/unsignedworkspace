@@ -985,9 +985,23 @@ function copyShareUrl(){
 
 function toast(m){var e=document.getElementById('toast');e.textContent=m;e.classList.add('show');setTimeout(function(){e.classList.remove('show');},2000);}
 
+// Lazy-Migration: alte base64-Bilder im Raum → Storage. Idempotent + safe.
+// Läuft 15s nach Load im Hintergrund. Replace nur nach Upload+Verify per transaction().
+function _lazyMigrate(){
+  if(!_DB||!_ROOM||!window.storageUtils||!window.storageUtils.migrateRoom)return;
+  setTimeout(function(){
+    window.storageUtils.migrateRoom(_DB,_ROOM,'design',{maxConcurrent:2,onProgress:function(p){
+      if(p.phase==='start')console.log('[design:mig] start',p.total,'images');
+      else if(p.phase==='empty')console.log('[design:mig] nothing to migrate');
+      else if(p.done===p.total||p.done%5===0)console.log('[design:mig]',p.done+'/'+p.total,'('+p.failed+' failed)');
+    }}).then(function(r){if(r&&r.migrated>0)console.log('[design:mig] complete:',r);});
+  },15000);
+}
+
 // INIT
 renderMb();renderProducts();
 fbLoad();
+_lazyMigrate();
 if(_ROOM){
   document.getElementById('liveStatus').style.display='flex';
   document.getElementById('shareBtn').innerHTML='🔗 Link teilen';
