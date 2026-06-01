@@ -403,9 +403,9 @@ function compress(file,cb){ var r=new FileReader(); r.onload=function(e){ var im
 // uploadOrCompress: zu Storage hochladen, bei Fehler base64-Fallback
 function uploadOrCompress(file, cb){
   if(!file || !cb) return;
-  var path = 'rooms/' + (_ROOM || 'unknown') + '/bi/' +
+  var path = 'rooms/' + (ROOM || 'unknown') + '/bi/' +
     (window.storageUtils ? window.storageUtils.uniqId() : Date.now().toString(36)) + '.jpg';
-  if(window.storageUtils && _ROOM && window.firebase && window.firebase.database){
+  if(window.storageUtils && ROOM && window.firebase && window.firebase.database){
     compress(file, function(dataUrl){
       window.storageUtils.uploadDataUrl(dataUrl, path).then(function(url){
         cb(url);
