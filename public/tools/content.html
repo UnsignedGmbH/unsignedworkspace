@@ -1438,7 +1438,14 @@ body { font-family: 'Montserrat', sans-serif; background: var(--bg); color: var(
     }
 
     var STRAT_KEYS = STRATEGY_FIELDS.map(function (f) { return f.k; });
+    // Englische Feld-Aliase tolerieren (die KI nutzt gelegentlich engl. Namen)
+    var STRAT_ALIAS = { niche: 'nische', direction: 'richtung', topics: 'ueberthemen', story: 'story' };
     function setStrat(s, d) {
+      d = d || {};
+      Object.keys(STRAT_ALIAS).forEach(function (en) {
+        var de = STRAT_ALIAS[en];
+        if (d[en] != null && d[de] == null) d[de] = d[en];
+      });
       if (d.name != null) s.name = String(d.name);
       STRAT_KEYS.forEach(function (k) { if (d[k] != null) s[k] = String(d[k]); });
     }
