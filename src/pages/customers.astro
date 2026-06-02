@@ -155,11 +155,24 @@ const filters = [
       return hay.indexOf(searchQuery) !== -1;
     }
 
+    // Gesamt-Fortschritt = exakt dieselbe Rechnung wie die BrandWork-Roadmap
+    // (7 Phasen), damit Listen-% und Detail-GESAMT immer übereinstimmen.
+    // Marketing bündelt mk+content+social (wie der Roadmap-Knoten), sonst würde
+    // z.B. Content-Arbeit in der Liste unsichtbar bleiben (0 %).
     function progressOf(c) {
-      var keys = ["agP", "biP", "shP", "crP", "dP", "mkP"];
-      var sum = 0;
-      keys.forEach(function (k) { sum += c[k] || 0; });
-      return Math.round(sum / keys.length);
+      function n(x) { var v = parseInt(x, 10) || 0; return v < 0 ? 0 : (v > 100 ? 100 : v); }
+      var marketing = Math.round((n(c.mkP) + n(c.contentP) + n(c.socialP)) / 3);
+      var phases = [
+        n(c.biP),    // 1 Branding
+        n(c.dP),     // 2 Design
+        n(c.prodP),  // 3 Produktion
+        n(c.shP),    // 4 Shooting
+        n(c.shopP),  // 5 Shop
+        marketing,   // 6 Marketing (mk · content · social)
+        n(c.agP),    // 7 AI Guide
+      ];
+      var sum = phases.reduce(function (a, b) { return a + b; }, 0);
+      return Math.round(sum / phases.length);
     }
 
     function render() {
