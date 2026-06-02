@@ -219,6 +219,13 @@ body.client .idel{display:flex !important;}
     
     
   </div>
+  <!-- ✨ KI-Agent-Leiste (Freitext) -->
+  <div id="aiBar" style="display:flex;gap:8px;align-items:center;background:#fff;border:.5px solid #e5e0d8;border-radius:12px;padding:10px 12px;margin-bottom:16px;flex-wrap:wrap;box-shadow:0 2px 10px rgba(0,0,0,.04);">
+    <span style="font-size:16px;line-height:1;">✨</span>
+    <input id="aiInput" type="text" autocomplete="off" placeholder="Sag der KI was sie tun soll — z.B. „Mach Vorschläge für Positionierung, Farbwelt und Typografie“" style="flex:1;min-width:200px;font-family:inherit;font-size:13px;border:0;outline:none;background:transparent;color:#1a1a1a;" />
+    <button id="aiSend" type="button" style="font-family:inherit;font-size:12px;font-weight:700;padding:8px 16px;border-radius:8px;border:0;background:#c13030;color:#fff;cursor:pointer;">KI fragen</button>
+    <div id="aiStatus" style="flex-basis:100%;font-size:11px;color:#888;display:none;"></div>
+  </div>
   <div class="grid">
       <div class="col" id="col-left">
         <div class="colhead"><span class="colhead-text" data-col="left">Branding</span></div>
@@ -377,6 +384,7 @@ body.client .idel{display:flex !important;}
 
 <script src="/tools/_shared/img-utils.js"></script>
 <script src="/tools/_shared/storage-utils.js"></script>
+<script src="/tools/_shared/ai-utils.js"></script>
 <script>
 // ── Init Firebase ──
 firebase.initializeApp(FB);
@@ -613,6 +621,72 @@ auth.onAuthStateChanged(function(user){
 </script>
 <script>
 // auth handled by workspace
+</script>
+<script>
+// ── KI-Agent-Leiste (Brand Identity): Textfeld-Vorschläge, mit Bestätigung ──
+(function initAiBarBI() {
+  var input = document.getElementById('aiInput');
+  var sendBtn = document.getElementById('aiSend');
+  var statusEl = document.getElementById('aiStatus');
+  if (!input || !sendBtn || !window.aiUtils) return;
+
+  function ftEl(fid) { return document.getElementById('ft-' + fid); }
+  function labelOf(fid) {
+    var fc = document.getElementById('fc-' + fid);
+    var fl = fc ? fc.querySelector('.fl') : null;
+    return fl ? fl.innerText.trim() : fid;
+  }
+  function buildState() {
+    var fields = [];
+    document.querySelectorAll('.fc').forEach(function (fc) {
+      var fid = fc.id.slice(3);
+      var ft = ftEl(fid);
+      fields.push({ id: fid, label: labelOf(fid), filled: !!(ft && ft.innerText.trim()) });
+    });
+    var bn = document.getElementById('bInput');
+    return { brandName: bn ? bn.value : '', fields: fields };
+  }
+  function isDestructive(op) {
+    if (op.op === 'set_field') { var ft = ftEl(op.field); return !!(ft && ft.innerText.trim()); }
+    return false;
+  }
+  function describe(op) {
+    if (op.op === 'set_field') return 'Feld „' + labelOf(op.field) + '" überschreiben';
+    if (op.op === 'add_field') return 'Neues Feld „' + (op.label || '') + '" anlegen';
+    return op.op || 'Änderung';
+  }
+  function applyOp(op) {
+    if (op.op === 'set_field') {
+      var ft = ftEl(op.field); if (!ft) return;
+      ft.innerText = op.text == null ? '' : String(op.text);
+      scheduleSave();
+    } else if (op.op === 'add_field') {
+      var fid = 'cx' + Date.now() + Math.floor(Math.random() * 1000);
+      var col = (op.col === 'right') ? 'right' : 'left';
+      makeField(fid, col, op.label || 'Neues Feld', op.text || '', []);
+      scheduleSave();
+    }
+  }
+  function setStatus(text, kind) {
+    if (!statusEl) return;
+    statusEl.style.display = 'block';
+    statusEl.textContent = (kind === 'busy' ? '✨ ' : kind === 'error' ? '⚠️ ' : '✓ ') + text;
+    statusEl.style.color = kind === 'error' ? '#c13030' : '#888';
+  }
+  function go() {
+    var instruction = (input.value || '').trim(); if (!instruction) return;
+    if (typeof ROOM === 'undefined' || !ROOM) { setStatus('Kein Raum verbunden.', 'error'); return; }
+    sendBtn.disabled = true; input.disabled = true;
+    window.aiUtils.execute({
+      room: ROOM, tool: 'bi', instruction: instruction, state: buildState(), brand: {},
+      onStatus: setStatus,
+      handlers: { isDestructive: isDestructive, describe: describe, applyOp: applyOp }
+    }).then(function () { input.value = ''; }).catch(function () {})
+      .then(function () { sendBtn.disabled = false; input.disabled = false; input.focus(); });
+  }
+  sendBtn.onclick = go;
+  input.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); go(); } });
+})();
 </script>
 </body>
 </html>
