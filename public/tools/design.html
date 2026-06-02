@@ -11,6 +11,7 @@
 <script src="/tools/_shared/iframe-resilience.js"></script>
 <link rel="stylesheet" href="/tools/_shared/motion.css">
 <script src="/error-logger.js"></script>
+<script src="/tools/_shared/ai-utils.js"></script>
 
 <script src="/tools/_shared/img-utils.js"></script>
 <script src="/tools/_shared/storage-utils.js"></script>
@@ -224,6 +225,14 @@ button.lb-btn{outline:none;}
       <button onclick="document.getElementById('shareModal').classList.remove('open')" style="flex:1;background:var(--cd2);color:var(--t);border:.5px solid var(--bd);border-radius:8px;padding:10px;font-family:'Montserrat',sans-serif;font-size:12px;font-weight:700;cursor:pointer;">Schließen</button>
     </div>
   </div>
+</div>
+
+<!-- ✨ KI-Agent-Leiste (Freitext) -->
+<div id="aiBar" style="display:flex;gap:8px;align-items:center;background:#fff;border:.5px solid #e5e0d8;border-radius:12px;padding:10px 12px;margin:0 0 16px;flex-wrap:wrap;box-shadow:0 2px 10px rgba(0,0,0,.04);">
+  <span style="font-size:16px;line-height:1;">✨</span>
+  <input id="aiInput" type="text" autocomplete="off" placeholder="Sag der KI was sie tun soll — z.B. „Schlag 4 Mockup-Ideen mit Brief für eine Streetwear-Kollektion vor“" style="flex:1;min-width:200px;font-family:inherit;font-size:13px;border:0;outline:none;background:transparent;color:#1a1a1a;" />
+  <button id="aiSend" type="button" style="font-family:inherit;font-size:12px;font-weight:700;padding:8px 16px;border-radius:8px;border:0;background:#c13030;color:#fff;cursor:pointer;">KI fragen</button>
+  <div id="aiStatus" style="flex-basis:100%;font-size:11px;color:#888;display:none;"></div>
 </div>
 
 <!-- 1. MOODBOARD -->
@@ -1005,6 +1014,46 @@ function _lazyMigrate(){
 renderMb();renderProducts();
 fbLoad();
 _lazyMigrate();
+
+// ── KI-Agent-Leiste (Design): Mockup-/Sketch-Ideen als Briefings ──
+(function initAiBarDesign() {
+  var input = document.getElementById('aiInput');
+  var sendBtn = document.getElementById('aiSend');
+  var statusEl = document.getElementById('aiStatus');
+  if (!input || !sendBtn || !window.aiUtils) return;
+
+  function cardList(data) {
+    var out = {};
+    ['testing', 'improve', 'final'].forEach(function (s) { out[s] = (data[s] || []).map(function (c) { return c.title || '(ohne Titel)'; }); });
+    return out;
+  }
+  function buildState() { return { mockups: cardList(mockCards), sketches: cardList(sketchCards) }; }
+  function applyOp(op) {
+    var st = (['testing', 'improve', 'final'].indexOf(op.stage) >= 0) ? op.stage : 'testing';
+    var card = { id: Date.now().toString(36) + Math.random().toString(36).slice(2, 4), title: op.title || '', note: op.note || '', img: '', linkedMock: '' };
+    if (op.op === 'add_mock') { if (!mockCards[st]) mockCards[st] = []; mockCards[st].push(card); renderKb('mock'); fbSave(); }
+    else if (op.op === 'add_sketch') { if (!sketchCards[st]) sketchCards[st] = []; sketchCards[st].push(card); renderKb('sketch'); fbSave(); }
+  }
+  function setStatus(text, kind) {
+    if (!statusEl) return;
+    statusEl.style.display = 'block';
+    statusEl.textContent = (kind === 'busy' ? '✨ ' : kind === 'error' ? '⚠️ ' : '✓ ') + text;
+    statusEl.style.color = kind === 'error' ? '#c13030' : '#888';
+  }
+  function go() {
+    var instruction = (input.value || '').trim(); if (!instruction) return;
+    if (!_ROOM) { setStatus('Kein Raum verbunden.', 'error'); return; }
+    sendBtn.disabled = true; input.disabled = true;
+    window.aiUtils.execute({
+      room: _ROOM, tool: 'design', instruction: instruction, state: buildState(), brand: {},
+      onStatus: setStatus,
+      handlers: { isDestructive: function () { return false; }, describe: function (op) { return op.op; }, applyOp: applyOp }
+    }).then(function () { input.value = ''; }).catch(function () {})
+      .then(function () { sendBtn.disabled = false; input.disabled = false; input.focus(); });
+  }
+  sendBtn.onclick = go;
+  input.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); go(); } });
+})();
 if(_ROOM){
   document.getElementById('liveStatus').style.display='flex';
   document.getElementById('shareBtn').innerHTML='🔗 Link teilen';
