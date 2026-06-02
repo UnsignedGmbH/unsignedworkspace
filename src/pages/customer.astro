@@ -123,6 +123,21 @@ import BrandworkTimeline from "../components/BrandworkTimeline.astro";
     >
       <!-- gefüllt per JS -->
     </section>
+
+    <!-- ⚠️ Technische Fehler (Fehler-Frühwarnsystem) — nur sichtbar wenn Fehler vorliegen -->
+    <section id="errPanel" class="hidden mb-5">
+      <div class="flex items-center justify-between mb-[10px]">
+        <h2 class="text-[10px] font-bold tracking-[0.12em] uppercase text-[#b4540a] flex items-center gap-2">
+          <span>⚠️</span> Technische Fehler (<span id="errCount">0</span>)
+        </h2>
+        <button
+          type="button"
+          id="errClear"
+          class="text-[10px] font-bold text-ink-soft bg-card border-[0.5px] border-line rounded-full px-3 py-1 cursor-pointer hover:border-brand hover:text-brand transition-colors"
+        >Als erledigt markieren</button>
+      </div>
+      <div id="errList" class="flex flex-col gap-2"></div>
+    </section>
   </div>
 
   <!-- ═══════════════ TOOL FULLSCREEN MODE ═══════════════ -->
@@ -216,6 +231,45 @@ import BrandworkTimeline from "../components/BrandworkTimeline.astro";
       ref.on(eventType, cb);
       LISTENERS.push({ ref: ref, eventType: eventType, cb: cb });
       return cb;
+    }
+
+    // ── Fehler-Frühwarnsystem: zeigt von error-logger.js gemeldete JS-Fehler ──
+    function _escErr(s) {
+      return String(s == null ? "" : s)
+        .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    }
+    function attachErrorLog(room) {
+      var panel = $("errPanel"), listEl = $("errList"), countEl = $("errCount");
+      if (!panel || !room) return;
+      trackOn("rooms/" + room + "/_errors", "value", function (s) {
+        var v = s.val() || {};
+        var keys = Object.keys(v);
+        if (!keys.length) { panel.classList.add("hidden"); return; }
+        var items = keys.map(function (k) { var e = v[k] || {}; e._id = k; return e; })
+          .sort(function (a, b) { return (b.ts || 0) - (a.ts || 0); });
+        countEl.textContent = items.length;
+        panel.classList.remove("hidden");
+        listEl.innerHTML = items.slice(0, 30).map(function (e) {
+          var when = e.ts ? new Date(e.ts).toLocaleString("de-DE") : "";
+          var loc = e.line ? _escErr((e.src || "").split("/").pop()) + ":" + e.line : "";
+          return (
+            '<div class="bg-card border-[0.5px] border-line rounded-lg px-3 py-2">' +
+            '<div class="flex items-center gap-2 flex-wrap mb-[2px]">' +
+            '<span class="text-[10px] font-bold text-white bg-[#b4540a] rounded px-[6px] py-[1px]">' + _escErr(e.tool || "?") + '</span>' +
+            '<span class="text-[10px] text-ink-mute">' + _escErr(when) + '</span>' +
+            (e.role ? '<span class="text-[10px] text-ink-mute">· ' + _escErr(e.role) + '</span>' : '') +
+            '</div>' +
+            '<div class="text-[12px] font-semibold text-ink break-words">' + _escErr(e.msg || "") + '</div>' +
+            (loc ? '<div class="text-[10px] text-ink-mute mt-[1px] break-words">' + loc + '</div>' : '') +
+            '</div>'
+          );
+        }).join("");
+      });
+      var clr = $("errClear");
+      if (clr) clr.onclick = function () {
+        if (!confirm("Diese Fehler als erledigt markieren (löschen)?")) return;
+        window.fb.safeRemove("rooms/" + room + "/_errors");
+      };
     }
     function trackInterval(id) {
       INTERVALS.push(id);
@@ -874,6 +928,7 @@ import BrandworkTimeline from "../components/BrandworkTimeline.astro";
           attachToolPctListeners(c.room);
           attachProductionStatusListener(c.room);
           attachClientPresence(c.room);
+          attachErrorLog(c.room);
           if (initialTool && TOOL_BY_FILE[initialTool]) showTool(initialTool);
           else showOverview();
         }

@@ -8,18 +8,19 @@ Ziel: Du erfährst **automatisch**, wenn etwas kaputt geht — bevor ein Kunde s
 
 ---
 
-## 1. Sentry — Fehler-Tracking (fängt JS-Crashes live ab)
+## 1. Fehler-Frühwarnsystem — EINGEBAUT, nichts einzurichten ✅
 
-> Hätte den bi.html-`_ROOM`-Crash in dem Moment gemeldet, in dem der erste Kunde
-> ihn ausgelöst hat — statt Tage später per Zuruf.
+> Statt eines externen Dienstes (Sentry) ist ein eigener „Rauchmelder" direkt in der
+> App verbaut. Hätte den bi.html-`_ROOM`-Crash in dem Moment gemeldet, in dem der
+> erste Kunde ihn ausgelöst hat — statt Tage später per Zuruf.
 
-1. Account anlegen auf https://sentry.io (kostenloser „Developer"-Plan reicht locker).
-2. **Create Project** → Plattform **„Browser JavaScript"** → Projektname z.B. `unsigned-workspace`.
-3. Sentry zeigt dir danach eine **DSN** an — eine URL der Form
-   `https://abc123...@o12345.ingest.de.sentry.io/67890`.
-4. **Diese DSN an Claude/den Entwickler geben** → wird in `BaseLayout.astro` und alle
-   Tool-HTMLs eingebaut. Die DSN ist nicht geheim (läuft im Browser, ist public-safe).
-5. (Optional) In Sentry → Alerts → Mail/Slack-Benachrichtigung bei neuen Fehlern aktivieren.
+- `public/error-logger.js` fängt JS-Fehler + Promise-Rejections bei Kunden ab und
+  schreibt sie nach `rooms/<room>/_errors` in **dein eigenes Firebase**.
+- Eingebunden in `BaseLayout.astro` (Portal) und alle Tool-HTMLs (iframes).
+- **Sichtbar machen:** Öffne im Dashboard einen Kunden (`/customer?id=…`). Gibt es
+  technische Fehler, erscheint unter den Tools das Panel **„⚠️ Technische Fehler"**
+  mit Tool, Zeitpunkt und Meldung. Button **„Als erledigt markieren"** löscht sie.
+- Kein externer Account, keine DSN, keine Kosten. Die Fehlerdaten bleiben bei dir.
 
 ---
 
@@ -74,6 +75,6 @@ Ziel: Du erfährst **automatisch**, wenn etwas kaputt geht — bevor ein Kunde s
 | Baustein            | Code im Repo | Einrichtung (du) |
 |---------------------|--------------|------------------|
 | Health-Endpoint     | ✅ `api/health.js` | UptimeRobot draufsetzen |
-| Sentry-Fehler       | ⏳ wartet auf DSN  | Account + DSN liefern |
+| Fehler-Frühwarnung  | ✅ `error-logger.js` + Viewer | nichts — siehe Kunden-Ansicht |
 | Budget-/Quota-Alarm | — (Console)        | GCP/Firebase Console |
 | Tägliches Backup    | ✅ Workflow        | Secret + Lauf prüfen |
