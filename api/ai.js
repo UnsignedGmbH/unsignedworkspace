@@ -1,21 +1,21 @@
-// Vercel Serverless Function — KI-Agent (Anthropic / Claude).
+// Vercel Serverless Function — KI-Agent (Google Gemini, kostenloses Kontingent).
 //
 // Nimmt einen Freitext-Befehl + den aktuellen Tool-Zustand entgegen und liefert eine
 // Liste von OPERATIONEN (add/update/delete) zurück, die der Client anwendet. Der
-// API-Key liegt ausschließlich serverseitig (env ANTHROPIC_API_KEY).
+// API-Key liegt ausschließlich serverseitig (env GEMINI_API_KEY).
 //
-// Sicherheit/Kosten: per-Raum-Tageslimit (Kunden dürfen die KI auslösen) + max_tokens.
-// Single-Turn (kein autonomer Loop) → planbare Kosten, bleibt unter Vercel-Timeout.
+// Sicherheit/Kosten: per-Raum-Tageslimit (Kunden dürfen die KI auslösen) + begrenzte
+// Antwortlänge. Single-Turn (kein autonomer Loop) → planbar, bleibt unter Vercel-Timeout.
 //
 // Setup: env vars in Vercel:
-//   ANTHROPIC_API_KEY   (Pflicht)  — dein Anthropic-Key
-//   ANTHROPIC_MODEL     (optional) — Modell-ID, Default unten. Bei "model not found"
-//                                    eine gültige ID aus der Anthropic-Console setzen.
-//   FIREBASE_SERVICE_ACCOUNT       — schon vorhanden (für das Rate-Limit)
+//   GEMINI_API_KEY   (Pflicht)  — kostenloser Key von aistudio.google.com
+//   GEMINI_MODEL     (optional) — Default unten. Bei "model not found" eine gültige
+//                                 ID aus AI Studio setzen (z.B. gemini-1.5-flash).
+//   FIREBASE_SERVICE_ACCOUNT     — schon vorhanden (für das Rate-Limit)
 
 import admin from 'firebase-admin';
 
-const MODEL = process.env.ANTHROPIC_MODEL || 'claude-sonnet-4-5';
+const MODEL = process.env.GEMINI_MODEL || 'gemini-2.0-flash';
 const MAX_TOKENS = 2000;
 const DAILY_LIMIT = parseInt(process.env.AI_DAILY_LIMIT, 10) || 25; // pro Raum pro Tag
 
@@ -69,7 +69,6 @@ function systemPromptFor(tool) {
       'Wenn der Befehl unklar ist, mache den sinnvollsten kleinen Schritt und erkläre ihn in "summary".',
     ].join('\n');
   }
-  // Fallback (für spätere Tools)
   return 'Antworte ausschließlich mit einem JSON-Objekt {"summary":"","operations":[]}.';
 }
 
@@ -86,9 +85,7 @@ function buildUserMessage(instruction, state, brand) {
 function extractJson(text) {
   if (!text) return null;
   let t = String(text).trim();
-  // evtl. Codeblock-Fences entfernen
   t = t.replace(/^```(?:json)?/i, '').replace(/```$/i, '').trim();
-  // erstes { ... letztes } greifen, falls Claude doch was drumherum schreibt
   const a = t.indexOf('{'), b = t.lastIndexOf('}');
   if (a >= 0 && b > a) t = t.slice(a, b + 1);
   try { return JSON.parse(t); } catch (e) { return null; }
@@ -101,9 +98,9 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(204).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const apiKey = process.env.ANTHROPIC_API_KEY;
+  const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
-    return res.status(503).json({ error: 'KI noch nicht eingerichtet (ANTHROPIC_API_KEY fehlt).' });
+    return res.status(503).json({ error: 'KI noch nicht eingerichtet (GEMINI_API_KEY fehlt).' });
   }
 
   let body = req.body;
@@ -130,22 +127,22 @@ export default async function handler(req, res) {
     } catch (e) { /* Limit nicht kritisch — im Zweifel durchlassen */ }
   }
 
-  // ── Anthropic-Call ──────────────────────────────────────────────────────────
+  // ── Gemini-Call (generateContent, JSON-Modus) ───────────────────────────────
   let apiJson;
   try {
-    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+    const url = 'https://generativelanguage.googleapis.com/v1beta/models/' +
+      encodeURIComponent(MODEL) + ':generateContent';
+    const resp = await fetch(url, {
       method: 'POST',
-      headers: {
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-        'content-type': 'application/json',
-      },
+      headers: { 'content-type': 'application/json', 'x-goog-api-key': apiKey },
       body: JSON.stringify({
-        model: MODEL,
-        max_tokens: MAX_TOKENS,
-        temperature: 0.7,
-        system: systemPromptFor(tool),
-        messages: [{ role: 'user', content: buildUserMessage(instruction, body.state, body.brand) }],
+        system_instruction: { parts: [{ text: systemPromptFor(tool) }] },
+        contents: [{ role: 'user', parts: [{ text: buildUserMessage(instruction, body.state, body.brand) }] }],
+        generationConfig: {
+          temperature: 0.7,
+          maxOutputTokens: MAX_TOKENS,
+          responseMimeType: 'application/json',
+        },
       }),
     });
     apiJson = await resp.json();
@@ -157,7 +154,14 @@ export default async function handler(req, res) {
     return res.status(502).json({ error: 'KI nicht erreichbar: ' + e.message });
   }
 
-  const text = apiJson && apiJson.content && apiJson.content[0] && apiJson.content[0].text;
+  // Gemini-Antwort: candidates[0].content.parts[*].text
+  let text = '';
+  try {
+    const cand = apiJson && apiJson.candidates && apiJson.candidates[0];
+    const parts = cand && cand.content && cand.content.parts;
+    if (Array.isArray(parts)) text = parts.map(function (p) { return p && p.text ? p.text : ''; }).join('');
+  } catch (e) {}
+
   const parsed = extractJson(text);
   if (!parsed || !Array.isArray(parsed.operations)) {
     return res.status(502).json({ error: 'KI-Antwort konnte nicht verarbeitet werden.' });
