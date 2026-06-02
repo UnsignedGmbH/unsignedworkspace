@@ -39,6 +39,44 @@ function initAdmin() {
   }
 }
 
+// ── Cross-Tool-Kontext ("Gedächtnis"): liest einen kompakten Querschnitt aus dem
+// Raum (Brand Identity + Content-Strategien + Social-Basics), damit die KI in JEDEM
+// Tool auf die Brand zugreifen kann. Serverseitig (firebase-admin), längenbegrenzt.
+async function gatherRoomContext(room) {
+  if (!initAdmin()) return null;
+  var db = admin.database();
+  var ctx = {};
+  try {
+    // Brand Identity = Fundament (rooms/<room>/data/fields)
+    var biSnap = await db.ref('rooms/' + room + '/data/fields').once('value');
+    var f = biSnap.val() || {};
+    var bi = {};
+    Object.keys(f).forEach(function (k) {
+      var fld = f[k] || {};
+      var label = fld.label || k, text = fld.text || '';
+      if (text && String(text).trim()) bi[label] = String(text).slice(0, 500);
+    });
+    if (Object.keys(bi).length) ctx.brandIdentity = bi;
+  } catch (e) {}
+  try {
+    // Content-Strategien (Kurzfassung)
+    var sSnap = await db.ref('rooms/' + room + '/content/strategies').once('value');
+    var strat = sSnap.val() || {};
+    var strategies = Object.keys(strat).map(function (id) {
+      var s = strat[id] || {};
+      return { name: s.name || '', richtung: s.richtung || '', nische: s.nische || '' };
+    }).filter(function (s) { return s.name || s.richtung || s.nische; }).slice(0, 5);
+    if (strategies.length) ctx.contentStrategien = strategies;
+  } catch (e) {}
+  try {
+    // Social-Profil-Basics
+    var igSnap = await db.ref('rooms/' + room + '/social/instagram').once('value');
+    var ig = igSnap.val() || {};
+    if (ig.slogan || ig.subline) ctx.socialProfil = { slogan: ig.slogan || '', subline: ig.subline || '' };
+  } catch (e) {}
+  return Object.keys(ctx).length ? ctx : null;
+}
+
 // ── Prompt-Templates pro Tool (bleiben serverseitig) ──────────────────────────
 function systemPromptFor(tool) {
   if (tool === 'content') {
@@ -208,7 +246,7 @@ function systemPromptFor(tool) {
 function buildUserMessage(instruction, state, brand) {
   const parts = [];
   if (brand && Object.keys(brand).length) {
-    parts.push('BRAND-KONTEXT:\n' + JSON.stringify(brand).slice(0, 4000));
+    parts.push('BRAND-KONTEXT (Daten aus den anderen Tools dieses Kunden — nutze sie für konsistente, passende Vorschläge):\n' + JSON.stringify(brand).slice(0, 6000));
   }
   parts.push('AKTUELLER ZUSTAND (ids + Kurzfelder):\n' + JSON.stringify(state || {}).slice(0, 8000));
   parts.push('BEFEHL DES NUTZERS:\n' + String(instruction || '').slice(0, 2000));
@@ -260,6 +298,11 @@ export default async function handler(req, res) {
     } catch (e) { /* Limit nicht kritisch — im Zweifel durchlassen */ }
   }
 
+  // ── Cross-Tool-Kontext ("Gedächtnis") aus dem Raum holen + mit Client-Brand mergen ──
+  let roomCtx = null;
+  try { roomCtx = await gatherRoomContext(room); } catch (e) {}
+  const mergedBrand = Object.assign({}, roomCtx || {}, body.brand || {});
+
   // ── Groq-Call (OpenAI-kompatibel, JSON-Modus) ───────────────────────────────
   let apiJson;
   try {
@@ -273,7 +316,7 @@ export default async function handler(req, res) {
         response_format: { type: 'json_object' },
         messages: [
           { role: 'system', content: systemPromptFor(tool) },
-          { role: 'user', content: buildUserMessage(instruction, body.state, body.brand) },
+          { role: 'user', content: buildUserMessage(instruction, body.state, mergedBrand) },
         ],
       }),
     });
