@@ -10,6 +10,7 @@
 
 <script src="/tools/_shared/img-utils.js"></script>
 <script src="/tools/_shared/storage-utils.js"></script>
+<script src="/tools/_shared/ai-utils.js"></script>
 <script>
 var _R=new URLSearchParams(location.search).get('room'),_D=null;
 try{firebase.initializeApp({apiKey:"AIzaSyDJqdh3apGM4fcsjRYI7vZ4VrT1_A6L92U",authDomain:"unsignedworkspace.firebaseapp.com",databaseURL:"https://unsignedworkspace-default-rtdb.europe-west1.firebasedatabase.app",projectId:"unsignedworkspace",storageBucket:"unsignedworkspace.firebasestorage.app",messagingSenderId:"144491079509",appId:"1:144491079509:web:c7dcc1c14b8daf404231dc"});_D=firebase.database();}catch(e){try{_D=firebase.database();}catch(e2){}}
@@ -299,6 +300,14 @@ if(_R && _D) {
     </div>
   </div>
   <div class="important-box"><p><strong>Wichtige Regel:</strong> An jeder Location erst alles für dieses Produkt shooten — Fotos + Videos — bevor ihr die Location wechselt.</p></div>
+
+  <!-- ✨ KI-Agent-Leiste (Freitext) -->
+  <div id="aiBar" style="display:flex;gap:8px;align-items:center;background:#fff;border:.5px solid #e5e0d8;border-radius:12px;padding:10px 12px;margin-bottom:20px;flex-wrap:wrap;box-shadow:0 2px 10px rgba(0,0,0,.04);">
+    <span style="font-size:16px;line-height:1;">✨</span>
+    <input id="aiInput" type="text" autocomplete="off" placeholder="Sag der KI was sie tun soll — z.B. „Schlag Posen und Model-Shots für ein Streetwear-Shooting vor“" style="flex:1;min-width:200px;font-family:inherit;font-size:13px;border:0;outline:none;background:transparent;color:#1a1a1a;" />
+    <button id="aiSend" type="button" style="font-family:inherit;font-size:12px;font-weight:700;padding:8px 16px;border-radius:8px;border:0;background:#c13030;color:#fff;cursor:pointer;">KI fragen</button>
+    <div id="aiStatus" style="flex-basis:100%;font-size:11px;color:#888;display:none;"></div>
+  </div>
 
   <div id="checklistRoot"></div>
   <button class="add-cat-btn" id="addCatBtn"><span>+</span> Neuer Oberpunkt</button>
@@ -1302,6 +1311,71 @@ document.getElementById('deleteProductBtn').addEventListener('click',deleteCurre
       else if(p.done===p.total||p.done%5===0)console.log('[sh:mig]',p.done+'/'+p.total,'('+p.failed+' failed)');
     }}).then(function(r){if(r&&r.migrated>0)console.log('[sh:mig] complete:',r);});
   },15000);
+})();
+</script>
+<script>
+// ── KI-Agent-Leiste (Shooting): Checklisten-Beispiele pro Kategorie, mit Bestätigung ──
+(function initAiBarSH() {
+  var input = document.getElementById('aiInput');
+  var sendBtn = document.getElementById('aiSend');
+  var statusEl = document.getElementById('aiStatus');
+  if (!input || !sendBtn || !window.aiUtils) return;
+
+  function listEl(cat) { return document.querySelector('#checklistRoot .section[data-cat-id="' + cat + '"] .checklist'); }
+  function catName(cat) { return (typeof CAT_NAMES !== 'undefined' && CAT_NAMES[cat]) || cat; }
+
+  function buildState() {
+    var cats = [];
+    try {
+      var read = (typeof readCategories === 'function') ? readCategories() : [];
+      read.forEach(function (c) { cats.push({ cat: c.id, label: c.label, items: (c.items || []).map(function (it) { return it.label; }) }); });
+    } catch (e) {}
+    return { categories: cats };
+  }
+  function isDestructive(op) {
+    if (op.op === 'set_items') { var l = listEl(op.cat); return !!(l && l.querySelectorAll('.check-item').length); }
+    if (op.op === 'delete_item') return true;
+    return false;
+  }
+  function describe(op) {
+    if (op.op === 'add_item') return 'Neuer Punkt in „' + catName(op.cat) + '": ' + (op.text || '').slice(0, 60);
+    if (op.op === 'set_items') return 'Alle Punkte in „' + catName(op.cat) + '" ERSETZEN (' + ((op.items || []).length) + ')';
+    if (op.op === 'delete_item') return 'Punkt #' + ((op.index || 0) + 1) + ' in „' + catName(op.cat) + '" LÖSCHEN';
+    return op.op || 'Änderung';
+  }
+  function applyOp(op) {
+    var l = listEl(op.cat); if (!l) return;
+    if (op.op === 'add_item') {
+      l.appendChild(makeItem(String(op.text || ''), false, op.cat));
+    } else if (op.op === 'set_items') {
+      l.querySelectorAll('.check-item').forEach(function (it) { it.remove(); });
+      (op.items || []).forEach(function (t) { l.appendChild(makeItem(String(t || ''), false, op.cat)); });
+    } else if (op.op === 'delete_item') {
+      var items = l.querySelectorAll('.check-item'); var idx = op.index || 0;
+      if (items[idx]) items[idx].remove();
+    }
+    saveCurrentProduct();
+  }
+  function setStatus(text, kind) {
+    if (!statusEl) return;
+    statusEl.style.display = 'block';
+    statusEl.textContent = (kind === 'busy' ? '✨ ' : kind === 'error' ? '⚠️ ' : '✓ ') + text;
+    statusEl.style.color = kind === 'error' ? '#c13030' : '#888';
+  }
+  function go() {
+    var instruction = (input.value || '').trim(); if (!instruction) return;
+    if (!_R) { setStatus('Kein Raum verbunden.', 'error'); return; }
+    if (!listEl('model') && !listEl('location')) { setStatus('Bitte zuerst ein Produkt anlegen/öffnen.', 'error'); return; }
+    sendBtn.disabled = true; input.disabled = true;
+    window.aiUtils.execute({
+      room: _R, tool: 'sh', instruction: instruction, state: buildState(), brand: {},
+      onStatus: setStatus,
+      handlers: { isDestructive: isDestructive, describe: describe, applyOp: applyOp }
+    }).then(function () { input.value = ''; }).catch(function () {})
+      .then(function () { sendBtn.disabled = false; input.disabled = false; input.focus(); });
+  }
+  sendBtn.onclick = go;
+  input.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); go(); } });
 })();
 </script>
 </body>

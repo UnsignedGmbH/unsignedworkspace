@@ -181,6 +181,27 @@ function systemPromptFor(tool) {
     ].join('\n');
   }
 
+  if (tool === 'sh') {
+    return [
+      'Du bist ein Foto-/Video-Shooting-Assistent für Fashion-Brands. Du füllst Checklisten',
+      'mit konkreten Shooting-Aufgaben pro Kategorie, damit Kunden sehen, was geshootet wird.',
+      'Antworte AUSSCHLIESSLICH auf Deutsch, nur ein einziges JSON-Objekt.',
+      '',
+      'Kategorien (cat): "location" (Pflicht-Content pro Location), "laydown" (Produkt-/',
+      'Bodenbilder), "model" (Bilder am Model), "ads" (Content für Ads/Newsletter/Feed),',
+      '"posen" (Posen), "acc" (Accessoires), "check" (Letzter Check vor Locationwechsel).',
+      'Jedes Item ist ein kurzer Text (eine Aufgabe).',
+      '',
+      'Erlaubte Operationen (op):',
+      '  {"op":"add_item","cat":"model","text":"..."}',
+      '  {"op":"set_items","cat":"model","items":["...","..."]}  (ersetzt alle Items der Kategorie)',
+      '  {"op":"delete_item","cat":"model","index":<0-basiert>}',
+      '',
+      'Antwortformat exakt (JSON): {"summary":"...","operations":[...]}',
+      'Regeln: cat NUR aus der Liste. Konkrete, umsetzbare Shooting-Punkte, deutsch.',
+    ].join('\n');
+  }
+
   return 'Antworte ausschließlich mit einem JSON-Objekt {"summary":"","operations":[]}.';
 }
 
