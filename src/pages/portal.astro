@@ -142,8 +142,31 @@ import BrandworkTimeline from "../components/BrandworkTimeline.astro";
           <span id="toolCrumb" class="text-[12px] font-bold text-ink">…</span>
         </div>
         <div
-          class="bg-card border-[0.5px] border-line rounded-xl overflow-hidden h-[calc(100vh-220px)]"
+          class="relative bg-card border-[0.5px] border-line rounded-xl overflow-hidden h-[calc(100vh-220px)]"
         >
+          <!-- Loading-Overlay: sichtbar bis iframe.onload feuert oder Timeout -->
+          <div
+            id="portalToolLoading"
+            class="hidden absolute inset-0 flex-col items-center justify-center gap-3 bg-card text-ink-mute pointer-events-none"
+          >
+            <span class="w-8 h-8 rounded-full border-[3px] border-line border-t-brand animate-spin" aria-hidden="true"></span>
+            <span class="text-[12px] font-bold">Tool wird geladen…</span>
+          </div>
+          <!-- Error-Fallback: nur nach Timeout sichtbar -->
+          <div
+            id="portalToolError"
+            class="hidden absolute inset-0 flex-col items-center justify-center gap-3 bg-card text-ink p-6 text-center"
+            role="alert"
+          >
+            <span class="text-[28px]" aria-hidden="true">⚠️</span>
+            <span class="text-[14px] font-extrabold">Tool konnte nicht geladen werden</span>
+            <span class="text-[12px] text-ink-mute max-w-[420px]">Verbindung prüfen — oder kurz erneut versuchen.</span>
+            <button
+              type="button"
+              id="portalToolRetry"
+              class="text-[12px] font-bold text-brand bg-brand-dim border-[0.5px] border-brand-border rounded-lg px-4 py-2 cursor-pointer"
+            >Erneut laden</button>
+          </div>
           <iframe
             id="portalFrame"
             src="about:blank"
@@ -181,6 +204,26 @@ import BrandworkTimeline from "../components/BrandworkTimeline.astro";
           Versehen ist, melde dich bitte direkt bei deinem Ansprechpartner
           bei Unsigned.
         </p>
+      </div>
+
+      <!-- Verbindungs-Fehler: nur sichtbar wenn Firebase nach Timeout nicht lädt -->
+      <div
+        id="portalConnError"
+        class="hidden bg-card border-[0.5px] border-line rounded-2xl px-6 md:px-8 py-12 md:py-16 text-center max-w-[520px] mx-auto"
+      >
+        <div class="text-[48px] mb-4" aria-hidden="true">📡</div>
+        <h2 class="text-[20px] md:text-[22px] font-extrabold text-ink mb-2">
+          Verbindung wird hergestellt…
+        </h2>
+        <p class="text-[13px] text-ink-soft leading-relaxed mb-4" id="portalConnErrorSub">
+          Wir konnten gerade keine Verbindung aufbauen. Das liegt meist am Netz —
+          bitte kurz warten oder neu laden.
+        </p>
+        <button
+          type="button"
+          id="portalConnRetry"
+          class="text-[12px] font-bold text-white bg-brand border-0 rounded-lg px-5 py-2 cursor-pointer hover:bg-[#a82929]"
+        >Neu laden</button>
       </div>
     </main>
 
@@ -627,6 +670,52 @@ import BrandworkTimeline from "../components/BrandworkTimeline.astro";
       });
     }
 
+    // Tool-Lade-Statusanzeige (Loader → Timeout → Fehler/Retry).
+    var TOOL_LOAD_TIMEOUT_MS = 12000;
+    var _toolLoaded = false;
+    var _toolTimer = null;
+    var _lastToolUrl = null;
+    function _toolLoadingEl() { return document.getElementById("portalToolLoading"); }
+    function _toolErrorEl() { return document.getElementById("portalToolError"); }
+    function _showToolLoading() {
+      var l = _toolLoadingEl(), e = _toolErrorEl();
+      if (e) { e.classList.add("hidden"); e.classList.remove("flex"); }
+      if (l) { l.classList.remove("hidden"); l.classList.add("flex"); }
+    }
+    function _hideToolOverlays() {
+      var l = _toolLoadingEl(), e = _toolErrorEl();
+      if (l) { l.classList.add("hidden"); l.classList.remove("flex"); }
+      if (e) { e.classList.add("hidden"); e.classList.remove("flex"); }
+    }
+    function _showToolError() {
+      if (_toolLoaded) return;
+      var l = _toolLoadingEl(), e = _toolErrorEl();
+      if (l) { l.classList.add("hidden"); l.classList.remove("flex"); }
+      if (e) { e.classList.remove("hidden"); e.classList.add("flex"); }
+    }
+    frame.addEventListener("load", function () {
+      // about:blank feuert auch — nur als geladen werten, wenn echte URL gesetzt war.
+      if (!frame.src || frame.src === "about:blank") return;
+      _toolLoaded = true;
+      if (_toolTimer) { clearTimeout(_toolTimer); _toolTimer = null; }
+      _hideToolOverlays();
+    });
+    frame.addEventListener("error", _showToolError);
+    (function () {
+      var rb = document.getElementById("portalToolRetry");
+      if (rb) rb.addEventListener("click", function () {
+        if (_lastToolUrl) _loadToolUrl(_lastToolUrl);
+      });
+    })();
+    function _loadToolUrl(url) {
+      _lastToolUrl = url;
+      _toolLoaded = false;
+      _showToolLoading();
+      if (_toolTimer) clearTimeout(_toolTimer);
+      _toolTimer = setTimeout(_showToolError, TOOL_LOAD_TIMEOUT_MS);
+      frame.src = url;
+    }
+
     function openTool(toolId, extraParams) {
       var t = TOOLS.find(function (x) { return x.id === toolId; });
       if (!t) return;
@@ -640,7 +729,7 @@ import BrandworkTimeline from "../components/BrandworkTimeline.astro";
           if (extraParams[k] != null) url += '&' + k + '=' + encodeURIComponent(extraParams[k]);
         });
       }
-      frame.src = url;
+      _loadToolUrl(url);
       pingFn(toolId);
     }
 
@@ -657,6 +746,9 @@ import BrandworkTimeline from "../components/BrandworkTimeline.astro";
 
     function backToOverview() {
       currentTool = null;
+      if (_toolTimer) { clearTimeout(_toolTimer); _toolTimer = null; }
+      _toolLoaded = false;
+      _hideToolOverlays();
       document.getElementById("toolView").classList.add("hidden");
       document.getElementById("overviewView").classList.remove("hidden");
       frame.src = "about:blank";
@@ -669,11 +761,33 @@ import BrandworkTimeline from "../components/BrandworkTimeline.astro";
     }
     document.getElementById("toolBack").addEventListener("click", backToOverview);
 
-    function waitForFb(cb) {
-      if (window.fb && window.firebase) cb();
-      else setTimeout(function () { waitForFb(cb); }, 50);
+    // Verbindungs-Fehler-Screen: Firebase ist nach Timeout nicht erreichbar
+    // (CDN blockiert, Netz weg). Statt ewig auf window.fb zu pollen → klare Rückmeldung.
+    function showConnError() {
+      try {
+        document.getElementById("overviewView").style.display = "none";
+        document.getElementById("toolView").classList.add("hidden");
+        var em = document.getElementById("portalEmpty"); if (em) em.classList.add("hidden");
+        document.getElementById("portalConnError").classList.remove("hidden");
+        if (liveSlot) liveSlot.style.display = "none";
+      } catch (e) {}
     }
-    waitForFb(function () { checkClosedThen(bootAuth); });
+    (function () {
+      var rb = document.getElementById("portalConnRetry");
+      if (rb) rb.addEventListener("click", function () { location.reload(); });
+    })();
+
+    // Bounded boot: max ~15s auf Firebase warten, sonst Fehler-Screen statt Endlos-Poll.
+    var FB_BOOT_TIMEOUT_MS = 15000;
+    function waitForFb(cb, onTimeout) {
+      var deadline = Date.now() + FB_BOOT_TIMEOUT_MS;
+      (function tick() {
+        if (window.fb && window.firebase) { cb(); return; }
+        if (Date.now() >= deadline) { if (onTimeout) onTimeout(); return; }
+        setTimeout(tick, 50);
+      })();
+    }
+    waitForFb(function () { checkClosedThen(bootAuth); }, showConnError);
 
     // Workspace-Brand applied to portal — name in tagline, custom welcome text, logo swap
     function applyBrand() {
