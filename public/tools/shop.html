@@ -4,6 +4,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 <script src="/tools/_shared/iframe-resilience.js"></script>
+<script src="/tools/_shared/ai-utils.js"></script>
 <script>
 var _R = new URLSearchParams(location.search).get('room'), _D = null;
 try {
@@ -191,6 +192,13 @@ body.lb-open { overflow: hidden; }
 </header>
 
 <main class="main">
+  <!-- ✨ KI-Agent-Leiste (Freitext) -->
+  <div id="aiBar" style="display:flex;gap:8px;align-items:center;background:#fff;border:.5px solid #e5e0d8;border-radius:12px;padding:10px 12px;margin-bottom:16px;flex-wrap:wrap;box-shadow:0 2px 10px rgba(0,0,0,.04);">
+    <span style="font-size:16px;line-height:1;">✨</span>
+    <input id="aiInput" type="text" autocomplete="off" placeholder="Sag der KI was sie tun soll — z.B. „Schreib Beispiel-Notizen für die Shop-Basics-Checkliste“" style="flex:1;min-width:200px;font-family:inherit;font-size:13px;border:0;outline:none;background:transparent;color:#1a1a1a;" />
+    <button id="aiSend" type="button" style="font-family:inherit;font-size:12px;font-weight:700;padding:8px 16px;border-radius:8px;border:0;background:#c13030;color:#fff;cursor:pointer;">KI fragen</button>
+    <div id="aiStatus" style="flex-basis:100%;font-size:11px;color:#888;display:none;"></div>
+  </div>
   <div class="intro">
     <p>Sechs Phasen — von der ersten Besprechung über die Setup-Basics bis zum Aufbau und laufenden Drop. Häkchen setzen, Notizen pro Punkt hinterlegen, alles live mit deinem Team geteilt. Bei Phasen mit 📎 öffnet sich das passende Cheatsheet als Bild-Referenz.</p>
   </div>
@@ -541,6 +549,71 @@ body.lb-open { overflow: hidden; }
   } else {
     connTag.textContent = '· lokal (kein Raum)';
   }
+
+  // ── KI-Agent-Leiste (Shop): Beispiel-Notizen je Checklisten-Punkt, mit Bestätigung ──
+  (function initAiBarShop() {
+    var input = document.getElementById('aiInput');
+    var sendBtn = document.getElementById('aiSend');
+    var statusEl = document.getElementById('aiStatus');
+    if (!input || !sendBtn || !window.aiUtils) return;
+
+    function itemLabel(pk, ik) {
+      var p = PHASES.find(function (x) { return x.key === pk; });
+      var it = p && p.items.find(function (y) { return y.key === ik; });
+      return it ? it.text : ik;
+    }
+    function buildState() {
+      return {
+        phases: PHASES.map(function (p) {
+          return {
+            key: p.key, title: p.title,
+            items: p.items.map(function (it) {
+              var cur = STATE[p.key] && STATE[p.key][it.key];
+              return { key: it.key, label: it.text, hasNote: !!(cur && cur.n && String(cur.n).trim()) };
+            })
+          };
+        })
+      };
+    }
+    function isDestructive(op) {
+      if (op.op === 'set_note') { var cur = STATE[op.phase] && STATE[op.phase][op.item]; return !!(cur && cur.n && String(cur.n).trim()); }
+      return false;
+    }
+    function describe(op) { return 'Notiz überschreiben: ' + itemLabel(op.phase, op.item); }
+    function applyOp(op) {
+      if (op.op !== 'set_note') return;
+      if (!STATE[op.phase]) return;
+      if (!STATE[op.phase][op.item]) STATE[op.phase][op.item] = { d: false, n: '' };
+      var note = op.note == null ? '' : String(op.note);
+      STATE[op.phase][op.item].n = note;
+      var item = document.querySelector('.item[data-phase="' + op.phase + '"][data-item="' + op.item + '"]');
+      if (item) {
+        var ta = item.querySelector('textarea'); if (ta) ta.value = note;
+        item.dataset.notesOpen = 'true';
+        var btn = item.querySelector('.item-toggle'); if (btn) btn.textContent = '▾ Notizen';
+      }
+      persist(op.phase, op.item);
+    }
+    function setStatus(text, kind) {
+      if (!statusEl) return;
+      statusEl.style.display = 'block';
+      statusEl.textContent = (kind === 'busy' ? '✨ ' : kind === 'error' ? '⚠️ ' : '✓ ') + text;
+      statusEl.style.color = kind === 'error' ? '#c13030' : '#888';
+    }
+    function go() {
+      var instruction = (input.value || '').trim(); if (!instruction) return;
+      if (!_R) { setStatus('Kein Raum verbunden.', 'error'); return; }
+      sendBtn.disabled = true; input.disabled = true;
+      window.aiUtils.execute({
+        room: _R, tool: 'shop', instruction: instruction, state: buildState(), brand: {},
+        onStatus: setStatus,
+        handlers: { isDestructive: isDestructive, describe: describe, applyOp: applyOp }
+      }).then(function () { input.value = ''; }).catch(function () {})
+        .then(function () { sendBtn.disabled = false; input.disabled = false; input.focus(); });
+    }
+    sendBtn.onclick = go;
+    input.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); go(); } });
+  })();
 })();
 </script>
 

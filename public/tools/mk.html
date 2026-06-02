@@ -8,6 +8,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 <script src="/tools/_shared/iframe-resilience.js"></script>
+<script src="/tools/_shared/ai-utils.js"></script>
 <script>
 var _ROOM = new URLSearchParams(location.search).get('room');
 var _IS_OWNER = new URLSearchParams(location.search).get('owner') === '1';
@@ -561,6 +562,16 @@ body.lb-open { overflow: hidden; }
     <span class="live-pill" id="liveBadge" style="display:none;">
       <span class="live-dot"></span>Live
     </span>
+  </div>
+</div>
+
+<div style="max-width:880px;margin:16px auto 0;padding:0 16px;">
+  <!-- ✨ KI-Agent-Leiste (Freitext) -->
+  <div id="aiBar" style="display:flex;gap:8px;align-items:center;background:#fff;border:.5px solid #e5e0d8;border-radius:12px;padding:10px 12px;flex-wrap:wrap;box-shadow:0 2px 10px rgba(0,0,0,.04);">
+    <span style="font-size:16px;line-height:1;">✨</span>
+    <input id="aiInput" type="text" autocomplete="off" placeholder="Sag der KI was sie tun soll — z.B. „Füll Phase 1 mit Beispiel-Aufgaben und Beschreibungen“" style="flex:1;min-width:200px;font-family:inherit;font-size:13px;border:0;outline:none;background:transparent;color:#1a1a1a;" />
+    <button id="aiSend" type="button" style="font-family:inherit;font-size:12px;font-weight:700;padding:8px 16px;border-radius:8px;border:0;background:#c13030;color:#fff;cursor:pointer;">KI fragen</button>
+    <div id="aiStatus" style="flex-basis:100%;font-size:11px;color:#888;display:none;"></div>
   </div>
 </div>
 
@@ -1375,6 +1386,70 @@ document.addEventListener('keydown', function(e){
 STATE = makeDefaultState();
 render();
 loadRemote();
+
+// ── KI-Agent-Leiste (Marketing): Beispiel-Aufgaben + Notizen, mit Bestätigung ──
+(function initAiBarMK() {
+  var input = document.getElementById('aiInput');
+  var sendBtn = document.getElementById('aiSend');
+  var statusEl = document.getElementById('aiStatus');
+  if (!input || !sendBtn || !window.aiUtils) return;
+
+  function phaseLabel(pid) { var p = PHASES_DEF.find(function (x) { return x.id === pid; }); return p ? p.label : pid; }
+  function findItem(pid, itemId) {
+    var st = STATE.phases && STATE.phases[pid];
+    if (!st || !st.items) return null;
+    return st.items.find(function (it) { return it.id === itemId; });
+  }
+  function buildState() {
+    var phases = [];
+    PHASES_DEF.forEach(function (pd) {
+      var st = (STATE.phases && STATE.phases[pd.id]) || { items: [] };
+      phases.push({
+        id: pd.id, label: pd.label,
+        items: (st.items || []).map(function (it) { return { id: it.id, label: it.label, hasNote: !!(it.notes && it.notes.trim()) }; })
+      });
+    });
+    return { phases: phases };
+  }
+  function isDestructive(op) {
+    if (op.op === 'set_note') { var it = findItem(op.phase, op.itemId); return !!(it && it.notes && it.notes.trim()); }
+    return false;
+  }
+  function describe(op) {
+    if (op.op === 'add_item') return 'Neue Aufgabe in „' + phaseLabel(op.phase) + '": ' + (op.label || '');
+    if (op.op === 'set_note') { var it = findItem(op.phase, op.itemId); return 'Notiz überschreiben: ' + ((it && it.label) || op.itemId); }
+    return op.op || 'Änderung';
+  }
+  function applyOp(op) {
+    if (op.op === 'add_item') {
+      var st = STATE.phases[op.phase]; if (!st) return; if (!st.items) st.items = [];
+      st.items.push({ id: 'cx' + Date.now() + Math.floor(Math.random() * 1000), label: op.label || 'Neue Aufgabe', done: false, notes: op.notes || '', links: [] });
+    } else if (op.op === 'set_note') {
+      var it = findItem(op.phase, op.itemId); if (!it) return;
+      it.notes = op.notes == null ? '' : String(op.notes);
+    }
+    render({ preserveFocus: true }); save();
+  }
+  function setStatus(text, kind) {
+    if (!statusEl) return;
+    statusEl.style.display = 'block';
+    statusEl.textContent = (kind === 'busy' ? '✨ ' : kind === 'error' ? '⚠️ ' : '✓ ') + text;
+    statusEl.style.color = kind === 'error' ? '#c13030' : '#888';
+  }
+  function go() {
+    var instruction = (input.value || '').trim(); if (!instruction) return;
+    if (!_ROOM) { setStatus('Kein Raum verbunden.', 'error'); return; }
+    sendBtn.disabled = true; input.disabled = true;
+    window.aiUtils.execute({
+      room: _ROOM, tool: 'mk', instruction: instruction, state: buildState(), brand: {},
+      onStatus: setStatus,
+      handlers: { isDestructive: isDestructive, describe: describe, applyOp: applyOp }
+    }).then(function () { input.value = ''; }).catch(function () {})
+      .then(function () { sendBtn.disabled = false; input.disabled = false; input.focus(); });
+  }
+  sendBtn.onclick = go;
+  input.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); go(); } });
+})();
 </script>
 
 <div class="lightbox" id="lightbox" hidden>
