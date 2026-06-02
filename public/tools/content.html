@@ -6,6 +6,7 @@
 <script src="/tools/_shared/iframe-resilience.js"></script>
 <link rel="stylesheet" href="/tools/_shared/motion.css">
 <script src="/error-logger.js"></script>
+<script src="/tools/_shared/ai-utils.js"></script>
 
 <script>
 var _R = new URLSearchParams(location.search).get('room'), _D = null;
@@ -268,6 +269,13 @@ body { font-family: 'Montserrat', sans-serif; background: var(--bg); color: var(
 </header>
 
 <main class="main">
+  <!-- ✨ KI-Agent-Leiste (Freitext) -->
+  <div id="aiBar" style="display:flex;gap:8px;align-items:center;background:#fff;border:.5px solid #e5e0d8;border-radius:12px;padding:10px 12px;margin-bottom:14px;flex-wrap:wrap;box-shadow:0 2px 10px rgba(0,0,0,.04);">
+    <span style="font-size:16px;line-height:1;">✨</span>
+    <input id="aiInput" type="text" autocomplete="off" placeholder="Sag der KI was sie tun soll — z.B. „Bau eine Strategie für Streetwear + 3 Video-Ideen“" style="flex:1;min-width:200px;font-family:inherit;font-size:13px;border:0;outline:none;background:transparent;color:#1a1a1a;" />
+    <button id="aiSend" type="button" style="font-family:inherit;font-size:12px;font-weight:700;padding:8px 16px;border-radius:8px;border:0;background:#c13030;color:#fff;cursor:pointer;">KI fragen</button>
+    <div id="aiStatus" style="flex-basis:100%;font-size:11px;color:#888;display:none;"></div>
+  </div>
   <div class="intro">
     <p><strong>Strategien</strong> setzen die Grundrichtung — du kannst mehrere parallel pflegen (z.B. Personal Brand vs. Brand Account). <strong>Videos</strong> sind einzelne Ideen, <strong>Archiv</strong> hält fertige.</p>
   </div>
@@ -1394,6 +1402,130 @@ body { font-family: 'Montserrat', sans-serif; background: var(--bg); color: var(
   } else {
     connTag.textContent = '· lokal (kein Raum)';
   }
+
+  // ── KI-Agent-Leiste (Freitext → Operationen, mit Bestätigung für destruktive) ──
+  (function initAiBar() {
+    var input = document.getElementById('aiInput');
+    var sendBtn = document.getElementById('aiSend');
+    var statusEl = document.getElementById('aiStatus');
+    if (!input || !sendBtn || !window.aiUtils) return;
+
+    // Brand-Kontext einmalig aus Brand-Identity-Daten laden (für bessere Vorschläge)
+    var BRAND = {};
+    if (_R && _D) {
+      try {
+        _D.ref('rooms/' + _R + '/data/fields').once('value').then(function (s) {
+          var f = s.val() || {}, out = {};
+          Object.keys(f).forEach(function (k) {
+            var fld = f[k] || {}, label = fld.label || k, text = fld.text || '';
+            if (text && String(text).trim()) out[label] = String(text).slice(0, 400);
+          });
+          BRAND = out;
+        }).catch(function () {});
+      } catch (e) {}
+    }
+
+    function buildState() {
+      var strat = Object.keys(STRATEGIES).map(function (id) {
+        var s = STRATEGIES[id] || {};
+        return { id: id, name: s.name || '', richtung: s.richtung || '', nische: s.nische || '' };
+      });
+      var vids = Object.keys(VIDEOS).filter(function (id) { return !VIDEOS[id].archived; }).map(function (id) {
+        var v = VIDEOS[id] || {};
+        return { id: id, title: v.title || '', status: v.status || '' };
+      });
+      return { strategies: strat, videos: vids };
+    }
+
+    var STRAT_KEYS = STRATEGY_FIELDS.map(function (f) { return f.k; });
+    function setStrat(s, d) {
+      if (d.name != null) s.name = String(d.name);
+      STRAT_KEYS.forEach(function (k) { if (d[k] != null) s[k] = String(d[k]); });
+    }
+    var VID_KEYS = ['title', 'videoTyp', 'hook', 'idee', 'link', 'status'];
+    function setVid(v, d) { VID_KEYS.forEach(function (k) { if (d[k] != null) v[k] = String(d[k]); }); }
+
+    function isDestructive(op) {
+      var d = op.data || {};
+      if (op.op === 'delete_strategy' || op.op === 'delete_video') return true;
+      if (op.op === 'update_strategy') {
+        var s = STRATEGIES[op.id]; if (!s) return false;
+        return Object.keys(d).some(function (k) { return isFilled(s[k]) && String(s[k]) !== String(d[k]); });
+      }
+      if (op.op === 'update_video') {
+        var v = VIDEOS[op.id]; if (!v) return false;
+        return Object.keys(d).some(function (k) { return isFilled(v[k]) && String(v[k]) !== String(d[k]); });
+      }
+      return false;
+    }
+
+    function describe(op) {
+      var d = op.data || {};
+      if (op.op === 'add_strategy') return 'Neue Strategie „' + (d.name || 'ohne Titel') + '" anlegen';
+      if (op.op === 'update_strategy') return 'Strategie ändern: ' + ((STRATEGIES[op.id] || {}).name || op.id);
+      if (op.op === 'delete_strategy') return 'Strategie LÖSCHEN: ' + ((STRATEGIES[op.id] || {}).name || op.id);
+      if (op.op === 'add_video') return 'Neues Video „' + (d.title || 'ohne Titel') + '" anlegen';
+      if (op.op === 'update_video') return 'Video ändern: ' + ((VIDEOS[op.id] || {}).title || op.id);
+      if (op.op === 'delete_video') return 'Video LÖSCHEN: ' + ((VIDEOS[op.id] || {}).title || op.id);
+      return op.op || 'Änderung';
+    }
+
+    function applyOp(op) {
+      var d = op.data || {};
+      if (op.op === 'add_strategy') {
+        var id = genId('s'), s = makeEmptyStrategy(d.name || ''); setStrat(s, d);
+        STRATEGIES[id] = s; activeStrategyId = id; persistStrategy(id);
+        renderStrategyChips(); renderStrategyDetail(); updateStrategyCount(); updateProgress();
+      } else if (op.op === 'update_strategy') {
+        var s2 = STRATEGIES[op.id]; if (!s2) return; setStrat(s2, d); persistStrategy(op.id);
+        renderStrategyChips(); if (op.id === activeStrategyId) renderStrategyDetail(); updateProgress();
+      } else if (op.op === 'delete_strategy') {
+        if (!STRATEGIES[op.id]) return;
+        delete STRATEGIES[op.id];
+        if (_R && _D) _D.ref('rooms/' + _R + '/content/strategies/' + op.id).remove().catch(function () {});
+        if (activeStrategyId === op.id) { var rem = sortedStrategyIds(); activeStrategyId = rem.length ? rem[0] : null; }
+        delete STRATEGY_REFS[op.id];
+        renderStrategyChips(); renderStrategyDetail(); updateStrategyCount(); updateProgress();
+      } else if (op.op === 'add_video') {
+        var vid = genId('v'), v = makeEmptyVideo(); setVid(v, d);
+        VIDEOS[vid] = v;
+        var em = videosWrapEl && videosWrapEl.querySelector('.empty-slots'); if (em) clearChildren(videosWrapEl);
+        renderVideoCard(vid, false); persistVideo(vid); updateVideoCount(); updateProgress();
+      } else if (op.op === 'update_video') {
+        var v2 = VIDEOS[op.id]; if (!v2) return; setVid(v2, d); persistVideo(op.id);
+        removeVideoCardFromDOM(op.id); renderVideoCard(op.id, !!v2.archived); updateProgress();
+      } else if (op.op === 'delete_video') {
+        if (!VIDEOS[op.id]) return;
+        delete VIDEOS[op.id]; removeVideoCardFromDOM(op.id);
+        if (_R && _D) _D.ref('rooms/' + _R + '/content/videos/' + op.id).remove().catch(function () {});
+        if (countActiveVideos() === 0) renderEmptyVideos();
+        updateVideoCount(); updateProgress();
+      }
+    }
+
+    function setStatus(text, kind) {
+      if (!statusEl) return;
+      statusEl.style.display = 'block';
+      statusEl.textContent = (kind === 'busy' ? '✨ ' : kind === 'error' ? '⚠️ ' : '✓ ') + text;
+      statusEl.style.color = kind === 'error' ? '#c13030' : '#888';
+    }
+
+    function go() {
+      var instruction = (input.value || '').trim();
+      if (!instruction) return;
+      if (!_R) { setStatus('Kein Raum verbunden.', 'error'); return; }
+      sendBtn.disabled = true; input.disabled = true;
+      window.aiUtils.execute({
+        room: _R, tool: 'content', instruction: instruction,
+        state: buildState(), brand: BRAND,
+        onStatus: setStatus,
+        handlers: { isDestructive: isDestructive, describe: describe, applyOp: applyOp }
+      }).then(function () { input.value = ''; }).catch(function () {})
+        .then(function () { sendBtn.disabled = false; input.disabled = false; input.focus(); });
+    }
+    sendBtn.onclick = go;
+    input.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); go(); } });
+  })();
 })();
 </script>
 </body>
