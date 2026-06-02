@@ -4,6 +4,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 <script src="/tools/_shared/iframe-resilience.js"></script>
+<script src="/tools/_shared/ai-utils.js"></script>
 <script>
 var _R = new URLSearchParams(location.search).get('room'), _D = null;
 try {
@@ -303,6 +304,14 @@ body { font-family: 'Montserrat', sans-serif; background: var(--bg); color: var(
 <main class="main">
   <div class="intro">
     <p>Profile, Highlights, Captions & WhatsApp — alles Live-synchron mit deinem Team. <strong>Strategie & Video-Ideen</strong> findest du im neuen <strong>Content-Tool</strong>.</p>
+  </div>
+
+  <!-- ✨ KI-Agent-Leiste (Freitext) -->
+  <div id="aiBar" style="display:flex;gap:8px;align-items:center;background:#fff;border:.5px solid #e5e0d8;border-radius:12px;padding:10px 12px;margin-bottom:16px;flex-wrap:wrap;box-shadow:0 2px 10px rgba(0,0,0,.04);">
+    <span style="font-size:16px;line-height:1;">✨</span>
+    <input id="aiInput" type="text" autocomplete="off" placeholder="Sag der KI was sie tun soll — z.B. „Schreib eine Instagram-Bio und 3 WhatsApp-Perks“" style="flex:1;min-width:200px;font-family:inherit;font-size:13px;border:0;outline:none;background:transparent;color:#1a1a1a;" />
+    <button id="aiSend" type="button" style="font-family:inherit;font-size:12px;font-weight:700;padding:8px 16px;border-radius:8px;border:0;background:#c13030;color:#fff;cursor:pointer;">KI fragen</button>
+    <div id="aiStatus" style="flex-basis:100%;font-size:11px;color:#888;display:none;"></div>
   </div>
 
   <div id="sections"></div>
@@ -749,6 +758,67 @@ body { font-family: 'Montserrat', sans-serif; background: var(--bg); color: var(
   } else {
     connTag.textContent = '· lokal (kein Raum)';
   }
+
+  // ── KI-Agent-Leiste (Freitext → set_field, mit Bestätigung bei Überschreiben) ──
+  (function initAiBarSocial() {
+    var input = document.getElementById('aiInput');
+    var sendBtn = document.getElementById('aiSend');
+    var statusEl = document.getElementById('aiStatus');
+    if (!input || !sendBtn || !window.aiUtils) return;
+
+    function buildState() {
+      var out = {};
+      Object.keys(STATE || {}).forEach(function (sec) {
+        var keys = STATE[sec] || {};
+        Object.keys(keys).forEach(function (k) {
+          var v = keys[k];
+          if (v && String(v).trim()) out[sec + '.' + k] = String(v).slice(0, 120);
+        });
+      });
+      return out;
+    }
+    function ref(section, key) { return FIELD_REFS[section] && FIELD_REFS[section][key]; }
+
+    function isDestructive(op) {
+      if (op.op !== 'set_field') return false;
+      var cur = STATE[op.section] && STATE[op.section][op.key];
+      return !!(cur && String(cur).trim() && String(cur) !== String(op.value));
+    }
+    function describe(op) {
+      var r = ref(op.section, op.key);
+      var label = (r && r.item && r.item.label) || (op.section + '.' + op.key);
+      return 'Feld „' + label + '" überschreiben';
+    }
+    function applyOp(op) {
+      if (op.op !== 'set_field') return;
+      var r = ref(op.section, op.key); if (!r) return; // unbekanntes Feld ignorieren
+      if (!STATE[op.section]) STATE[op.section] = {};
+      var val = op.value == null ? '' : String(op.value);
+      STATE[op.section][op.key] = val;
+      r.applyValue(val);
+      persist(op.section, op.key);
+    }
+
+    function setStatus(text, kind) {
+      if (!statusEl) return;
+      statusEl.style.display = 'block';
+      statusEl.textContent = (kind === 'busy' ? '✨ ' : kind === 'error' ? '⚠️ ' : '✓ ') + text;
+      statusEl.style.color = kind === 'error' ? '#c13030' : '#888';
+    }
+    function go() {
+      var instruction = (input.value || '').trim(); if (!instruction) return;
+      if (!_R) { setStatus('Kein Raum verbunden.', 'error'); return; }
+      sendBtn.disabled = true; input.disabled = true;
+      window.aiUtils.execute({
+        room: _R, tool: 'social', instruction: instruction, state: buildState(), brand: {},
+        onStatus: setStatus,
+        handlers: { isDestructive: isDestructive, describe: describe, applyOp: applyOp }
+      }).then(function () { input.value = ''; }).catch(function () {})
+        .then(function () { sendBtn.disabled = false; input.disabled = false; input.focus(); });
+    }
+    sendBtn.onclick = go;
+    input.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); go(); } });
+  })();
 })();
 </script>
 </body>

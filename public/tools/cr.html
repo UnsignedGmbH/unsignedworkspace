@@ -4,6 +4,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 <script src="/tools/_shared/iframe-resilience.js"></script>
+<script src="/tools/_shared/ai-utils.js"></script>
 <script>
 var _R = new URLSearchParams(location.search).get('room');
 var _D = null;
@@ -162,6 +163,14 @@ body { font-family: 'Montserrat', sans-serif; background: var(--bg); color: var(
 </div>
 
 <div class="main">
+
+  <!-- ✨ KI-Agent-Leiste (Freitext) -->
+  <div id="aiBar" style="display:flex;gap:8px;align-items:center;background:#fff;border:.5px solid #e5e0d8;border-radius:12px;padding:10px 12px;margin-bottom:18px;flex-wrap:wrap;box-shadow:0 2px 10px rgba(0,0,0,.04);">
+    <span style="font-size:16px;line-height:1;">✨</span>
+    <input id="aiInput" type="text" autocomplete="off" placeholder="Sag der KI was sie tun soll — z.B. „Aktualisiere die Trends“ oder „3 Outfit-Ideen“" style="flex:1;min-width:200px;font-family:inherit;font-size:13px;border:0;outline:none;background:transparent;color:#1a1a1a;" />
+    <button id="aiSend" type="button" style="font-family:inherit;font-size:12px;font-weight:700;padding:8px 16px;border-radius:8px;border:0;background:#c13030;color:#fff;cursor:pointer;">KI fragen</button>
+    <div id="aiStatus" style="flex-basis:100%;font-size:11px;color:#888;display:none;"></div>
+  </div>
 
   <div class="intro-block">
     <h2>Brand Briefing</h2>
@@ -598,6 +607,106 @@ function applyCustomItems(custom) {
     if (custom['notes-'+i] !== undefined && document.activeElement !== ta) ta.value = custom['notes-'+i];
   });
 }
+</script>
+<script>
+// ── KI-Agent-Leiste (Freitext → Operationen auf cr_items, mit Bestätigung) ──
+(function initAiBarCR() {
+  var input = document.getElementById('aiInput');
+  var sendBtn = document.getElementById('aiSend');
+  var statusEl = document.getElementById('aiStatus');
+  if (!input || !sendBtn || !window.aiUtils) return;
+
+  var CATS = ['outfit', 'speech', 'collab', 'trends', 'free'];
+  var SVGNS = 'http://www.w3.org/2000/svg';
+  function catEl(cat) { return document.getElementById('cat-' + cat); }
+
+  // Item-DOM wie addItem(), per createElement (kein innerHTML), mit Inhalt, ohne Fokus
+  function buildItem(cat, text, hook) {
+    var div = document.createElement('div');
+    div.className = 'check-item';
+    div.dataset.cat = cat;
+    var box = document.createElement('div'); box.className = 'check-box';
+    var svg = document.createElementNS(SVGNS, 'svg');
+    svg.setAttribute('class', 'check-icon'); svg.setAttribute('viewBox', '0 0 10 8'); svg.setAttribute('fill', 'none');
+    var path = document.createElementNS(SVGNS, 'path');
+    path.setAttribute('d', 'M1 4L3.5 6.5L9 1'); path.setAttribute('stroke', 'white');
+    path.setAttribute('stroke-width', '1.8'); path.setAttribute('stroke-linecap', 'round'); path.setAttribute('stroke-linejoin', 'round');
+    svg.appendChild(path); box.appendChild(svg);
+    var content = document.createElement('div'); content.className = 'check-content';
+    var t = document.createElement('p'); t.className = 'check-title'; t.setAttribute('contenteditable', 'true'); t.setAttribute('spellcheck', 'false'); t.textContent = text || '';
+    var h = document.createElement('p'); h.className = 'check-hook'; h.setAttribute('contenteditable', 'true'); h.setAttribute('spellcheck', 'false'); h.textContent = hook || '';
+    content.appendChild(t); content.appendChild(h);
+    var del = document.createElement('button'); del.className = 'delete-btn'; del.title = 'Löschen'; del.textContent = '×';
+    div.appendChild(box); div.appendChild(content); div.appendChild(del);
+    box.addEventListener('pointerdown', function (e) { e.preventDefault(); toggleItem(div); });
+    del.addEventListener('pointerdown', function (e) {
+      e.preventDefault(); e.stopPropagation(); div.remove();
+      try { persistState(); } catch (x) {} saveCustomItems(); updateProgress();
+    });
+    t.addEventListener('blur', function () { saveCustomItems(); });
+    h.addEventListener('blur', function () { saveCustomItems(); });
+    return div;
+  }
+
+  function buildState() {
+    var out = {};
+    CATS.forEach(function (cat) {
+      var el = catEl(cat); if (!el) return;
+      var arr = [];
+      el.querySelectorAll('.check-item').forEach(function (it) {
+        var t = it.querySelector('.check-title'), h = it.querySelector('.check-hook');
+        arr.push({ text: t ? t.textContent.trim() : '', hook: h ? h.textContent.trim() : '' });
+      });
+      out[cat] = arr;
+    });
+    return out;
+  }
+
+  function isDestructive(op) {
+    if (op.op === 'set_items') { var el = catEl(op.cat); return !!(el && el.querySelectorAll('.check-item').length); }
+    if (op.op === 'delete_item') return true;
+    return false; // add_item
+  }
+  function describe(op) {
+    if (op.op === 'add_item') return 'Neue Idee in „' + op.cat + '": ' + (op.text || '').slice(0, 60);
+    if (op.op === 'set_items') return 'Alle Einträge in „' + op.cat + '" ERSETZEN (' + ((op.items || []).length) + ' neue)';
+    if (op.op === 'delete_item') return 'Eintrag #' + (((op.index || 0)) + 1) + ' in „' + op.cat + '" LÖSCHEN';
+    return op.op || 'Änderung';
+  }
+  function applyOp(op) {
+    var el = catEl(op.cat); if (!el) return;
+    if (op.op === 'add_item') {
+      el.appendChild(buildItem(op.cat, op.text, op.hook));
+    } else if (op.op === 'set_items') {
+      el.querySelectorAll('.check-item').forEach(function (it) { it.remove(); });
+      (op.items || []).forEach(function (x) { el.appendChild(buildItem(op.cat, x.text, x.hook)); });
+    } else if (op.op === 'delete_item') {
+      var items = el.querySelectorAll('.check-item'); var idx = op.index || 0;
+      if (items[idx]) items[idx].remove();
+    }
+    saveCustomItems(); updateProgress();
+  }
+
+  function setStatus(text, kind) {
+    if (!statusEl) return;
+    statusEl.style.display = 'block';
+    statusEl.textContent = (kind === 'busy' ? '✨ ' : kind === 'error' ? '⚠️ ' : '✓ ') + text;
+    statusEl.style.color = kind === 'error' ? '#c13030' : '#888';
+  }
+  function go() {
+    var instruction = (input.value || '').trim(); if (!instruction) return;
+    if (!_R) { setStatus('Kein Raum verbunden.', 'error'); return; }
+    sendBtn.disabled = true; input.disabled = true;
+    window.aiUtils.execute({
+      room: _R, tool: 'cr', instruction: instruction, state: buildState(), brand: {},
+      onStatus: setStatus,
+      handlers: { isDestructive: isDestructive, describe: describe, applyOp: applyOp }
+    }).then(function () { input.value = ''; }).catch(function () {})
+      .then(function () { sendBtn.disabled = false; input.disabled = false; input.focus(); });
+  }
+  sendBtn.onclick = go;
+  input.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); go(); } });
+})();
 </script>
 <div id="saved-toast">Gespeichert ✓</div>
 </body>
