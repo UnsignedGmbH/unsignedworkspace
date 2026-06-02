@@ -43,6 +43,12 @@
   --font-script: "Dancing Script", cursive;
 
   --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
+
+  /* Motion-System: einheitliche Dauern + Easings (subtil & schnell) */
+  --dur-fast: 0.15s;
+  --dur: 0.2s;
+  --dur-slow: 0.26s;
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
 }
 
 @layer base {
@@ -111,6 +117,45 @@
     }
     50% {
       box-shadow: 0 0 0 8px rgba(255, 255, 255, 0);
+    }
+  }
+
+  /* ── Motion-System: View-Übergänge + Stagger ──────────────────── */
+  @keyframes viewInRight {
+    from { opacity: 0; transform: translate3d(14px, 0, 0); }
+    to   { opacity: 1; transform: translate3d(0, 0, 0); }
+  }
+  @keyframes viewInLeft {
+    from { opacity: 0; transform: translate3d(-14px, 0, 0); }
+    to   { opacity: 1; transform: translate3d(0, 0, 0); }
+  }
+  @keyframes scaleIn {
+    from { opacity: 0; transform: scale(0.97); }
+    to   { opacity: 1; transform: scale(1); }
+  }
+  .view-enter-right {
+    animation: viewInRight var(--dur-slow) var(--ease-out-quart) both;
+  }
+  .view-enter-left {
+    animation: viewInLeft var(--dur-slow) var(--ease-out-quart) both;
+  }
+  .anim-scale-in {
+    animation: scaleIn var(--dur) var(--ease-out-quart) both;
+  }
+  /* Gestaffeltes Einblenden von Listen/Grids: Delay pro Kind via inline style. */
+  .stagger > * {
+    animation: fadeUp var(--dur-slow) var(--ease-out-quart) both;
+  }
+
+  /* ── Accessibility: Bewegung reduzieren wenn vom System gewünscht ── */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+      scroll-behavior: auto !important;
     }
   }
 

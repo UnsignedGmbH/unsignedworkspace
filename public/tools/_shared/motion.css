@@ -1,0 +1,63 @@
+/* Gemeinsames Motion-Stylesheet für alle Tool-iframes.
+ *
+ * Eingebunden via: <link rel="stylesheet" href="/tools/_shared/motion.css">
+ * Rein additiv — fällt die Datei aus, funktionieren die Tools unverändert.
+ *
+ * Prinzip: subtil & schnell. Nur transform + opacity (GPU-freundlich).
+ * Enter-Animationen auf den "aktiv"-Klassen (.on/.active/.open) feuern sauber,
+ * weil das Element beim Sichtbarwerden (display:none → block/flex) neu rendert.
+ * Exits bleiben sofort (bewusst, ruckelfrei). prefers-reduced-motion wird respektiert.
+ *
+ * Bewusst NICHT enthalten: Einblende-Animation für einzelne Items
+ * (Moodboard-Bilder, Kanban-Karten) — die Grids rendern bei jedem Firebase-Sync
+ * komplett neu und würden sonst bei jedem Speichern flackern.
+ */
+
+:root {
+  --mo-dur: 0.2s;
+  --mo-dur-slow: 0.26s;
+  --mo-ease: cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+@keyframes moFadeUp {
+  from { opacity: 0; transform: translate3d(0, 6px, 0); }
+  to   { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+@keyframes moScaleIn {
+  from { opacity: 0; transform: scale(0.97); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+/* ── Sektion-/Tab-Wechsel: sanftes Rein-/Hochgleiten statt hartem Schnitt ── */
+.sec.on,
+.section.on,
+.section.active,
+.osec.on {
+  animation: moFadeUp var(--mo-dur) var(--mo-ease) both;
+}
+
+/* ── Modals & Lightboxen: sanftes Scale-in beim Öffnen ── */
+.lb.open,
+.lbEl.on,
+.modal-bg.open,
+.modal-overlay.open,
+.mov.open {
+  animation: moScaleIn var(--mo-dur) var(--mo-ease) both;
+  transform-origin: center;
+}
+
+/* ── Mikro-Interaktion: dezentes Press-Feedback auf Buttons ── */
+button:active {
+  transform: scale(0.985);
+}
+
+/* ── Accessibility: Bewegung reduzieren wenn vom System gewünscht ── */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}

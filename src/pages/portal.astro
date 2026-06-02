@@ -716,12 +716,28 @@ import BrandworkTimeline from "../components/BrandworkTimeline.astro";
       frame.src = url;
     }
 
+    // Enter-Animation: Klasse setzen + nach Abschluss entfernen (damit sie
+    // beim nächsten Wechsel neu feuert). Respektiert prefers-reduced-motion via CSS.
+    function _enterAnim(el, cls) {
+      if (!el) return;
+      el.classList.remove("view-enter-right", "view-enter-left");
+      // reflow erzwingen, damit die Animation auch bei schnellem Re-Trigger neu startet
+      void el.offsetWidth;
+      el.classList.add(cls);
+      el.addEventListener("animationend", function h() {
+        el.classList.remove(cls);
+        el.removeEventListener("animationend", h);
+      });
+    }
+
     function openTool(toolId, extraParams) {
       var t = TOOLS.find(function (x) { return x.id === toolId; });
       if (!t) return;
       currentTool = toolId;
       document.getElementById("overviewView").classList.add("hidden");
-      document.getElementById("toolView").classList.remove("hidden");
+      var tv = document.getElementById("toolView");
+      tv.classList.remove("hidden");
+      _enterAnim(tv, "view-enter-right");
       document.getElementById("toolCrumb").textContent = t.icon + " " + t.label;
       var url = "/tools/" + toolId + ".html?room=" + encodeURIComponent(room) + "&owner=1&role=customer";
       if (extraParams && typeof extraParams === 'object') {
@@ -750,7 +766,9 @@ import BrandworkTimeline from "../components/BrandworkTimeline.astro";
       _toolLoaded = false;
       _hideToolOverlays();
       document.getElementById("toolView").classList.add("hidden");
-      document.getElementById("overviewView").classList.remove("hidden");
+      var ov = document.getElementById("overviewView");
+      ov.classList.remove("hidden");
+      _enterAnim(ov, "view-enter-left");
       frame.src = "about:blank";
       pingFn(null);
       // Wichtig: Grid neu rendern. Listener haben TOOL_PROGRESS waehrend der
