@@ -39,42 +39,115 @@ function initAdmin() {
   }
 }
 
-// ── Cross-Tool-Kontext ("Gedächtnis"): liest einen kompakten Querschnitt aus dem
-// Raum (Brand Identity + Content-Strategien + Social-Basics), damit die KI in JEDEM
-// Tool auf die Brand zugreifen kann. Serverseitig (firebase-admin), längenbegrenzt.
-async function gatherRoomContext(room) {
-  if (!initAdmin()) return null;
-  var db = admin.database();
-  var ctx = {};
-  try {
-    // Brand Identity = Fundament (rooms/<room>/data/fields)
-    var biSnap = await db.ref('rooms/' + room + '/data/fields').once('value');
-    var f = biSnap.val() || {};
+// ── Cross-Tool-Kontext + lernendes "Brand-Brain" pro Kunde ────────────────────
+// Liest EINEN Querschnitt aus ALLEN Tools des Kunden (ein Read auf rooms/<room>),
+// destilliert daraus ein knappes Kunden-Profil ("Brand-Brain") und speichert es.
+// Das Profil wird aufgefrischt wenn sich die Daten aendern (gehasht) → die Antworten
+// werden mit der Zeit treffender. Serverseitig, laengenbegrenzt.
+
+function _s(v, n) { return v == null ? '' : String(v).slice(0, n || 300); }
+function simpleHash(str) {
+  var h = 5381;
+  for (var i = 0; i < str.length; i++) h = ((h << 5) + h + str.charCodeAt(i)) >>> 0;
+  return h.toString(36);
+}
+
+// Kompakten Text-Digest aus dem kompletten Raum-Snapshot ziehen (nur Text, keine Bilder)
+function buildDigest(R) {
+  if (!R || typeof R !== 'object') return {};
+  var d = {};
+  try { // Brand Identity
+    var f = (R.data && R.data.fields) || {};
     var bi = {};
-    Object.keys(f).forEach(function (k) {
-      var fld = f[k] || {};
-      var label = fld.label || k, text = fld.text || '';
-      if (text && String(text).trim()) bi[label] = String(text).slice(0, 500);
+    Object.keys(f).forEach(function (k) { var fl = f[k] || {}; if (fl.text && String(fl.text).trim()) bi[fl.label || k] = _s(fl.text, 400); });
+    if (Object.keys(bi).length) d.brandIdentity = bi;
+  } catch (e) {}
+  try { // Content
+    var strat = (R.content && R.content.strategies) || {};
+    var ss = Object.keys(strat).map(function (id) { var s = strat[id] || {}; return { name: _s(s.name, 80), richtung: _s(s.richtung, 140), nische: _s(s.nische, 140), story: _s(s.story, 220) }; }).filter(function (s) { return s.name || s.richtung || s.nische; }).slice(0, 5);
+    if (ss.length) d.contentStrategien = ss;
+    var vids = (R.content && R.content.videos) || {};
+    var vt = Object.keys(vids).map(function (id) { return _s((vids[id] || {}).title, 80); }).filter(Boolean).slice(0, 12);
+    if (vt.length) d.contentVideos = vt;
+  } catch (e) {}
+  try { // Social
+    var ig = (R.social && R.social.instagram) || {};
+    var so = {};
+    if (ig.slogan) so.slogan = _s(ig.slogan, 140);
+    if (ig.subline) so.subline = _s(ig.subline, 140);
+    if (Object.keys(so).length) d.social = so;
+  } catch (e) {}
+  try { // Shooting
+    var prods = (R.sh && R.sh.ug_products_v2) || [];
+    if (Array.isArray(prods)) { var pn = prods.map(function (p) { return _s(p && p.name, 60); }).filter(Boolean).slice(0, 8); if (pn.length) d.shootingProdukte = pn; }
+  } catch (e) {}
+  try { // Marketing (Item-Labels mit Notiz)
+    var mph = (R.mk && R.mk.phases) || {};
+    var mkItems = [];
+    Object.keys(mph).forEach(function (pid) { var items = (mph[pid] && mph[pid].items) || []; (Array.isArray(items) ? items : Object.values(items)).forEach(function (it) { if (it && it.label) mkItems.push(_s(it.label, 60) + (it.notes ? (': ' + _s(it.notes, 80)) : '')); }); });
+    if (mkItems.length) d.marketing = mkItems.slice(0, 12);
+  } catch (e) {}
+  try { // Shop (gefuellte Notizen)
+    var shopNotes = [];
+    var sd = R.shop || {};
+    Object.keys(sd).forEach(function (pk) { var ph = sd[pk] || {}; Object.keys(ph).forEach(function (ik) { var it = ph[ik] || {}; if (it.n && String(it.n).trim()) shopNotes.push(_s(it.n, 90)); }); });
+    if (shopNotes.length) d.shopNotizen = shopNotes.slice(0, 10);
+  } catch (e) {}
+  try { // Creator Guide (inkl. Trends)
+    var cr = R.cr_items || {};
+    var crT = (cr['cat-trends'] || []).map(function (it) { return _s(it && it.text, 80); }).filter(Boolean).slice(0, 8);
+    if (crT.length) d.creatorTrends = crT;
+  } catch (e) {}
+  return d;
+}
+
+// Brand-Brain via LLM destillieren (knappes Kunden-Profil)
+async function distillBrain(digest, apiKey) {
+  try {
+    var sys = 'Erstelle ein knappes, scharfes "Brand-Brain" für diesen Kunden aus den gegebenen Tool-Daten. ' +
+      'Stichpunkte auf Deutsch (max ~180 Wörter): Positionierung, Zielgruppe, Nische, Tonalität/Stil, ' +
+      'wiederkehrende Themen, Do\'s & Don\'ts. NUR das Profil, kein Vorspann, kein JSON.';
+    var resp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'authorization': 'Bearer ' + apiKey },
+      body: JSON.stringify({
+        model: MODEL, temperature: 0.4, max_tokens: 500,
+        messages: [
+          { role: 'system', content: sys },
+          { role: 'user', content: 'TOOL-DATEN:\n' + JSON.stringify(digest).slice(0, 7000) }
+        ]
+      })
     });
-    if (Object.keys(bi).length) ctx.brandIdentity = bi;
-  } catch (e) {}
-  try {
-    // Content-Strategien (Kurzfassung)
-    var sSnap = await db.ref('rooms/' + room + '/content/strategies').once('value');
-    var strat = sSnap.val() || {};
-    var strategies = Object.keys(strat).map(function (id) {
-      var s = strat[id] || {};
-      return { name: s.name || '', richtung: s.richtung || '', nische: s.nische || '' };
-    }).filter(function (s) { return s.name || s.richtung || s.nische; }).slice(0, 5);
-    if (strategies.length) ctx.contentStrategien = strategies;
-  } catch (e) {}
-  try {
-    // Social-Profil-Basics
-    var igSnap = await db.ref('rooms/' + room + '/social/instagram').once('value');
-    var ig = igSnap.val() || {};
-    if (ig.slogan || ig.subline) ctx.socialProfil = { slogan: ig.slogan || '', subline: ig.subline || '' };
-  } catch (e) {}
-  return Object.keys(ctx).length ? ctx : null;
+    var j = await resp.json();
+    if (!resp.ok) return '';
+    var t = j && j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content;
+    return _s(t, 2000);
+  } catch (e) { return ''; }
+}
+
+// Liefert { brain, digest } — frischt das Brand-Brain auf wenn Daten sich aendern.
+async function getBrainAndContext(room, apiKey) {
+  if (!initAdmin()) return { brain: '', digest: {} };
+  var db = admin.database();
+  var R;
+  try { R = (await db.ref('rooms/' + room).once('value')).val() || {}; } catch (e) { return { brain: '', digest: {} }; }
+  var digest = buildDigest(R);
+  var digestStr = JSON.stringify(digest);
+  if (digestStr.length < 15) return { brain: '', digest: {} }; // noch keine Daten
+  var hash = simpleHash(digestStr);
+  var prof = (R._ai && R._ai.profile) || null;
+  var brain = (prof && prof.text) || '';
+  var now = Date.now();
+  var changed = !prof || prof.hash !== hash;
+  var cooled = !prof || !prof.updatedAt || (now - prof.updatedAt > 2 * 3600 * 1000); // max ~alle 2h auffrischen
+  if ((!brain || changed) && (cooled || !brain)) {
+    var fresh = await distillBrain(digest, apiKey);
+    if (fresh) {
+      brain = fresh;
+      try { await db.ref('rooms/' + room + '/_ai/profile').set({ text: brain, hash: hash, updatedAt: now }); } catch (e) {}
+    }
+  }
+  return { brain: brain, digest: digest };
 }
 
 // ── Prompt-Templates pro Tool (bleiben serverseitig) ──────────────────────────
@@ -279,12 +352,15 @@ function systemPromptFor(tool) {
   return 'Antworte ausschließlich mit einem JSON-Objekt {"summary":"","operations":[]}.';
 }
 
-function buildUserMessage(instruction, state, brand) {
+function buildUserMessage(instruction, state, brain, digest) {
   const parts = [];
-  if (brand && Object.keys(brand).length) {
-    parts.push('BRAND-KONTEXT (Daten aus den anderen Tools dieses Kunden — nutze sie für konsistente, passende Vorschläge):\n' + JSON.stringify(brand).slice(0, 6000));
+  if (brain) {
+    parts.push('KUNDEN-PROFIL (von der KI über die Zeit aus allen Tools gelernt — nutze es für konsistente, treffende Vorschläge):\n' + String(brain).slice(0, 2500));
   }
-  parts.push('AKTUELLER ZUSTAND (ids + Kurzfelder):\n' + JSON.stringify(state || {}).slice(0, 8000));
+  if (digest && Object.keys(digest).length) {
+    parts.push('AKTUELLE DATEN AUS DEN TOOLS DES KUNDEN:\n' + JSON.stringify(digest).slice(0, 5000));
+  }
+  parts.push('AKTUELLER ZUSTAND (aktuelles Tool):\n' + JSON.stringify(state || {}).slice(0, 7000));
   parts.push('BEFEHL DES NUTZERS:\n' + String(instruction || '').slice(0, 2000));
   return parts.join('\n\n');
 }
@@ -334,10 +410,13 @@ export default async function handler(req, res) {
     } catch (e) { /* Limit nicht kritisch — im Zweifel durchlassen */ }
   }
 
-  // ── Cross-Tool-Kontext ("Gedächtnis") aus dem Raum holen + mit Client-Brand mergen ──
-  let roomCtx = null;
-  try { roomCtx = await gatherRoomContext(room); } catch (e) {}
-  const mergedBrand = Object.assign({}, roomCtx || {}, body.brand || {});
+  // ── Brand-Brain + Cross-Tool-Daten holen (lernendes Kunden-Profil) ──
+  let brain = '', digest = {};
+  try { var bc = await getBrainAndContext(room, apiKey); brain = bc.brain || ''; digest = bc.digest || {}; } catch (e) {}
+  // Client kann zusätzlichen Brand-Kontext mitgeben (z.B. aktuelles Tool) → in digest mergen
+  if (body.brand && typeof body.brand === 'object' && Object.keys(body.brand).length) {
+    digest = Object.assign({}, digest, { _clientKontext: body.brand });
+  }
 
   // ── Groq-Call (OpenAI-kompatibel, JSON-Modus) ───────────────────────────────
   let apiJson;
@@ -352,7 +431,7 @@ export default async function handler(req, res) {
         response_format: { type: 'json_object' },
         messages: [
           { role: 'system', content: systemPromptFor(tool) },
-          { role: 'user', content: buildUserMessage(instruction, body.state, mergedBrand) },
+          { role: 'user', content: buildUserMessage(instruction, body.state, brain, digest) },
         ],
       }),
     });
