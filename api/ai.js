@@ -1,21 +1,24 @@
-// Vercel Serverless Function — KI-Agent (Google Gemini, kostenloses Kontingent).
+// Vercel Serverless Function — KI-Agent (Groq, kostenloses Kontingent).
 //
 // Nimmt einen Freitext-Befehl + den aktuellen Tool-Zustand entgegen und liefert eine
 // Liste von OPERATIONEN (add/update/delete) zurück, die der Client anwendet. Der
-// API-Key liegt ausschließlich serverseitig (env GEMINI_API_KEY).
+// API-Key liegt ausschließlich serverseitig (env GROQ_API_KEY).
 //
-// Sicherheit/Kosten: per-Raum-Tageslimit (Kunden dürfen die KI auslösen) + begrenzte
-// Antwortlänge. Single-Turn (kein autonomer Loop) → planbar, bleibt unter Vercel-Timeout.
+// Groq ist OpenAI-API-kompatibel (chat/completions, JSON-Modus). Gratis-Kontingent
+// ist verlässlich verfügbar (kein Region-/„limit 0"-Theater wie bei Gemini).
+//
+// Sicherheit/Kosten: per-Raum-Tageslimit (Kunden dürfen die KI auslösen) + max_tokens.
+// Single-Turn (kein autonomer Loop) → planbar, bleibt unter Vercel-Timeout.
 //
 // Setup: env vars in Vercel:
-//   GEMINI_API_KEY   (Pflicht)  — kostenloser Key von aistudio.google.com
-//   GEMINI_MODEL     (optional) — Default unten. Bei "model not found" eine gültige
-//                                 ID aus AI Studio setzen (z.B. gemini-1.5-flash).
-//   FIREBASE_SERVICE_ACCOUNT     — schon vorhanden (für das Rate-Limit)
+//   GROQ_API_KEY   (Pflicht)  — kostenloser Key von console.groq.com
+//   GROQ_MODEL     (optional) — Default unten. Bei "model not found" eine gültige
+//                               ID aus der Groq-Console setzen.
+//   FIREBASE_SERVICE_ACCOUNT  — schon vorhanden (für das Rate-Limit)
 
 import admin from 'firebase-admin';
 
-const MODEL = process.env.GEMINI_MODEL || 'gemini-2.0-flash';
+const MODEL = process.env.GROQ_MODEL || 'llama-3.3-70b-versatile';
 const MAX_TOKENS = 2000;
 const DAILY_LIMIT = parseInt(process.env.AI_DAILY_LIMIT, 10) || 25; // pro Raum pro Tag
 
@@ -61,7 +64,7 @@ function systemPromptFor(tool) {
       '  {"op":"update_video","id":"<vorhandene id>","data":{...}}',
       '  {"op":"delete_video","id":"<vorhandene id>"}',
       '',
-      'Antwortformat exakt:',
+      'Antwortformat exakt (JSON):',
       '{"summary":"<1 kurzer Satz, was du gemacht hast>","operations":[ ...Operationen... ]}',
       '',
       'Regeln: Beziehe dich bei update/delete NUR auf ids, die im State vorkommen.',
@@ -98,9 +101,9 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(204).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const apiKey = process.env.GEMINI_API_KEY;
+  const apiKey = process.env.GROQ_API_KEY;
   if (!apiKey) {
-    return res.status(503).json({ error: 'KI noch nicht eingerichtet (GEMINI_API_KEY fehlt).' });
+    return res.status(503).json({ error: 'KI noch nicht eingerichtet (GROQ_API_KEY fehlt).' });
   }
 
   let body = req.body;
@@ -127,39 +130,36 @@ export default async function handler(req, res) {
     } catch (e) { /* Limit nicht kritisch — im Zweifel durchlassen */ }
   }
 
-  // ── Gemini-Call (generateContent, JSON-Modus) ───────────────────────────────
+  // ── Groq-Call (OpenAI-kompatibel, JSON-Modus) ───────────────────────────────
   let apiJson;
   try {
-    const url = 'https://generativelanguage.googleapis.com/v1beta/models/' +
-      encodeURIComponent(MODEL) + ':generateContent';
-    const resp = await fetch(url, {
+    const resp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
-      headers: { 'content-type': 'application/json', 'x-goog-api-key': apiKey },
+      headers: { 'content-type': 'application/json', 'authorization': 'Bearer ' + apiKey },
       body: JSON.stringify({
-        system_instruction: { parts: [{ text: systemPromptFor(tool) }] },
-        contents: [{ role: 'user', parts: [{ text: buildUserMessage(instruction, body.state, body.brand) }] }],
-        generationConfig: {
-          temperature: 0.7,
-          maxOutputTokens: MAX_TOKENS,
-          responseMimeType: 'application/json',
-        },
+        model: MODEL,
+        temperature: 0.7,
+        max_tokens: MAX_TOKENS,
+        response_format: { type: 'json_object' },
+        messages: [
+          { role: 'system', content: systemPromptFor(tool) },
+          { role: 'user', content: buildUserMessage(instruction, body.state, body.brand) },
+        ],
       }),
     });
     apiJson = await resp.json();
     if (!resp.ok) {
-      const msg = (apiJson && apiJson.error && apiJson.error.message) || ('HTTP ' + resp.status);
+      const msg = (apiJson && apiJson.error && (apiJson.error.message || apiJson.error)) || ('HTTP ' + resp.status);
       return res.status(502).json({ error: 'KI-Dienst: ' + msg });
     }
   } catch (e) {
     return res.status(502).json({ error: 'KI nicht erreichbar: ' + e.message });
   }
 
-  // Gemini-Antwort: candidates[0].content.parts[*].text
   let text = '';
   try {
-    const cand = apiJson && apiJson.candidates && apiJson.candidates[0];
-    const parts = cand && cand.content && cand.content.parts;
-    if (Array.isArray(parts)) text = parts.map(function (p) { return p && p.text ? p.text : ''; }).join('');
+    text = apiJson && apiJson.choices && apiJson.choices[0] &&
+      apiJson.choices[0].message && apiJson.choices[0].message.content;
   } catch (e) {}
 
   const parsed = extractJson(text);
