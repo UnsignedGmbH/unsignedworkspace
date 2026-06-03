@@ -499,8 +499,11 @@ import BrandworkTimeline from "../components/BrandworkTimeline.astro";
           .catch(function () {});
       };
 
+      _staggerUntil = Date.now() + 1200; // Stagger-Fenster für die Karten-Einblendung
       renderGrid();
-      attachToolProgress();
+      // Progress-Listener kurz verzögern, damit der Karten-Stagger sichtbar durchläuft,
+      // bevor der erste pct-Sync neu rendert.
+      setTimeout(attachToolProgress, 700);
       pingFn(null); // beigetreten, aber noch in Übersicht
 
       heartbeat = setInterval(function () {
@@ -562,6 +565,7 @@ import BrandworkTimeline from "../components/BrandworkTimeline.astro";
       return parts.join("");
     }
 
+    var _staggerUntil = 0;
     function renderGrid() {
       var grid = document.getElementById("ovGrid");
       grid.innerHTML = TOOLS.map(function (t) {
@@ -588,6 +592,16 @@ import BrandworkTimeline from "../components/BrandworkTimeline.astro";
       grid.querySelectorAll(".tool-card").forEach(function (b) {
         b.addEventListener("click", function () { openTool(b.dataset.tool); });
       });
+      // Stagger im Zeitfenster nach Overview-Anzeige (~1,2s): egal welcher Render die
+      // Karten zeigt, sie blenden gestaffelt ein. Danach kein Stagger mehr → spätere
+      // pct-Sync-Re-Render flackern nicht.
+      if (Date.now() < _staggerUntil) {
+        var kids = grid.children;
+        for (var gi = 0; gi < kids.length; gi++) {
+          kids[gi].style.animation = "fadeUp 0.5s var(--ease-spring) both";
+          kids[gi].style.animationDelay = (Math.min(gi, 11) * 45) + "ms";
+        }
+      }
       if (window.BWTimeline) {
         window.BWTimeline.render(function (toolKey) {
           return TOOL_PROGRESS[toolKey] || 0;

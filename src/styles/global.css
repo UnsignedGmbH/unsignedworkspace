@@ -44,11 +44,12 @@
 
   --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
 
-  /* Motion-System: einheitliche Dauern + Easings (subtil & schnell) */
-  --dur-fast: 0.15s;
-  --dur: 0.2s;
-  --dur-slow: 0.26s;
+  /* Motion-System: einheitliche Dauern + Easings (deutlich & lebendig) */
+  --dur-fast: 0.2s;
+  --dur: 0.3s;
+  --dur-slow: 0.42s;
   --ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --ease-spring: cubic-bezier(0.34, 1.4, 0.5, 1);
 }
 
 @layer base {
@@ -95,7 +96,7 @@
     background-size: 160px 160px;
   }
   .fade-up {
-    animation: fadeUp 0.7s var(--ease-out-quart) both;
+    animation: fadeUp 0.55s var(--ease-spring) both;
   }
   .pulse-dot {
     animation: pulseDot 1.6s ease-in-out infinite;
@@ -103,7 +104,7 @@
   @keyframes fadeUp {
     from {
       opacity: 0;
-      transform: translate3d(0, 12px, 0);
+      transform: translate3d(0, 24px, 0);
     }
     to {
       opacity: 1;
@@ -120,31 +121,38 @@
     }
   }
 
-  /* ── Motion-System: View-Übergänge + Stagger ──────────────────── */
+  /* ── Motion-System: View-Übergänge + Stagger (deutlich & lebendig) ─ */
   @keyframes viewInRight {
-    from { opacity: 0; transform: translate3d(14px, 0, 0); }
+    from { opacity: 0; transform: translate3d(30px, 0, 0); }
     to   { opacity: 1; transform: translate3d(0, 0, 0); }
   }
   @keyframes viewInLeft {
-    from { opacity: 0; transform: translate3d(-14px, 0, 0); }
+    from { opacity: 0; transform: translate3d(-30px, 0, 0); }
     to   { opacity: 1; transform: translate3d(0, 0, 0); }
   }
   @keyframes scaleIn {
-    from { opacity: 0; transform: scale(0.97); }
+    from { opacity: 0; transform: scale(0.92); }
     to   { opacity: 1; transform: scale(1); }
   }
   .view-enter-right {
-    animation: viewInRight var(--dur-slow) var(--ease-out-quart) both;
+    animation: viewInRight var(--dur-slow) var(--ease-spring) both;
   }
   .view-enter-left {
-    animation: viewInLeft var(--dur-slow) var(--ease-out-quart) both;
+    animation: viewInLeft var(--dur-slow) var(--ease-spring) both;
   }
   .anim-scale-in {
-    animation: scaleIn var(--dur) var(--ease-out-quart) both;
+    animation: scaleIn var(--dur) var(--ease-spring) both;
   }
   /* Gestaffeltes Einblenden von Listen/Grids: Delay pro Kind via inline style. */
   .stagger > * {
-    animation: fadeUp var(--dur-slow) var(--ease-out-quart) both;
+    animation: fadeUp var(--dur-slow) var(--ease-spring) both;
+  }
+
+  /* Tap-/Klick-Feedback — deutlich fühlbar (v.a. mobil) */
+  button:active,
+  .tool-card:active,
+  a.tool-card:active {
+    transform: scale(0.96);
   }
 
   /* ── Accessibility: Bewegung reduzieren wenn vom System gewünscht ── */
