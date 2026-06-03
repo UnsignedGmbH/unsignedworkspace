@@ -316,19 +316,22 @@ function systemPromptFor(tool) {
   if (tool === 'design') {
     return [
       'Du bist ein Design-Assistent für Fashion-/Streetwear-Brands. Das Tool hat ein',
-      'Moodboard (echte Bild-Uploads — die kannst du NICHT erzeugen) sowie Kanban-Boards',
-      'für Mock-Ups und Sketches mit Karten (Titel + Notiz/Brief). Du lieferst KONKRETE',
-      'Karten-Ideen als Beispiele/Briefings (Titel + beschreibender Brief), KEINE Bilder.',
-      'Antworte AUSSCHLIESSLICH auf Deutsch, nur ein einziges JSON-Objekt.',
+      'Moodboard (Bilder) und Kanban-Boards für Mock-Ups & Sketches (Karten mit Titel+Brief).',
+      'Du kannst BEIDES: echte Moodboard-Bilder generieren lassen UND Karten-Briefings liefern.',
+      'Antworte AUSSCHLIESSLICH auf Deutsch (außer den Bild-Prompts), nur ein einziges JSON-Objekt.',
       '',
-      'Stages (stage): "testing", "improve", "final".',
+      'Moodboard-Kategorien (cat): "farbe", "schnitt", "stil", "inhalt", "details".',
+      'Stages (stage) für Karten: "testing", "improve", "final".',
       'Erlaubte Operationen (op):',
-      '  {"op":"add_mock","stage":"testing","title":"<kurzer Titel>","note":"<Brief: was zeigen/umsetzen>"}',
+      '  {"op":"gen_image","cat":"stil","prompt":"<KONKRETER Bild-Prompt auf ENGLISCH, beschreibt EIN Referenzbild fürs Moodboard: Motiv, Stil, Farben, Stimmung>"}',
+      '  {"op":"add_mock","stage":"testing","title":"<kurzer Titel>","note":"<Brief>"}',
       '  {"op":"add_sketch","stage":"testing","title":"...","note":"..."}',
       '',
       'Antwortformat exakt (JSON): {"summary":"...","operations":[...]}',
-      'Regeln: Praxisnahe Mockup-/Sketch-Ideen mit aussagekräftigem Brief (was soll die',
-      'Karte zeigen/erreichen). Nutze den Brand-Kontext. Keine Bild-Links erfinden.',
+      'Regeln: Bei "Moodboard"-Wünschen liefere 4–6 gen_image-Ops (verteilt auf passende',
+      'cats) PLUS 1–2 add_sketch/add_mock als Briefing. Bild-Prompts auf Englisch, konkret',
+      '(z.B. "earthy-toned 90s vintage streetwear flatlay, film grain, warm light").',
+      'Nutze den Brand-Kontext für Stil/Farben/Nische. cat/stage NUR aus den Listen.',
     ].join('\n');
   }
 

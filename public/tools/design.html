@@ -230,7 +230,7 @@ button.lb-btn{outline:none;}
 <!-- ✨ KI-Agent-Leiste (Freitext) -->
 <div id="aiBar" style="display:flex;gap:8px;align-items:center;background:#fff;border:.5px solid #e5e0d8;border-radius:12px;padding:10px 12px;margin:0 0 16px;flex-wrap:wrap;box-shadow:0 2px 10px rgba(0,0,0,.04);">
   <span style="font-size:16px;line-height:1;">✨</span>
-  <input id="aiInput" type="text" autocomplete="off" placeholder="Sag der KI was sie tun soll — z.B. „Schlag 4 Mockup-Ideen mit Brief für eine Streetwear-Kollektion vor“" style="flex:1;min-width:200px;font-family:inherit;font-size:13px;border:0;outline:none;background:transparent;color:#1a1a1a;" />
+  <input id="aiInput" type="text" autocomplete="off" placeholder="Sag der KI was sie tun soll — z.B. „Bau ein Moodboard für 90s-Vintage-Streetwear, erdige Töne“ (generiert Bilder)" style="flex:1;min-width:200px;font-family:inherit;font-size:13px;border:0;outline:none;background:transparent;color:#1a1a1a;" />
   <button id="aiSend" type="button" style="font-family:inherit;font-size:12px;font-weight:700;padding:8px 16px;border-radius:8px;border:0;background:#c13030;color:#fff;cursor:pointer;">KI fragen</button>
   <div id="aiStatus" style="flex-basis:100%;font-size:11px;color:#888;display:none;"></div>
 </div>
@@ -1027,8 +1027,42 @@ _lazyMigrate();
     ['testing', 'improve', 'final'].forEach(function (s) { out[s] = (data[s] || []).map(function (c) { return c.title || '(ohne Titel)'; }); });
     return out;
   }
-  function buildState() { return { mockups: cardList(mockCards), sketches: cardList(sketchCards) }; }
+  function buildState() {
+    var mbCounts = {};
+    MB_CATS.forEach(function (c) { mbCounts[c] = (mbData[c] || []).length; });
+    return { mockups: cardList(mockCards), sketches: cardList(sketchCards), moodboardBilderProKategorie: mbCounts };
+  }
+
+  // ── KI-Moodboard-Bilder (gen_image → /api/genimage → Firebase Storage) ──
+  var _imgPending = 0;
+  function _setImgStatus() {
+    if (_imgPending > 0) setStatus('Generiere Bilder … (' + _imgPending + ' offen)', 'busy');
+    else setStatus('Moodboard aktualisiert ✓', 'done');
+  }
+  function pushMbImage(cat, url, note) {
+    if (MB_CATS.indexOf(cat) < 0) cat = curMbCat || 'stil';
+    if (!mbData[cat]) mbData[cat] = [];
+    mbData[cat].push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2, 5), src: url, note: note || '', url: url, ts: Date.now() });
+    renderMb(); fbSave();
+  }
+  function genImage(cat, prompt) {
+    if (!prompt) return;
+    if (curSec !== 'mood' && typeof switchSec === 'function') switchSec('mood');
+    _imgPending++; _setImgStatus();
+    fetch('/api/genimage', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ room: _ROOM, prompt: prompt })
+    }).then(function (r) {
+      return r.text().then(function (t) { var j = null; try { j = JSON.parse(t); } catch (e) {} if (!r.ok) throw new Error((j && j.error) || ('Bild-Fehler ' + r.status)); return j; });
+    }).then(function (j) {
+      if (j && j.url) pushMbImage(cat, j.url, (prompt || '').slice(0, 60));
+    }).catch(function (e) {
+      setStatus((e && e.message) || 'Bild-Generierung fehlgeschlagen', 'error');
+    }).then(function () { _imgPending = Math.max(0, _imgPending - 1); _setImgStatus(); });
+  }
+
   function applyOp(op) {
+    if (op.op === 'gen_image') { genImage(op.cat, op.prompt); return; }
     var st = (['testing', 'improve', 'final'].indexOf(op.stage) >= 0) ? op.stage : 'testing';
     var card = { id: Date.now().toString(36) + Math.random().toString(36).slice(2, 4), title: op.title || '', note: op.note || '', img: '', linkedMock: '' };
     if (op.op === 'add_mock') { if (!mockCards[st]) mockCards[st] = []; mockCards[st].push(card); renderKb('mock'); fbSave(); }

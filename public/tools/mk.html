@@ -537,16 +537,6 @@ body.lb-open { overflow: hidden; }
 #toast.show { opacity: 1; }
 
 /* ── PRINT ── */
-@media print {
-  .hdr, .add-item-btn, .add-step-btn, .add-flow-btn,
-  .item-toggle, .item-del, .adset-del, .flow-del, .step-del,
-  .link-form, .hbtn, .live-pill { display: none !important; }
-  body { background: #fff; }
-  .wrap { max-width: 100%; padding: 12px; }
-  .phase { break-inside: avoid; box-shadow: none; }
-  .item-detail { display: block !important; }
-  .progress-wrap { display: none; }
-}
 </style>
 </head>
 <body>
@@ -558,7 +548,6 @@ body.lb-open { overflow: hidden; }
     <div class="progress-text" id="progText">0 / 0 Punkten</div>
   </div>
   <div class="hdr-actions">
-    <button class="hbtn" onclick="window.print()" title="Als PDF drucken">📄 Drucken</button>
     <span class="live-pill" id="liveBadge" style="display:none;">
       <span class="live-dot"></span>Live
     </span>

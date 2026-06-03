@@ -626,24 +626,6 @@ import BrandworkTimeline from "../components/BrandworkTimeline.astro";
         );
       }).join("");
 
-      // PDF / Drucken card
-      grid.insertAdjacentHTML(
-        "beforeend",
-        '<button type="button" id="btnPrint" ' +
-        'class="bg-card border-[0.5px] border-line rounded-xl p-4 text-left ' +
-        'hover:border-brand-border hover:bg-brand-dim transition-colors cursor-pointer">' +
-        '<div class="flex items-center gap-3 mb-3">' +
-        '<span class="w-10 h-10 rounded-lg bg-brand-dim flex items-center justify-center text-[20px]">📄</span>' +
-        '<div class="flex-1 min-w-0">' +
-        '<div class="text-[13px] font-extrabold text-ink">PDF / Drucken</div>' +
-        '<div class="text-[10px] text-ink-mute">Briefing als PDF exportieren</div>' +
-        '</div></div>' +
-        '<div class="text-[11px] text-ink-soft">→ Druckansicht öffnen</div>' +
-        '</button>'
-      );
-      var btnPrint = $("btnPrint");
-      if (btnPrint) btnPrint.addEventListener("click", function () { window.print(); });
-
       // Update meta line with avg progress (Techpack vom Schnitt ausgenommen, da kein einzelner %-Wert).
       var progressTools = TOOLS.filter(function (t) { return !NO_PCT_TOOLS[t.id] && t.id !== "production"; });
       var avg = progressTools.length ? Math.round(totalDone / progressTools.length) : 0;
