@@ -887,9 +887,10 @@ document.getElementById('deleteProductBtn').addEventListener('click',deleteCurre
     hdrTabs.forEach(function (b) { b.classList.toggle('on', b.dataset.osec === id); });
     osecs.forEach(function (s) { s.classList.toggle('on', s.id === ('osec-' + id)); });
     window.scrollTo({ top: 0, behavior: 'smooth' });
-    // Bei Wechsel zu Moodboard / Archiv: re-render damit Daten aktuell sind
-    if (id === 'mb') renderMbAll();
-    if (id === 'ar') renderArAll();
+    // Bei Wechsel zu Moodboard / Archiv: re-render damit Daten aktuell sind.
+    // Funktionen leben in der Moodboard-IIFE → über window aufrufen (Scope-Bruecke).
+    if (id === 'mb' && window._shRenderMbAll) window._shRenderMbAll();
+    if (id === 'ar' && window._shRenderArAll) window._shRenderArAll();
   }
   hdrTabs.forEach(function (b) { b.addEventListener('click', function () { switchOSec(b.dataset.osec); }); });
 })();
@@ -1297,6 +1298,9 @@ document.getElementById('deleteProductBtn').addEventListener('click',deleteCurre
     }
   }
   initMb();
+  // Für die Outer-Tab-IIFE (switchOSec) zugänglich machen — sonst "renderMbAll is not defined".
+  window._shRenderMbAll = renderMbAll;
+  window._shRenderArAll = renderArAll;
 })();
 
 // Lazy-Migration: alte base64-Bilder im Raum → Storage. Idempotent + safe.
