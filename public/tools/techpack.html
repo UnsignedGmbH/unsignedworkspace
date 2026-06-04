@@ -1290,8 +1290,13 @@ function loadPdfLibs(cb){
 }
 
 function _doExportPdf(packId){
+  var pack = STATE.packs[packId];
+  // Vektorisierter A4-Renderer (1:1 wie Vorlage). Fallback: alter Screenshot-Renderer.
+  if (typeof window.tpExportPdfVector === 'function'){
+    return window.tpExportPdfVector(packId, pack);
+  }
   if (typeof window.tpExportPdf === 'function'){
-    return window.tpExportPdf(packId, STATE.packs[packId]);
+    return window.tpExportPdf(packId, pack);
   }
   toast('PDF-Renderer noch nicht geladen');
 }
@@ -1306,5 +1311,6 @@ window.tpGetMockupSrc = getMockupSrc;
 window.tpToast = toast;
 </script>
 <script src="/tools/_shared/techpack-pdf.js" defer></script>
+<script src="/tools/_shared/techpack-pdf-vector.js" defer></script>
 </body>
 </html>
