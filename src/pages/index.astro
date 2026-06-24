@@ -101,6 +101,33 @@ import BaseLayout from "../layouts/BaseLayout.astro";
       <p class="text-[10px] text-ink-mute mt-4 text-center">
         Status: <span id="fbStatus">verbinde…</span>
       </p>
+
+      <!-- Kunden-Recovery: Wer hier landet, aber KUNDE ist (z.B. nach Browser-
+           Reset / verlorenem Raum-Code), kommt mit seinem Portal-Code direkt
+           zurück ins Portal — ohne das verwirrende Owner-Login. -->
+      <div class="mt-5 pt-4 border-t-[0.5px] border-line">
+        <p class="text-[11px] text-ink-mute mb-2 leading-relaxed">
+          Du bist <b>Kunde</b> und willst in deinen Raum? Gib deinen Portal-Code
+          ein (oder füg deinen Portal-Link ein):
+        </p>
+        <form id="roomForm" class="flex gap-2" novalidate>
+          <input
+            id="roomCode"
+            type="text"
+            autocapitalize="characters"
+            spellcheck="false"
+            placeholder="z. B. Z7Z8YN"
+            class="flex-1 min-w-0 text-[13px] font-semibold tracking-[0.08em] uppercase border-[1.5px] border-line rounded-lg px-[14px] py-[10px] outline-none text-ink bg-white focus:border-brand"
+          />
+          <button
+            id="roomBtn"
+            type="submit"
+            class="shrink-0 px-4 py-[10px] text-white rounded-lg text-[12px] font-bold cursor-pointer"
+            style="background:#0e0e0e"
+          >Zum Portal</button>
+        </form>
+        <p id="roomErr" class="hidden text-[11px] font-bold text-brand mt-2"></p>
+      </div>
     </div>
     <!-- Brand-Signatur am unteren Rand der Login-Seite -->
     <div class="brand-tag-foot" aria-hidden="true" style="position:absolute;left:0;right:0;bottom:0;">
@@ -137,6 +164,28 @@ import BaseLayout from "../layouts/BaseLayout.astro";
       }
       tryRedirect();
     } catch (e) {}
+  })();
+
+  // ─── Kunden-Recovery: Portal-Code (oder -Link) → direkt ins Portal ──
+  // Verhindert, dass ein Kunde nach Browser-Reset im Owner-Login strandet.
+  (function () {
+    var f = document.getElementById("roomForm");
+    if (!f) return;
+    var inp = document.getElementById("roomCode");
+    var errEl = document.getElementById("roomErr");
+    f.addEventListener("submit", function (e) {
+      e.preventDefault();
+      var raw = (inp.value || "").trim();
+      // Akzeptiert auch einen vollen Portal-Link (…?room=XYZ).
+      var m = raw.match(/[?&]room=([^&\s]+)/i);
+      var code = (m ? decodeURIComponent(m[1]) : raw).toUpperCase().replace(/[^A-Z0-9]/g, "");
+      if (errEl) { errEl.textContent = ""; errEl.classList.add("hidden"); }
+      if (code.length < 4) {
+        if (errEl) { errEl.textContent = "Bitte gültigen Portal-Code eingeben."; errEl.classList.remove("hidden"); }
+        return;
+      }
+      location.href = "/portal?room=" + encodeURIComponent(code);
+    });
   })();
 
   (function () {

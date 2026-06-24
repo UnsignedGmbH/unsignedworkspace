@@ -100,6 +100,35 @@ const { title = "Unsigned Workspace" } = Astro.props;
         ts: () => Date.now(),
       };
 
+      // ── Self-Healing Reset (RAUM-ERHALTEND) ─────────────────────────
+      // Räumt kaputten lokalen Zustand weg (Firebase-Auth-Persistenz in
+      // IndexedDB + uw.*-Keys), der das Laden blockieren kann ("Zombie"-
+      // Verbindung → Endlos-Spinner, den ein reiner Reload NICHT heilt weil
+      // dieselbe IndexedDB erneut geladen wird). DANN zurück in den EIGENEN
+      // Raum — NICHT ins Owner-Login. Der Raum wird VOR dem Wipe gemerkt und
+      // per URL (?room=) wieder hergestellt; BaseLayout speichert ihn dort neu.
+      window.uwReset = function () {
+        var room = "";
+        try { room = new URLSearchParams(location.search).get("room") || ""; } catch (e) {}
+        if (!room) { try { room = localStorage.getItem("uw.customerRoom") || ""; } catch (e) {} }
+        if (!room) { try { room = localStorage.getItem("uw.last_portal_room") || ""; } catch (e) {} }
+        var dest = room ? "/portal?room=" + encodeURIComponent(room) : "/";
+        function go() { try { location.replace(dest); } catch (e) { location.href = dest; } }
+        try { if (window.firebase) window.firebase.auth().signOut().catch(function () {}); } catch (e) {}
+        try { Object.keys(localStorage).forEach(function (k) { if (k.indexOf("uw.") === 0) localStorage.removeItem(k); }); } catch (e) {}
+        try { Object.keys(sessionStorage).forEach(function (k) { if (k.indexOf("uw.") === 0) sessionStorage.removeItem(k); }); } catch (e) {}
+        if (window.indexedDB && indexedDB.databases) {
+          indexedDB.databases().then(function (dbs) {
+            Promise.all((dbs || []).map(function (db) {
+              return new Promise(function (r) {
+                try { var rq = indexedDB.deleteDatabase(db.name); rq.onsuccess = rq.onerror = rq.onblocked = function () { r(); }; }
+                catch (e) { r(); }
+              });
+            })).then(go);
+          }).catch(go);
+        } else { go(); }
+      };
+
       // ── Toast notifications (global) ──
       window.toast = function (msg, kind, opts) {
         kind = kind || "info";
@@ -346,19 +375,12 @@ const { title = "Unsigned Workspace" } = Astro.props;
           updateDetail();
         }
         function doReset() {
+          // Delegiert an den globalen, raum-erhaltenden Reset (siehe oben).
+          if (typeof window.uwReset === "function") { window.uwReset(); return; }
+          // Fallback (sollte nie nötig sein): hartes Reset auf /
           try { if (window.firebase) window.firebase.auth().signOut().catch(function () {}); } catch (e) {}
           try { Object.keys(localStorage).forEach(function (k) { if (k.indexOf("uw.") === 0) localStorage.removeItem(k); }); } catch (e) {}
-          try { Object.keys(sessionStorage).forEach(function (k) { if (k.indexOf("uw.") === 0) sessionStorage.removeItem(k); }); } catch (e) {}
-          if (window.indexedDB && indexedDB.databases) {
-            indexedDB.databases().then(function (dbs) {
-              Promise.all((dbs || []).map(function (db) {
-                return new Promise(function (r) {
-                  try { var rq = indexedDB.deleteDatabase(db.name); rq.onsuccess = rq.onerror = rq.onblocked = function () { r(); }; }
-                  catch (e) { r(); }
-                });
-              })).then(function () { location.replace("/"); });
-            }).catch(function () { location.replace("/"); });
-          } else { location.replace("/"); }
+          location.replace("/");
         }
         function setBg(state) {
           var p = ensure();
