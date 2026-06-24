@@ -129,6 +129,58 @@ const { title = "Unsigned Workspace" } = Astro.props;
         } else { go(); }
       };
 
+      // ── IndexedDB-Verbindung verloren → sofort Recovery anbieten ──────
+      // Chrome wirft manchmal "Connection to Indexed Database server lost"
+      // (kaputte/abgebrochene IDB-Verbindung). Firebase-Auth braucht IDB →
+      // die App hängt, und ein simpler Reload heilt NICHT (dieselbe kaputte
+      // IDB wird neu geladen). Wir erkennen genau diese Fehlerklasse — auch
+      // wenn sie ERST NACH dem Laden auftritt (z.B. beim Tool-Öffnen) — und
+      // bieten EINEN Reset-Knopf an (uwReset räumt die IDB weg, behält Raum).
+      (function () {
+        var IDB_RE = /indexed\s*database|indexeddb|idbdatabase|database server lost/i;
+        var shown = false;
+        function isIdbErr(msg) { return !!msg && IDB_RE.test(String(msg)); }
+        function showIdbBanner() {
+          if (shown) return; shown = true;
+          var bar = document.createElement("div");
+          bar.id = "uw-idb-recover";
+          bar.style.cssText =
+            "position:fixed;top:0;left:0;right:0;z-index:10000;background:#c13030;color:#fff;" +
+            "padding:10px 14px;display:flex;gap:12px;align-items:center;justify-content:center;" +
+            "flex-wrap:wrap;font:600 13px Montserrat,system-ui,sans-serif;box-shadow:0 2px 12px rgba(0,0,0,0.25)";
+          var span = document.createElement("span");
+          span.textContent = "Die App hängt? Die lokale Datenbank deines Browsers ist verklemmt.";
+          var btn = document.createElement("button");
+          btn.textContent = "Zurücksetzen & neu laden";
+          btn.style.cssText =
+            "background:#fff;color:#c13030;border:0;border-radius:8px;padding:7px 14px;" +
+            "font:800 12px Montserrat,system-ui,sans-serif;cursor:pointer";
+          btn.onclick = function () {
+            if (typeof window.uwReset === "function") window.uwReset();
+            else location.reload();
+          };
+          var x = document.createElement("button");
+          x.textContent = "✕";
+          x.setAttribute("aria-label", "Schließen");
+          x.style.cssText = "background:transparent;border:0;color:#fff;font-size:15px;cursor:pointer;opacity:.85";
+          x.onclick = function () { if (bar.parentNode) bar.parentNode.removeChild(bar); };
+          bar.appendChild(span); bar.appendChild(btn); bar.appendChild(x);
+          function attach() {
+            if (document.body) document.body.appendChild(bar);
+            else document.addEventListener("DOMContentLoaded", function () { document.body.appendChild(bar); });
+          }
+          attach();
+        }
+        window.addEventListener("error", function (e) {
+          if (isIdbErr(e && e.message)) showIdbBanner();
+        });
+        window.addEventListener("unhandledrejection", function (e) {
+          var r = e && e.reason;
+          var msg = (r && (r.message || ("" + r))) || "";
+          if (isIdbErr(msg)) showIdbBanner();
+        });
+      })();
+
       // ── Toast notifications (global) ──
       window.toast = function (msg, kind, opts) {
         kind = kind || "info";
