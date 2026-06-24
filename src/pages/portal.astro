@@ -159,7 +159,27 @@ import BrandworkTimeline from "../components/BrandworkTimeline.astro";
                   id="ovAccessCopy"
                   class="text-[11px] font-bold text-ink-soft bg-transparent border-[0.5px] border-line rounded-lg px-3 py-2 cursor-pointer hover:border-brand hover:text-brand"
                 >Link kopieren</button>
+                <button
+                  type="button"
+                  id="ovAccessEmail"
+                  class="text-[11px] font-bold text-ink-soft bg-transparent border-[0.5px] border-line rounded-lg px-3 py-2 cursor-pointer hover:border-brand hover:text-brand"
+                >✉ Per E-Mail sichern</button>
               </div>
+              <!-- E-Mail-Recovery: Link kommt ins Postfach (überlebt jeden Wipe) -->
+              <form id="ovAccessEmailForm" class="hidden mt-2 flex gap-2 flex-wrap items-center">
+                <input
+                  id="ovAccessEmailInput"
+                  type="email"
+                  autocomplete="email"
+                  placeholder="deine@email.com"
+                  class="flex-1 min-w-[160px] text-[12px] font-semibold border-[1.5px] border-line rounded-lg px-3 py-2 outline-none text-ink bg-white focus:border-brand"
+                />
+                <button
+                  type="submit"
+                  id="ovAccessEmailSend"
+                  class="text-[11px] font-bold text-white bg-brand border-0 rounded-lg px-3 py-2 cursor-pointer hover:bg-[#a82929] disabled:opacity-50 disabled:cursor-not-allowed"
+                >Link senden</button>
+              </form>
             </div>
           </div>
         </div>
@@ -465,6 +485,45 @@ import BrandworkTimeline from "../components/BrandworkTimeline.astro";
       if (dis) dis.addEventListener("click", function () {
         card.classList.add("hidden");
         try { localStorage.setItem("uw.portal.accessHidden", "1"); } catch (e) {}
+      });
+
+      // E-Mail-Recovery: Link ins eigene Postfach schicken (api/sendlink.js).
+      var emailBtn = document.getElementById("ovAccessEmail");
+      var emailForm = document.getElementById("ovAccessEmailForm");
+      var emailInput = document.getElementById("ovAccessEmailInput");
+      var emailSend = document.getElementById("ovAccessEmailSend");
+      var EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (emailBtn && emailForm) emailBtn.addEventListener("click", function () {
+        emailForm.classList.toggle("hidden");
+        if (!emailForm.classList.contains("hidden") && emailInput) emailInput.focus();
+      });
+      if (emailForm) emailForm.addEventListener("submit", function (e) {
+        e.preventDefault();
+        var addr = ((emailInput && emailInput.value) || "").trim();
+        if (!EMAIL_RE.test(addr)) {
+          if (window.toast) window.toast("Bitte eine gültige E-Mail eingeben.", "error");
+          return;
+        }
+        if (emailSend) { emailSend.disabled = true; emailSend.textContent = "Sende…"; }
+        fetch("/api/sendlink", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ room: room, email: addr }),
+        }).then(function (r) {
+          return r.json().catch(function () { return {}; }).then(function (j) { return { ok: r.ok, j: j }; });
+        }).then(function (res) {
+          if (res.ok) {
+            if (window.toast) window.toast("Link an " + addr + " geschickt ✓ — schau in dein Postfach.", "success");
+            emailForm.classList.add("hidden");
+            if (emailInput) emailInput.value = "";
+          } else if (window.toast) {
+            window.toast((res.j && res.j.error) || "E-Mail konnte nicht gesendet werden.", "error", { ttl: 7000 });
+          }
+        }).catch(function () {
+          if (window.toast) window.toast("Keine Verbindung — bitte später erneut.", "error");
+        }).then(function () {
+          if (emailSend) { emailSend.disabled = false; emailSend.textContent = "Link senden"; }
+        });
       });
     })();
 
