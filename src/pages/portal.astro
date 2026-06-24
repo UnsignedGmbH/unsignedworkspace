@@ -114,6 +114,31 @@ import BrandworkTimeline from "../components/BrandworkTimeline.astro";
           </div>
         </section>
 
+        <!-- Zugang sichern: damit der Kunde von JEDEM Gerät zurückfindet -->
+        <div
+          id="ovAccess"
+          class="hidden mb-4 bg-card border-[0.5px] border-line rounded-xl px-4 py-3 flex items-center gap-3 flex-wrap"
+        >
+          <span class="text-[16px] shrink-0" aria-hidden="true">🔑</span>
+          <div class="flex-1 min-w-0">
+            <div class="text-[12px] font-extrabold text-ink leading-tight">Dein Zugang</div>
+            <div class="text-[11px] text-ink-mute leading-snug">
+              Speichere dir deinen Link (Lesezeichen) oder installiere die App (Teilen → Zum
+              Home-Bildschirm) — dann kommst du von jedem Gerät automatisch wieder rein.
+            </div>
+          </div>
+          <button
+            type="button"
+            id="ovAccessCopy"
+            class="text-[11px] font-bold text-white bg-brand border-0 rounded-lg px-3 py-2 cursor-pointer shrink-0 hover:bg-[#a82929]"
+          >Link kopieren</button>
+          <button
+            type="button"
+            id="ovAccessDismiss"
+            class="text-[11px] font-bold text-ink-mute bg-transparent border-0 cursor-pointer shrink-0"
+            title="Ausblenden">✕</button>
+        </div>
+
         <BrandworkTimeline />
 
         <h2
@@ -369,6 +394,30 @@ import BrandworkTimeline from "../components/BrandworkTimeline.astro";
     // Tap (Manifest-Start = "/") automatisch zurueck zu ihrem Portal kommen.
     // index.astro liest diesen Wert wenn keine Owner-Auth vorliegt.
     try { localStorage.setItem("uw.last_portal_room", room); } catch (e) {}
+
+    // ── "Zugang sichern": Link kopieren + Hinweis ──────────────────────
+    // Damit der Kunde seinen persönlichen Link behält und von JEDEM Gerät
+    // automatisch zurückfindet (Lesezeichen / PWA-Installation).
+    (function () {
+      var card = document.getElementById("ovAccess");
+      if (!card) return;
+      var hidden = false;
+      try { hidden = localStorage.getItem("uw.portal.accessHidden") === "1"; } catch (e) {}
+      if (!hidden) card.classList.remove("hidden");
+      var copyBtn = document.getElementById("ovAccessCopy");
+      if (copyBtn) copyBtn.addEventListener("click", function () {
+        var url = location.origin + "/portal?room=" + encodeURIComponent(room);
+        function ok() { if (window.toast) window.toast("Link kopiert ✓ — am besten als Lesezeichen speichern", "success"); }
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(url).then(ok).catch(function () { window.prompt("Dein Portal-Link (kopieren):", url); });
+        } else { window.prompt("Dein Portal-Link (kopieren):", url); }
+      });
+      var dis = document.getElementById("ovAccessDismiss");
+      if (dis) dis.addEventListener("click", function () {
+        card.classList.add("hidden");
+        try { localStorage.setItem("uw.portal.accessHidden", "1"); } catch (e) {}
+      });
+    })();
 
     var profile = null;
     var currentTool = null;

@@ -31,6 +31,10 @@ const { title = "Unsigned Workspace" } = Astro.props;
           document.head.appendChild(l);
           if (room) {
             try { localStorage.setItem("uw.customerRoom", room); } catch (e) {}
+            // Zweiter, unabhängiger Speicher: First-Party-Cookie (1 Jahr). Überlebt
+            // manche "Leeren"-Aktionen anders als localStorage → der Auto-Return ins
+            // eigene Portal (siehe index.astro) greift in mehr Fällen.
+            try { document.cookie = "uw_room=" + encodeURIComponent(room) + ";path=/;max-age=31536000;SameSite=Lax"; } catch (e) {}
           }
         } catch (e) {
           // Fallback: statisches Manifest

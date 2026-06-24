@@ -15,118 +15,135 @@ import BaseLayout from "../layouts/BaseLayout.astro";
         Brand Identity &amp; Tools
       </span>
 
-      <h2 class="text-[15px] font-extrabold mb-1">Willkommen</h2>
-      <p class="text-[12px] text-ink-mute mb-[18px] leading-relaxed">
-        Meld dich an um auf deine Kunden und Tools zuzugreifen.
-      </p>
-
-      <div
-        id="inviteBanner"
-        class="hidden bg-brand-dim border-[0.5px] border-brand-border rounded-lg px-3 py-2 mb-4 text-[12px] text-ink"
-      >
-        ✉ Du wurdest <span id="inviteRoleLabel" class="font-bold">eingeladen</span>.
-        Registriere dich oder logge dich ein um beizutreten.
-      </div>
-
-      <div
-        class="flex border-[1.5px] border-line rounded-[9px] overflow-hidden mb-4"
-      >
-        <button
-          id="tabLogin"
-          type="button"
-          data-mode="login"
-          class="auth-tab flex-1 py-[9px] text-[12px] font-bold cursor-pointer border-0 bg-brand text-white"
-        >
-          Einloggen
-        </button>
-        <button
-          id="tabRegister"
-          type="button"
-          data-mode="register"
-          class="auth-tab flex-1 py-[9px] text-[12px] font-bold cursor-pointer border-0 bg-[#f5f5f5] text-ink-mute"
-        >
-          Registrieren
-        </button>
-      </div>
-
-      <form id="authForm" class="space-y-3" novalidate>
-        <div>
-          <label
-            for="aEmail"
-            class="block text-[10px] font-bold tracking-[0.1em] uppercase text-ink-mute mb-1"
-          >
-            E-Mail
-          </label>
-          <input
-            id="aEmail"
-            name="email"
-            type="email"
-            autocomplete="email"
-            placeholder="deine@email.com"
-            class="block w-full text-[13px] font-semibold border-[1.5px] border-line rounded-lg px-[14px] py-[11px] outline-none text-ink bg-white focus:border-brand"
-          />
-        </div>
-        <div>
-          <label
-            for="aPass"
-            class="block text-[10px] font-bold tracking-[0.1em] uppercase text-ink-mute mb-1"
-          >
-            Passwort
-          </label>
-          <input
-            id="aPass"
-            name="password"
-            type="password"
-            autocomplete="current-password"
-            placeholder="Passwort"
-            class="block w-full text-[13px] font-semibold border-[1.5px] border-line rounded-lg px-[14px] py-[11px] outline-none text-ink bg-white focus:border-brand"
-          />
-        </div>
-
-        <div
-          id="aErr"
-          class="hidden text-[12px] font-bold text-white px-[14px] py-[10px] bg-brand rounded-lg"
-        >
-        </div>
-
-        <button
-          id="aBtn"
-          type="submit"
-          class="block w-full mt-4 py-[14px] bg-brand hover:bg-brand-dark text-white rounded-[10px] text-[14px] font-extrabold cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-        >
-          Einloggen
-        </button>
-      </form>
-
-      <p class="text-[10px] text-ink-mute mt-4 text-center">
-        Status: <span id="fbStatus">verbinde…</span>
-      </p>
-
-      <!-- Kunden-Recovery: Wer hier landet, aber KUNDE ist (z.B. nach Browser-
-           Reset / verlorenem Raum-Code), kommt mit seinem Portal-Code direkt
-           zurück ins Portal — ohne das verwirrende Owner-Login. -->
-      <div class="mt-5 pt-4 border-t-[0.5px] border-line">
-        <p class="text-[11px] text-ink-mute mb-2 leading-relaxed">
-          Du bist <b>Kunde</b> und willst in deinen Raum? Gib deinen Portal-Code
-          ein (oder füg deinen Portal-Link ein):
+      <!-- ═══ KUNDEN-EINGANG (Standard — was Kunden sehen) ═══ -->
+      <div id="customerView">
+        <h2 class="text-[15px] font-extrabold mb-1">Willkommen 👋</h2>
+        <p class="text-[12px] text-ink-mute mb-[18px] leading-relaxed">
+          Gib deinen Zugangs-Code ein, um in deinen Raum zu kommen.
         </p>
-        <form id="roomForm" class="flex gap-2" novalidate>
+        <form id="roomForm" novalidate>
+          <label
+            for="roomCode"
+            class="block text-[10px] font-bold tracking-[0.1em] uppercase text-ink-mute mb-1"
+          >Dein Zugangs-Code</label>
           <input
             id="roomCode"
             type="text"
             autocapitalize="characters"
             spellcheck="false"
             placeholder="z. B. Z7Z8YN"
-            class="flex-1 min-w-0 text-[13px] font-semibold tracking-[0.08em] uppercase border-[1.5px] border-line rounded-lg px-[14px] py-[10px] outline-none text-ink bg-white focus:border-brand"
+            class="block w-full text-[15px] font-bold tracking-[0.12em] uppercase border-[1.5px] border-line rounded-lg px-[14px] py-[12px] outline-none text-ink bg-white focus:border-brand"
           />
+          <p class="text-[10px] text-ink-mute mt-1.5 leading-relaxed">
+            Steht in deinem Portal-Link nach <code>?room=</code> — du kannst auch den ganzen Link einfügen.
+          </p>
           <button
             id="roomBtn"
             type="submit"
-            class="shrink-0 px-4 py-[10px] text-white rounded-lg text-[12px] font-bold cursor-pointer"
-            style="background:#0e0e0e"
-          >Zum Portal</button>
+            class="block w-full mt-3 py-[14px] bg-brand hover:bg-brand-dark text-white rounded-[10px] text-[14px] font-extrabold cursor-pointer transition-colors"
+          >Zu meinem Raum →</button>
+          <p id="roomErr" class="hidden text-[11px] font-bold text-brand mt-2"></p>
         </form>
-        <p id="roomErr" class="hidden text-[11px] font-bold text-brand mt-2"></p>
+        <button
+          type="button"
+          id="toTeam"
+          class="block w-full mt-5 pt-4 border-t-[0.5px] border-line border-x-0 border-b-0 bg-transparent text-[11px] text-ink-mute hover:text-ink cursor-pointer text-center"
+        >Gehörst du zum Unsigned-Team? <span class="font-bold text-brand">Team-Login →</span></button>
+      </div>
+
+      <!-- ═══ OWNER / TEAM-LOGIN (versteckt — nur Team) ═══ -->
+      <div id="ownerView" class="hidden">
+        <h2 class="text-[15px] font-extrabold mb-1">Team-Login</h2>
+        <p class="text-[12px] text-ink-mute mb-[18px] leading-relaxed">
+          Meld dich an um auf deine Kunden und Tools zuzugreifen.
+        </p>
+
+        <div
+          id="inviteBanner"
+          class="hidden bg-brand-dim border-[0.5px] border-brand-border rounded-lg px-3 py-2 mb-4 text-[12px] text-ink"
+        >
+          ✉ Du wurdest <span id="inviteRoleLabel" class="font-bold">eingeladen</span>.
+          Registriere dich oder logge dich ein um beizutreten.
+        </div>
+
+        <div
+          class="flex border-[1.5px] border-line rounded-[9px] overflow-hidden mb-4"
+        >
+          <button
+            id="tabLogin"
+            type="button"
+            data-mode="login"
+            class="auth-tab flex-1 py-[9px] text-[12px] font-bold cursor-pointer border-0 bg-brand text-white"
+          >
+            Einloggen
+          </button>
+          <button
+            id="tabRegister"
+            type="button"
+            data-mode="register"
+            class="auth-tab flex-1 py-[9px] text-[12px] font-bold cursor-pointer border-0 bg-[#f5f5f5] text-ink-mute"
+          >
+            Registrieren
+          </button>
+        </div>
+
+        <form id="authForm" class="space-y-3" novalidate>
+          <div>
+            <label
+              for="aEmail"
+              class="block text-[10px] font-bold tracking-[0.1em] uppercase text-ink-mute mb-1"
+            >
+              E-Mail
+            </label>
+            <input
+              id="aEmail"
+              name="email"
+              type="email"
+              autocomplete="email"
+              placeholder="deine@email.com"
+              class="block w-full text-[13px] font-semibold border-[1.5px] border-line rounded-lg px-[14px] py-[11px] outline-none text-ink bg-white focus:border-brand"
+            />
+          </div>
+          <div>
+            <label
+              for="aPass"
+              class="block text-[10px] font-bold tracking-[0.1em] uppercase text-ink-mute mb-1"
+            >
+              Passwort
+            </label>
+            <input
+              id="aPass"
+              name="password"
+              type="password"
+              autocomplete="current-password"
+              placeholder="Passwort"
+              class="block w-full text-[13px] font-semibold border-[1.5px] border-line rounded-lg px-[14px] py-[11px] outline-none text-ink bg-white focus:border-brand"
+            />
+          </div>
+
+          <div
+            id="aErr"
+            class="hidden text-[12px] font-bold text-white px-[14px] py-[10px] bg-brand rounded-lg"
+          >
+          </div>
+
+          <button
+            id="aBtn"
+            type="submit"
+            class="block w-full mt-4 py-[14px] bg-brand hover:bg-brand-dark text-white rounded-[10px] text-[14px] font-extrabold cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            Einloggen
+          </button>
+        </form>
+
+        <p class="text-[10px] text-ink-mute mt-4 text-center">
+          Status: <span id="fbStatus">verbinde…</span>
+        </p>
+        <button
+          type="button"
+          id="toCustomer"
+          class="block w-full mt-5 pt-4 border-t-[0.5px] border-line border-x-0 border-b-0 bg-transparent text-[11px] text-ink-mute hover:text-ink cursor-pointer text-center"
+        >← Ich bin Kunde</button>
       </div>
     </div>
     <!-- Brand-Signatur am unteren Rand der Login-Seite -->
@@ -137,32 +154,52 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 </BaseLayout>
 
 <script is:inline>
-  // ─── PWA: Customer-Redirect ──────────────────────────────────
-  // Wenn die App im standalone-Mode öffnet (vom Homescreen) UND ein
-  // customer_room in localStorage liegt UND der User NICHT eingeloggt ist
-  // (= genuiner Customer, kein Owner) → ins Portal mit gespeichertem Raum.
+  // ─── Auto-Return: Kunde landet automatisch in SEINEM Raum ─────────────
+  // Liest den gemerkten Raum (localStorage ODER langlebiges uw_room-Cookie) und
+  // leitet — auch im NORMALEN Browser-Tab — dorthin weiter. WICHTIG: NICHT an
+  // onAuthStateChanged gekettet, sondern mit kurzer Auth-Gnadenfrist. So bleibt
+  // der Kunde NICHT im Owner-Login hängen, wenn die Firebase-Auth lahmt/hängt
+  // (z.B. nach einem IndexedDB-Problem). Ein eingeloggter Owner (E-Mail) wird
+  // NICHT umgeleitet — der landet über den Owner-Pfad im Dashboard.
   (function () {
     try {
+      var qs = new URLSearchParams(location.search);
+      // Owner/Team-Flows haben Vorrang — hier NICHT ins Portal umleiten.
+      if (qs.get("room") || qs.get("invite") || qs.get("next")) return;
+      function readRoom() {
+        try {
+          var r = localStorage.getItem("uw.last_portal_room") ||
+                  localStorage.getItem("uw.customerRoom");
+          if (r) return r;
+        } catch (e) {}
+        try {
+          var m = document.cookie.match(/(?:^|;\s*)uw_room=([^;]+)/);
+          if (m) return decodeURIComponent(m[1]);
+        } catch (e) {}
+        return "";
+      }
+      var savedRoom = readRoom();
+      if (!savedRoom) return; // kein gemerkter Raum → normale Seite (Kunden-Eingang)
       var isStandalone = (window.navigator.standalone === true) ||
                          (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
-      var hasRoom = new URLSearchParams(location.search).get("room");
-      var savedRoom = localStorage.getItem("uw.customerRoom");
-      if (!isStandalone || hasRoom || !savedRoom) return;
-      // Auth-Check: wenn Owner/Team eingeloggt → NICHT redirecten
-      function tryRedirect() {
-        if (!window.firebase || !window.firebase.auth) return setTimeout(tryRedirect, 80);
-        var unsub = window.firebase.auth().onAuthStateChanged(function (u) {
-          unsub();
-          if (u) return; // Owner ist eingeloggt → AuthGuard kümmert sich um Dashboard
-          location.replace("/portal?room=" + encodeURIComponent(savedRoom) + "&pwa=1");
-        });
-        // Sicherheits-Timeout: wenn Auth nicht reagiert binnen 1.2s → annehmen nicht eingeloggt → redirecten
-        setTimeout(function () {
-          try { unsub(); } catch (e) {}
-          location.replace("/portal?room=" + encodeURIComponent(savedRoom) + "&pwa=1");
-        }, 1200);
+      var suffix = isStandalone ? "&pwa=1" : "";
+      var done = false;
+      function goPortal() {
+        if (done) return; done = true;
+        location.replace("/portal?room=" + encodeURIComponent(savedRoom) + suffix);
       }
-      tryRedirect();
+      function waitAuth() {
+        if (!window.firebase || !window.firebase.auth) return setTimeout(waitAuth, 80);
+        var unsub = window.firebase.auth().onAuthStateChanged(function (u) {
+          try { unsub(); } catch (e) {}
+          if (done) return;
+          if (u && u.email) { done = true; return; } // Owner → eigener Owner-Pfad (Dashboard)
+          goPortal(); // anonym / nicht eingeloggt → zurück in den eigenen Raum
+        });
+      }
+      waitAuth();
+      // Gnadenfrist: reagiert die Auth nicht in 1.2s (hängt/lahmt) → trotzdem ins Portal.
+      setTimeout(goPortal, 1200);
     } catch (e) {}
   })();
 
@@ -186,6 +223,26 @@ import BaseLayout from "../layouts/BaseLayout.astro";
       }
       location.href = "/portal?room=" + encodeURIComponent(code);
     });
+  })();
+
+  // ─── Ansicht: Kunde (Default) ↔ Team/Owner-Login ──────────────────
+  // Kunden sehen das Owner-Login nicht. Owner/Team kommen per "Team-Login"-
+  // Link dahin — oder automatisch, wenn ein ?invite=/?next= in der URL steht.
+  (function () {
+    var cust = document.getElementById("customerView");
+    var own = document.getElementById("ownerView");
+    function show(which) {
+      if (!cust || !own) return;
+      var owner = which === "owner";
+      own.classList.toggle("hidden", !owner);
+      cust.classList.toggle("hidden", owner);
+    }
+    var toTeam = document.getElementById("toTeam");
+    var toCust = document.getElementById("toCustomer");
+    if (toTeam) toTeam.addEventListener("click", function () { show("owner"); });
+    if (toCust) toCust.addEventListener("click", function () { show("customer"); });
+    var qs = new URLSearchParams(location.search);
+    if (qs.get("invite") || qs.get("next")) show("owner");
   })();
 
   (function () {
@@ -226,32 +283,21 @@ import BaseLayout from "../layouts/BaseLayout.astro";
       // We do this AFTER the user logs in via authChange — for now show a generic label.
     })();
 
-    // Routing-Logik fuer PWA-Tap und direktes Aufrufen von /
+    // Routing-Logik für Owner/Team:
     //  - Owner mit echter Auth (E-Mail) → next-Param oder /dashboard
-    //  - Anonymer User mit gespeichertem Portal-Raum → zurueck zu /portal?room=...
-    //    (typischer Fall: Kunde hat PWA installiert, tippt App-Icon)
-    //  - Sonst: Login-Form anzeigen
-    function _lastPortalRoom() {
-      try { return localStorage.getItem("uw.last_portal_room") || ""; } catch (e) { return ""; }
-    }
+    //  - Sonst: Eingang anzeigen (Kunden-Eingang ist Default)
+    // Die Kunden-Rückleitung (gemerkter Raum → Portal) macht der Auto-Return ganz
+    // oben — der respektiert ?invite=/?next= und hängt nicht an der Auth.
     waitFb(function () {
       status.textContent = "verbunden — prüfe Anmeldung…";
       status.style.color = "var(--color-success)";
       window.firebase.auth().onAuthStateChanged(function (u) {
-        // Owner = authentifiziert mit E-Mail (nicht-anonym)
+        // Owner = authentifiziert mit E-Mail (nicht-anonym) → Dashboard / next.
         if (u && u.email) {
           status.textContent = "eingeloggt als " + u.email;
           window.location.replace(safeNext());
           return;
         }
-        // Customer-Returning-Pfad: anonyme Auth oder gar keine Auth, aber
-        // localStorage hat ein gemerktes Portal — direkt dahin.
-        var room = _lastPortalRoom();
-        if (room) {
-          window.location.replace("/portal?room=" + encodeURIComponent(room));
-          return;
-        }
-        // Sonst: Login-Form
         status.textContent = "verbunden — nicht eingeloggt";
       });
     });
