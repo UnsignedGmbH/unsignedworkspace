@@ -427,18 +427,23 @@ import BrandworkTimeline from "../components/BrandworkTimeline.astro";
           navigator.clipboard.writeText(url).then(ok).catch(function () { window.prompt("Dein Portal-Link (kopieren):", url); });
         } else { window.prompt("Dein Portal-Link (kopieren):", url); }
       }
+      function copyCode() {
+        function ok() { if (window.toast) window.toast("Code kopiert ✓ — " + room, "success"); }
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(room).then(ok).catch(function () { window.prompt("Dein Zugangs-Code:", room); });
+        } else { window.prompt("Dein Zugangs-Code:", room); }
+      }
       var shareBtn = document.getElementById("ovAccessShare");
       if (shareBtn) shareBtn.addEventListener("click", function () {
-        // Natives Teilen-Menü → Kunde schickt sich den Link selbst (WhatsApp/Mail/
-        // Notizen). So liegt der Zugang außerhalb des löschbaren Browsers.
+        // Teilen-Menü → Kunde sichert sich seinen CODE (z.B. in Notizen/WhatsApp).
+        // Nur der Code — den vollen Link gibt es über "Link kopieren".
         if (navigator.share) {
           navigator.share({
-            title: "Unsigned — Mein Zugang",
-            text: "Mein persönlicher Zugang zu meinem Unsigned-Raum (Code " + room + ")",
-            url: url,
+            title: "Mein Unsigned Zugangs-Code",
+            text: room,
           }).catch(function () { /* abgebrochen/abgelehnt → ignorieren */ });
         } else {
-          copyLink(); // Desktop ohne Web-Share → Link kopieren
+          copyCode(); // Desktop ohne Web-Share → Code kopieren
         }
       });
       var copyBtn = document.getElementById("ovAccessCopy");
