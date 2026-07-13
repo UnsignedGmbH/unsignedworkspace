@@ -1,0 +1,641 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+---
+
+<BaseLayout title="Academy · Unsigned Workspace">
+  <div class="min-h-screen flex flex-col bg-paper text-ink-warm relative overflow-x-hidden">
+    <!-- Slim header -->
+    <header class="relative w-full bg-card border-b-[0.5px] border-line shrink-0 z-10">
+      <div class="relative px-4 md:px-6 lg:px-8 py-3 flex items-center gap-4 flex-wrap">
+        <img
+          src="/brand/v-dark.png"
+          alt="Unsigned"
+          class="h-7 w-auto select-none pointer-events-none"
+          loading="eager"
+        />
+        <span
+          class="text-[11px] font-bold tracking-[0.12em] uppercase text-ink-mute hidden sm:block"
+          >Academy</span
+        >
+        <a
+          id="backToWorkspace"
+          href="/portal"
+          class="hidden ml-auto text-[11px] font-bold text-ink-soft border-[0.5px] border-line rounded-lg px-3 py-2 no-underline hover:border-brand hover:text-brand"
+          >← Zurück zum Workspace</a
+        >
+      </div>
+    </header>
+
+    <!-- Vorschau-Leiste (nur Team-Vorschau) -->
+    <div
+      id="previewBar"
+      class="hidden bg-[#fdf6e3] border-b-[0.5px] border-[#8a6d1a]/30 px-4 md:px-6 lg:px-8 py-2 flex items-center gap-4 flex-wrap z-10"
+    >
+      <span class="text-[11px] font-bold text-[#8a6d1a]">👁 Team-Vorschau — Fortschritt wird nicht gespeichert</span>
+      <label class="flex items-center gap-[6px] cursor-pointer select-none text-[11px] font-semibold text-[#8a6d1a]">
+        <input type="checkbox" id="pvUnlockAll" class="accent-[#8a6d1a]" /> Alles entsperren
+      </label>
+      <label class="flex items-center gap-[6px] cursor-pointer select-none text-[11px] font-semibold text-[#8a6d1a]">
+        <input type="checkbox" id="pvShowUnpub" class="accent-[#8a6d1a]" /> Unveröffentlichte anzeigen
+      </label>
+    </div>
+
+    <main class="flex-1 px-4 md:px-6 lg:px-8 py-5 fade-up" style="animation-delay:120ms">
+      <!-- Boot-Overlay (Muster wie portal.astro: verhindert tote Seite) -->
+      <div
+        id="acadBooting"
+        class="fixed inset-0 z-[60] flex flex-col items-center justify-center gap-3 bg-paper"
+      >
+        <span
+          class="w-8 h-8 rounded-full border-[3px] border-line border-t-brand animate-spin"
+          aria-hidden="true"></span>
+        <span class="text-[12px] font-bold text-ink-mute">Deine Academy wird geladen…</span>
+      </div>
+
+      <!-- Verbindungs-Fehler / Recovery -->
+      <div id="acadConnError" class="hidden max-w-[440px] mx-auto mt-16 text-center">
+        <div class="bg-card border-[0.5px] border-line rounded-2xl px-6 py-8">
+          <div class="text-[28px] mb-2" aria-hidden="true">📡</div>
+          <h2 class="text-[16px] font-extrabold text-ink mb-1">Verbindung hängt</h2>
+          <p class="text-[12px] text-ink-mute mb-4">
+            Die Academy konnte nicht geladen werden. Prüfe deine Internet-Verbindung — oder setze die App zurück (dein Fortschritt bleibt gespeichert).
+          </p>
+          <div class="flex gap-2 justify-center flex-wrap">
+            <button
+              type="button"
+              onclick="location.reload()"
+              class="text-[12px] font-bold text-white bg-brand border-0 rounded-lg px-4 py-2 cursor-pointer hover:bg-[#a82929]"
+              >Neu laden</button
+            >
+            <button
+              type="button"
+              onclick="window.uwReset && window.uwReset()"
+              class="text-[12px] font-bold text-ink-soft bg-transparent border-[0.5px] border-line rounded-lg px-4 py-2 cursor-pointer hover:border-brand hover:text-brand"
+              >Zurücksetzen</button
+            >
+          </div>
+        </div>
+      </div>
+
+      <!-- Kein Zugang (keine ?room= und keine Vorschau) -->
+      <div id="acadNoAccess" class="hidden max-w-[440px] mx-auto mt-16 text-center">
+        <div class="bg-card border-[0.5px] border-line rounded-2xl px-6 py-8">
+          <div class="text-[28px] mb-2" aria-hidden="true">🔑</div>
+          <h2 class="text-[16px] font-extrabold text-ink mb-1">Kein Zugang</h2>
+          <p id="acadNoAccessText" class="text-[12px] text-ink-mute">
+            Öffne die Academy über den Link aus deinem Workspace — oder gib deinen Raum-Code auf der Startseite ein.
+          </p>
+          <a
+            href="/"
+            class="inline-block mt-4 text-[12px] font-bold text-white bg-brand rounded-lg px-4 py-2 no-underline hover:bg-[#a82929]"
+            >Zur Startseite</a
+          >
+        </div>
+      </div>
+
+      <!-- Bald verfügbar (enabled=false, Phase-1-Riegel) -->
+      <div id="acadSoon" class="hidden max-w-[440px] mx-auto mt-16 text-center">
+        <div class="bg-card border-[0.5px] border-line rounded-2xl px-6 py-8">
+          <div class="text-[28px] mb-2" aria-hidden="true">🎓</div>
+          <h2 class="font-display italic font-extrabold text-[24px] text-ink mb-1">Bald verfügbar</h2>
+          <p class="text-[12px] text-ink-mute">
+            Deine Academy ist fast fertig — wir geben dir Bescheid, sobald es losgeht.
+          </p>
+          <a
+            id="soonBackLink"
+            href="/portal"
+            class="inline-block mt-4 text-[12px] font-bold text-white bg-brand rounded-lg px-4 py-2 no-underline hover:bg-[#a82929]"
+            >← Zurück zum Workspace</a
+          >
+        </div>
+      </div>
+
+      <!-- App-Views (per JS gerendert) -->
+      <div id="viewOverview" class="hidden"></div>
+      <div id="viewModule" class="hidden max-w-[760px] mx-auto"></div>
+      <div id="viewLesson" class="hidden max-w-[760px] mx-auto"></div>
+    </main>
+  </div>
+</BaseLayout>
+
+<script is:inline src="/academy/academy-shared.js"></script>
+<script is:inline>
+  // XSS-Hinweis: Alle innerHTML-Templates escapen dynamische Werte über
+  // esc() (UWAcademy.escapeHtml); Rich-Text läuft durch den Allowlist-
+  // Sanitizer (UWAcademy.sanitizeHtml). Gleiches Muster wie portal.astro.
+  (function () {
+    var A = window.UWAcademy;
+    A.injectBaseCss();
+    var esc = A.escapeHtml;
+
+    // ── Modus bestimmen ──────────────────────────────────────────
+    var params = new URLSearchParams(location.search);
+    var room = (params.get("room") || "").trim().toUpperCase();
+    var isPreview = params.get("preview") === "1";
+
+    // ── Zustand ──────────────────────────────────────────────────
+    var content = null; // workspace/academy
+    var progress = {}; // rooms/<room>/academy/progress (oder in-memory bei Vorschau)
+    var openSeenAt = 0;
+    var route = { view: "overview", mid: null, lid: null };
+    var pvUnlockAll = false;
+    var pvShowUnpub = false;
+    var booted = false;
+
+    // ── Boot-Watchdog (Muster portal.astro) ──────────────────────
+    var BOOT_TIMEOUT_MS = 10000;
+    var bootTimer = setTimeout(function () {
+      if (!booted) showOnly("acadConnError");
+    }, BOOT_TIMEOUT_MS);
+    function markReady() {
+      booted = true;
+      clearTimeout(bootTimer);
+      var b = document.getElementById("acadBooting");
+      if (b) b.style.display = "none";
+    }
+
+    function showOnly(id) {
+      markReady();
+      ["acadConnError", "acadNoAccess", "acadSoon", "viewOverview", "viewModule", "viewLesson"].forEach(
+        function (v) {
+          document.getElementById(v).classList.toggle("hidden", v !== id);
+        }
+      );
+    }
+
+    // ── Freischaltung / Optionen ─────────────────────────────────
+    function accessOpts() {
+      return {
+        unlockAll: isPreview && pvUnlockAll,
+        includeUnpublished: isPreview && pvShowUnpub,
+      };
+    }
+    function listOpts() {
+      return { includeUnpublished: isPreview && pvShowUnpub };
+    }
+
+    // ── Rendering ────────────────────────────────────────────────
+    function progressBar(pct) {
+      return (
+        '<div class="h-[3px] bg-line rounded-full overflow-hidden mt-3"><div class="h-full bg-brand rounded-full" style="width:' +
+        Math.max(0, Math.min(100, pct)) + '%"></div></div>'
+      );
+    }
+
+    function moduleCard(m, acc, locked, lockHint) {
+      var st = acc.modules[m.id] || {};
+      var stateIcon = st.complete
+        ? '<span class="text-[16px]" aria-hidden="true">✅</span>'
+        : locked
+          ? '<span class="text-[16px] opacity-50" aria-hidden="true">🔒</span>'
+          : '<span class="text-[16px]" aria-hidden="true">📖</span>';
+      var draft = !m.published
+        ? ' <span class="text-[9px] font-bold px-[6px] py-[1px] rounded-full bg-page text-ink-mute align-middle">ENTWURF</span>'
+        : "";
+      var inner =
+        '<div class="flex items-start gap-3">' +
+        stateIcon +
+        '<div class="flex-1 min-w-0">' +
+        '<div class="text-[13px] font-extrabold ' + (locked ? "text-ink-mute" : "text-ink") + '">' +
+        esc(m.title || "Ohne Titel") + draft + "</div>" +
+        (m.description
+          ? '<div class="text-[11px] text-ink-mute mt-[2px] leading-snug">' + esc(m.description) + "</div>"
+          : "") +
+        (locked && lockHint
+          ? '<div class="text-[10px] font-bold text-ink-mute mt-[6px]">' + lockHint + "</div>"
+          : "") +
+        "</div>" +
+        '<div class="text-[10px] font-bold text-ink-mute shrink-0">' + st.done + "/" + st.total + "</div>" +
+        "</div>" +
+        (!locked ? progressBar(st.pct) : "");
+      if (locked) {
+        return (
+          '<div class="bg-card border-[0.5px] border-line rounded-xl px-4 py-[14px] opacity-70 cursor-not-allowed">' +
+          inner + "</div>"
+        );
+      }
+      return (
+        '<button type="button" data-openmod="' + esc(m.id) +
+        '" class="w-full text-left bg-card border-[0.5px] border-line rounded-xl px-4 py-[14px] cursor-pointer hover:border-brand-border hover:bg-brand-dim transition-colors">' +
+        inner + "</button>"
+      );
+    }
+
+    function renderOverview() {
+      var host = document.getElementById("viewOverview");
+      var acc = A.computeAccess(content, progress, accessOpts());
+      var mods = A.sortModules(content, listOpts());
+      var course = mods.filter(function (m) { return m.type !== "open"; });
+      var open = mods.filter(function (m) { return m.type === "open"; });
+
+      // "Neu"-Badge im offenen Bereich: Lektion neuer als letzter Besuch
+      function hasNew(m) {
+        if (isPreview) return false;
+        var ls = A.sortLessons(m, listOpts());
+        return ls.some(function (l) { return (l.updatedAt || 0) > (openSeenAt || 0); });
+      }
+
+      // Kurskarten mit Sperr-Logik: gesperrt, wenn Modul nicht unlocked
+      var prevTitle = null;
+      var courseHtml = course
+        .map(function (m) {
+          var st = acc.modules[m.id] || {};
+          var locked = !st.unlocked;
+          var hint = locked && prevTitle ? "Erst „" + esc(prevTitle) + "“ abschließen" : "";
+          var html = moduleCard(m, acc, locked, hint);
+          prevTitle = m.title || "Ohne Titel";
+          return html;
+        })
+        .join("");
+
+      var openHtml = open
+        .map(function (m) {
+          var badge = hasNew(m)
+            ? '<span class="text-[9px] font-bold px-[7px] py-[2px] rounded-full bg-brand text-white ml-2 align-middle">NEU</span>'
+            : "";
+          var st = acc.modules[m.id] || {};
+          return (
+            '<button type="button" data-openmod="' + esc(m.id) +
+            '" class="w-full text-left bg-card border-[0.5px] border-line rounded-xl px-4 py-[14px] cursor-pointer hover:border-brand-border hover:bg-brand-dim transition-colors">' +
+            '<div class="flex items-start gap-3">' +
+            '<span class="text-[16px]" aria-hidden="true">📣</span>' +
+            '<div class="flex-1 min-w-0">' +
+            '<div class="text-[13px] font-extrabold text-ink">' + esc(m.title || "Ohne Titel") + badge +
+            (!m.published ? ' <span class="text-[9px] font-bold px-[6px] py-[1px] rounded-full bg-page text-ink-mute align-middle">ENTWURF</span>' : "") +
+            "</div>" +
+            (m.description
+              ? '<div class="text-[11px] text-ink-mute mt-[2px] leading-snug">' + esc(m.description) + "</div>"
+              : "") +
+            "</div>" +
+            '<span class="text-[10px] font-bold text-ink-mute shrink-0">' + (st.total || 0) + " Beiträge</span>" +
+            "</div></button>"
+          );
+        })
+        .join("");
+
+      host.innerHTML =
+        // HERO (Bestand-Stil: dunkles Bild + Fraunces italic)
+        '<section class="relative overflow-hidden rounded-2xl mb-5 md:mb-6 shadow-[0_10px_40px_rgba(0,0,0,0.08)]">' +
+        '<div class="absolute inset-0 bg-[#0a0a0a] bg-no-repeat bg-cover bg-center" style="background-image:url(\'/brand/hintergrund.jpg\')" aria-hidden="true"></div>' +
+        '<div class="absolute inset-0 bg-gradient-to-br from-black/85 via-black/70 to-black/55" aria-hidden="true"></div>' +
+        '<div class="relative px-5 md:px-8 py-6 md:py-8 text-white">' +
+        '<p class="text-[11px] md:text-[12px] font-bold tracking-[0.18em] uppercase text-white/55">Dein Weg zur eigenen Brand</p>' +
+        '<h1 class="font-display italic font-extrabold text-[32px] md:text-[52px] leading-[0.95] tracking-[-0.01em] mt-1 mb-2">Academy</h1>' +
+        '<p class="text-[13px] md:text-[14px] text-white/70 max-w-[520px]">Arbeite die Lektionen Schritt für Schritt durch — jede abgeschlossene Aufgabe bringt dich näher an deine eigene Modemarke.</p>' +
+        (acc.courseTotal
+          ? '<div class="inline-flex items-center gap-3 mt-4 bg-white/10 backdrop-blur rounded-xl px-4 py-2">' +
+            '<span class="text-[20px] font-extrabold">' + acc.pct + "%</span>" +
+            '<span class="text-[11px] text-white/70 font-semibold">' + acc.courseDone + " von " + acc.courseTotal + " Lektionen geschafft</span>" +
+            "</div>"
+          : "") +
+        "</div></section>" +
+        // Kurs
+        '<div class="max-w-[760px] mx-auto">' +
+        '<div class="flex items-center gap-2 mb-2"><span class="w-1 h-3 bg-brand"></span><span class="text-[10px] font-bold tracking-[0.12em] uppercase text-ink-mute">Dein Kurs</span></div>' +
+        (course.length
+          ? '<div class="flex flex-col gap-2 stagger">' + courseHtml + "</div>"
+          : '<div class="bg-card border-[0.5px] border-line rounded-xl px-4 py-6 text-center text-[12px] text-ink-mute">Hier entsteht gerade dein Kurs — schau bald wieder rein.</div>') +
+        (open.length
+          ? '<div class="flex items-center gap-2 mb-2 mt-6"><span class="w-1 h-3 bg-brand"></span><span class="text-[10px] font-bold tracking-[0.12em] uppercase text-ink-mute">Immer für dich offen</span></div>' +
+            '<div class="flex flex-col gap-2 stagger">' + openHtml + "</div>"
+          : "") +
+        "</div>";
+    }
+
+    function renderModule() {
+      var host = document.getElementById("viewModule");
+      var m = content && content.modules && content.modules[route.mid];
+      if (!m) { goOverview(); return; }
+      var acc = A.computeAccess(content, progress, accessOpts());
+      var ls = A.sortLessons(m, listOpts());
+      var mst = acc.modules[route.mid] || {};
+
+      host.innerHTML =
+        '<button type="button" data-back="overview" class="text-[11px] font-bold text-ink-soft bg-transparent border-[0.5px] border-line rounded-lg px-3 py-2 cursor-pointer hover:border-brand hover:text-brand mb-4">← Übersicht</button>' +
+        '<div class="mb-4">' +
+        '<h1 class="font-display italic font-extrabold text-[26px] md:text-[34px] leading-tight text-ink">' + esc(m.title || "Ohne Titel") + "</h1>" +
+        (m.description ? '<p class="text-[12px] text-ink-mute mt-1">' + esc(m.description) + "</p>" : "") +
+        (m.type !== "open" && mst.total
+          ? '<div class="max-w-[280px]">' + progressBar(mst.pct) + '</div><div class="text-[10px] font-bold text-ink-mute mt-1">' + mst.done + " von " + mst.total + " Lektionen</div>"
+          : "") +
+        "</div>" +
+        '<div class="flex flex-col gap-2 stagger">' +
+        ls
+          .map(function (l, i) {
+            var st = acc.lessons[l.id] || {};
+            var icon = st.done ? "✅" : st.current ? "▶️" : st.accessible ? "📖" : "🔒";
+            var draft = !l.published
+              ? ' <span class="text-[9px] font-bold px-[6px] py-[1px] rounded-full bg-page text-ink-mute align-middle">ENTWURF</span>'
+              : "";
+            var inner =
+              '<div class="flex items-center gap-3">' +
+              '<span class="text-[15px] shrink-0 ' + (!st.accessible ? "opacity-50" : "") + '" aria-hidden="true">' + icon + "</span>" +
+              '<span class="text-[10px] font-bold text-ink-mute w-5 shrink-0">' + (i + 1) + "</span>" +
+              '<span class="text-[12.5px] font-bold flex-1 min-w-0 ' + (st.accessible ? "text-ink" : "text-ink-mute") + '">' + esc(l.title || "Ohne Titel") + draft + "</span>" +
+              (st.current ? '<span class="text-[9px] font-bold px-[7px] py-[2px] rounded-full bg-brand text-white shrink-0">JETZT DRAN</span>' : "") +
+              "</div>";
+            if (!st.accessible) {
+              return '<div class="bg-card border-[0.5px] border-line rounded-xl px-4 py-3 opacity-70 cursor-not-allowed">' + inner + "</div>";
+            }
+            return (
+              '<button type="button" data-openlesson="' + esc(l.id) +
+              '" class="w-full text-left bg-card border-[0.5px] border-line rounded-xl px-4 py-3 cursor-pointer hover:border-brand-border hover:bg-brand-dim transition-colors">' +
+              inner + "</button>"
+            );
+          })
+          .join("") +
+        "</div>" +
+        (!ls.length
+          ? '<div class="bg-card border-[0.5px] border-line rounded-xl px-4 py-6 text-center text-[12px] text-ink-mute">Noch keine Lektionen in diesem Bereich.</div>'
+          : "");
+    }
+
+    function findLesson(lid) {
+      var mods = (content && content.modules) || {};
+      var hit = null;
+      Object.keys(mods).forEach(function (mid) {
+        var ls = mods[mid].lessons || {};
+        if (ls[lid]) hit = { mid: mid, lesson: ls[lid], module: mods[mid] };
+      });
+      return hit;
+    }
+
+    function renderLesson() {
+      var host = document.getElementById("viewLesson");
+      var hit = findLesson(route.lid);
+      if (!hit) { goOverview(); return; }
+      var l = hit.lesson;
+      var acc = A.computeAccess(content, progress, accessOpts());
+      var st = acc.lessons[route.lid] || {};
+      if (!st.accessible && !(isPreview && pvUnlockAll)) { goModule(hit.mid); return; }
+
+      var tasks = A.toArr(l.tasks);
+      var prog = progress[route.lid] || {};
+      var checkedMap = prog.tasks || {};
+      var allChecked = tasks.every(function (t) { return !!checkedMap[t.id]; });
+      var isDone = !!prog.done;
+      var nextLid = acc.nextAfter[route.lid] || null;
+
+      host.innerHTML =
+        '<button type="button" data-back="module" class="text-[11px] font-bold text-ink-soft bg-transparent border-[0.5px] border-line rounded-lg px-3 py-2 cursor-pointer hover:border-brand hover:text-brand mb-4">← ' +
+        esc(hit.module.title || "Zurück") + "</button>" +
+        '<div class="flex items-center gap-2 flex-wrap mb-3">' +
+        '<h1 class="font-display italic font-extrabold text-[24px] md:text-[32px] leading-tight text-ink flex-1 min-w-[200px]">' + esc(l.title || "Ohne Titel") + "</h1>" +
+        (isDone ? '<span class="text-[10px] font-bold px-[8px] py-[3px] rounded-full bg-success/10 text-success shrink-0">✓ Abgeschlossen</span>' : "") +
+        "</div>" +
+        (l.videoUrl ? '<div class="mb-4">' + A.videoEmbedHtml(l.videoType, l.videoUrl) + "</div>" : "") +
+        '<div class="bg-card border-[0.5px] border-line rounded-xl px-4 md:px-6 py-5 mb-4">' +
+        (A.lessonBodyHtml(l) || '<div class="text-[12px] text-ink-mute">Zu dieser Lektion gibt es noch keinen Text.</div>') +
+        "</div>" +
+        (tasks.length
+          ? '<div class="bg-card border-[0.5px] border-line rounded-xl px-4 md:px-6 py-5 mb-4">' +
+            '<div class="flex items-center gap-2 mb-3"><span class="w-1 h-3 bg-brand"></span><span class="text-[10px] font-bold tracking-[0.12em] uppercase text-ink-mute">Aufgaben-Check</span></div>' +
+            '<div class="flex flex-col gap-[10px]">' +
+            tasks
+              .map(function (t) {
+                var on = !!checkedMap[t.id];
+                return (
+                  '<label class="flex items-start gap-3 cursor-pointer select-none group">' +
+                  '<input type="checkbox" data-task="' + esc(t.id) + '"' + (on ? " checked" : "") +
+                  (isDone ? " disabled" : "") +
+                  ' class="accent-[#c13030] w-[18px] h-[18px] mt-[1px] shrink-0 cursor-pointer"/>' +
+                  '<span class="text-[13px] font-semibold leading-snug ' + (on ? "text-ink-mute line-through" : "text-ink") + '">' +
+                  esc(t.text || "") + "</span></label>"
+                );
+              })
+              .join("") +
+            "</div></div>"
+          : "") +
+        // Abschluss-Leiste
+        '<div class="sticky bottom-3 z-10">' +
+        (isDone
+          ? nextLid
+            ? '<button type="button" data-openlesson="' + esc(nextLid) +
+              '" class="w-full text-[13px] font-bold text-white bg-brand border-0 rounded-xl px-4 py-[14px] cursor-pointer hover:bg-[#a82929] shadow-[0_6px_24px_rgba(193,48,48,0.35)]">Weiter zur nächsten Lektion →</button>'
+            : '<div class="w-full text-center text-[13px] font-bold text-success bg-card border-[0.5px] border-success/40 rounded-xl px-4 py-[14px]">🎉 Stark — du hast alle Lektionen geschafft!</div>'
+          : '<button type="button" id="completeBtn"' + (allChecked ? "" : " disabled") +
+            ' class="w-full text-[13px] font-bold text-white bg-brand border-0 rounded-xl px-4 py-[14px] cursor-pointer hover:bg-[#a82929] shadow-[0_6px_24px_rgba(193,48,48,0.35)] disabled:opacity-40 disabled:cursor-not-allowed">' +
+            (allChecked ? "Lektion abschließen ✓" : tasks.length ? "Erst alle Aufgaben abhaken" : "Lektion abschließen ✓") +
+            "</button>") +
+        "</div>";
+
+      // Task-Checkboxen
+      host.querySelectorAll("[data-task]").forEach(function (cb) {
+        cb.addEventListener("change", function () {
+          setTaskChecked(route.lid, cb.dataset.task, cb.checked);
+        });
+      });
+      var btn = document.getElementById("completeBtn");
+      if (btn) btn.addEventListener("click", function () { completeLesson(route.lid); });
+    }
+
+    // ── Navigation ───────────────────────────────────────────────
+    function goOverview() {
+      route = { view: "overview", mid: null, lid: null };
+      renderOverview();
+      showOnly("viewOverview");
+      document.getElementById("viewOverview").classList.add("view-enter-left");
+    }
+    function goModule(mid) {
+      route = { view: "module", mid: mid, lid: null };
+      var m = content && content.modules && content.modules[mid];
+      if (m && m.type === "open" && !isPreview && room) {
+        // Marketing-Bereich besucht → "Neu"-Badge zurücksetzen
+        window.fb.safeSet("rooms/" + room + "/academy/openSeenAt", window.fb.ts()).catch(function () {});
+        openSeenAt = Date.now();
+      }
+      renderModule();
+      showOnly("viewModule");
+      document.getElementById("viewModule").classList.add("view-enter-right");
+    }
+    function goLesson(lid) {
+      var hit = findLesson(lid);
+      if (!hit) { goOverview(); return; }
+      route = { view: "lesson", mid: hit.mid, lid: lid };
+      renderLesson();
+      showOnly("viewLesson");
+      document.getElementById("viewLesson").classList.add("view-enter-right");
+    }
+
+    document.addEventListener("click", function (e) {
+      var t;
+      if ((t = e.target.closest("[data-openmod]"))) { goModule(t.dataset.openmod); return; }
+      if ((t = e.target.closest("[data-openlesson]"))) { goLesson(t.dataset.openlesson); return; }
+      if ((t = e.target.closest("[data-back]"))) {
+        if (t.dataset.back === "module" && route.mid) goModule(route.mid);
+        else goOverview();
+      }
+    });
+
+    // ── Fortschritt schreiben ────────────────────────────────────
+    function setTaskChecked(lid, tid, on) {
+      if (isPreview) {
+        progress[lid] = progress[lid] || {};
+        progress[lid].tasks = progress[lid].tasks || {};
+        if (on) progress[lid].tasks[tid] = true;
+        else delete progress[lid].tasks[tid];
+        renderLesson();
+        return;
+      }
+      var path = "rooms/" + room + "/academy/progress/" + lid + "/tasks/" + tid;
+      if (on) window.fb.safeSet(path, true);
+      else window.fb.safeRemove(path);
+    }
+
+    function completeLesson(lid) {
+      if (isPreview) {
+        progress[lid] = progress[lid] || {};
+        progress[lid].done = true;
+        progress[lid].doneAt = Date.now();
+        renderLesson();
+        return;
+      }
+      // pct mit dem NEUEN Zustand berechnen und in einem Update schreiben
+      var next = {};
+      Object.keys(progress).forEach(function (k) { next[k] = progress[k]; });
+      next[lid] = Object.assign({}, next[lid], { done: true });
+      var acc = A.computeAccess(content, next, {});
+      var upd = {};
+      upd["academy/progress/" + lid + "/done"] = true;
+      upd["academy/progress/" + lid + "/doneAt"] = window.fb.ts();
+      upd["academy_pct"] = acc.pct;
+      window.fb.safeUpdate("rooms/" + room, upd).then(function () {
+        window.toast("Lektion abgeschlossen ✓", "info");
+      });
+    }
+
+    // ── Re-Render bei Datenänderung ──────────────────────────────
+    function rerender() {
+      if (!content) return;
+      markReady();
+      if (route.view === "lesson") { renderLesson(); showOnly("viewLesson"); }
+      else if (route.view === "module") { renderModule(); showOnly("viewModule"); }
+      else { renderOverview(); showOnly("viewOverview"); }
+    }
+
+    // ── Subscriptions ────────────────────────────────────────────
+    function subscribeContent() {
+      window.fb.ref("workspace/academy").on(
+        "value",
+        function (s) {
+          var v = s.val() || {};
+          content = v;
+          if (!isPreview && v.enabled !== true) {
+            // Harter Phase-1-Riegel für Kunden
+            showOnly("acadSoon");
+            return;
+          }
+          rerender();
+        },
+        function (err) {
+          // Fehlende Leserechte (Rules noch nicht gesetzt) ≠ Verbindungsproblem:
+          // Kunden sehen dann schlicht "Bald verfügbar", Team-Vorschau den Hinweis.
+          var code = String((err && err.code) || err || "");
+          if (/permission/i.test(code)) {
+            if (isPreview) {
+              showOnly("acadNoAccess");
+              document.getElementById("acadNoAccessText").textContent =
+                "Kein Lesezugriff auf workspace/academy — bitte die Firebase-Rules ergänzen (siehe Anleitung im Team).";
+            } else {
+              showOnly("acadSoon");
+            }
+            return;
+          }
+          showOnly("acadConnError");
+        }
+      );
+    }
+
+    function subscribeProgress() {
+      window.fb.ref("rooms/" + room + "/academy").on("value", function (s) {
+        var v = s.val() || {};
+        progress = v.progress || {};
+        openSeenAt = v.openSeenAt || 0;
+        if (content) rerender();
+      });
+    }
+
+    // ── Boot ─────────────────────────────────────────────────────
+    function waitForFb(cb) {
+      if (window.fb && window.firebase) { cb(); return; }
+      var n = 0;
+      var t = setInterval(function () {
+        if (window.fb && window.firebase) { clearInterval(t); cb(); }
+        else if (++n > 100) { clearInterval(t); showOnly("acadConnError"); }
+      }, 100);
+    }
+
+    function bootPreview() {
+      document.getElementById("backToWorkspace").classList.add("hidden");
+      window.firebase.auth().onAuthStateChanged(function (u) {
+        if (!u || u.isAnonymous) {
+          showOnly("acadNoAccess");
+          document.getElementById("acadNoAccessText").textContent =
+            "Die Vorschau ist nur fürs Team. Bitte zuerst im Workspace einloggen.";
+          return;
+        }
+        document.getElementById("previewBar").classList.remove("hidden");
+        document.getElementById("pvUnlockAll").addEventListener("change", function (e) {
+          pvUnlockAll = e.target.checked;
+          rerender();
+        });
+        document.getElementById("pvShowUnpub").addEventListener("change", function (e) {
+          pvShowUnpub = e.target.checked;
+          rerender();
+        });
+        subscribeContent();
+      });
+    }
+
+    function bootRoom() {
+      var back = document.getElementById("backToWorkspace");
+      back.href = "/portal?room=" + encodeURIComponent(room);
+      back.classList.remove("hidden");
+      document.getElementById("soonBackLink").href = "/portal?room=" + encodeURIComponent(room);
+
+      var auth = window.firebase.auth();
+      auth.onAuthStateChanged(function (u) {
+        if (u) { afterAuth(); return; }
+        auth.signInAnonymously().catch(function (e) {
+          window.toast(
+            "Anmeldung fehlgeschlagen — bitte Seite neu laden. (" + (e.code || e.message) + ")",
+            "error",
+            { ttl: 0 }
+          );
+          showOnly("acadConnError");
+        });
+      });
+
+      var started = false;
+      function afterAuth() {
+        if (started) return;
+        started = true;
+        // Geschlossener Raum (Kunde gelöscht)? → wie Portal behandeln
+        var done = false;
+        var to = setTimeout(function () { if (!done) { done = true; start(); } }, 7000);
+        window.fb.ref("rooms/" + room + "/_closed").once("value")
+          .then(function (s) {
+            if (done) return; done = true; clearTimeout(to);
+            if (s.exists()) {
+              showOnly("acadNoAccess");
+              document.getElementById("acadNoAccessText").textContent =
+                "Dieser Zugang wurde geschlossen. Melde dich bei deinem Team, wenn das ein Versehen ist.";
+              return;
+            }
+            start();
+          })
+          .catch(function () { if (done) return; done = true; clearTimeout(to); start(); });
+      }
+      function start() {
+        subscribeContent();
+        subscribeProgress();
+      }
+    }
+
+    waitForFb(function () {
+      if (isPreview) bootPreview();
+      else if (room) bootRoom();
+      else showOnly("acadNoAccess");
+    });
+  })();
+</script>

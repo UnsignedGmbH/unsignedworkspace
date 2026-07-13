@@ -1,0 +1,758 @@
+---
+import AppLayout from "../layouts/AppLayout.astro";
+---
+
+<AppLayout title="Academy" active="academy-admin">
+  <div id="acadRoot">
+    <!-- Kopfzeile: Status + Vorschau + Kunden-Sichtbarkeit -->
+    <div
+      class="bg-card border-[0.5px] border-line rounded-xl px-4 py-3 mb-4 flex items-center gap-3 flex-wrap"
+    >
+      <div class="flex-1 min-w-[220px]">
+        <div class="flex items-center gap-2">
+          <span class="w-1 h-3 bg-brand"></span>
+          <span
+            class="text-[10px] font-bold tracking-[0.12em] uppercase text-ink-mute"
+            >Coaching-Plattform</span
+          >
+        </div>
+        <div id="acadStatus" class="text-[11px] text-ink-mute mt-1">Lade…</div>
+      </div>
+      <a
+        href="/academy?preview=1"
+        target="_blank"
+        rel="noopener"
+        class="text-[11px] font-bold text-ink-soft bg-transparent border-[0.5px] border-line rounded-lg px-3 py-2 cursor-pointer hover:border-brand hover:text-brand no-underline"
+        >👁 Vorschau als Kunde ↗</a
+      >
+      <div class="flex items-center gap-2">
+        <span class="text-[11px] font-bold text-ink-soft"
+          >Für Kunden sichtbar</span
+        >
+        <button
+          type="button"
+          id="enabledToggle"
+          class="w-10 h-[22px] rounded-full bg-[#ddd] flex items-center justify-start px-[3px] border-0 cursor-pointer transition-colors"
+          title="Academy für Kunden freischalten"
+          aria-label="Academy für Kunden freischalten"
+        >
+          <span class="w-4 h-4 rounded-full bg-white shadow pointer-events-none"
+          ></span>
+        </button>
+      </div>
+    </div>
+
+    <div class="grid md:grid-cols-[320px_minmax(0,1fr)] gap-4 items-start">
+      <!-- Linke Spalte: Überthemen + Lektionen -->
+      <div class="min-w-0">
+        <div class="flex items-center gap-2 mb-2">
+          <span class="w-1 h-3 bg-brand"></span>
+          <span
+            class="text-[10px] font-bold tracking-[0.12em] uppercase text-ink-mute"
+            >Überthemen</span
+          >
+        </div>
+        <div id="modList" class="flex flex-col gap-2"></div>
+        <button
+          type="button"
+          id="addModuleBtn"
+          class="acad-edit mt-2 w-full text-[12px] font-bold text-ink-soft bg-card border-[0.5px] border-dashed border-line rounded-xl px-3 py-3 cursor-pointer hover:border-brand hover:text-brand"
+          >＋ Überthema anlegen</button
+        >
+      </div>
+
+      <!-- Rechte Spalte: Editor -->
+      <div id="editorPane" class="min-w-0"></div>
+    </div>
+  </div>
+</AppLayout>
+
+<script is:inline src="/academy/academy-shared.js"></script>
+<script is:inline>
+  // XSS-Hinweis: Alle innerHTML-Templates hier escapen JEDEN dynamischen
+  // Wert über esc() (UWAcademy.escapeHtml); Rich-Text läuft zusätzlich
+  // beim Speichern UND Rendern durch den Allowlist-Sanitizer
+  // (UWAcademy.sanitizeHtml). Gleiches Muster wie portal.astro.
+  (function () {
+    var A = window.UWAcademy;
+    A.injectBaseCss();
+    var esc = A.escapeHtml;
+
+    // ── Zustand ──────────────────────────────────────────────────
+    var content = null; // Snapshot von workspace/academy
+    var sel = { mid: null, lid: null };
+    var dirty = false; // Lektions-Editor hat ungespeicherte Änderungen
+    var externChanged = false; // Daten kamen rein, während dirty
+    var isAdmin = false;
+
+    // ── Schreib-Helfer: ALLE Editor-Writes laufen hier durch und
+    //    sind damit auf workspace/academy begrenzt (Bug-Schutz). ──
+    var BASE = "workspace/academy";
+    function acadSet(sub, val) { return window.fb.safeSet(BASE + "/" + sub, val); }
+    function acadUpdate(upd) { return window.fb.safeUpdate(BASE, upd); }
+    function acadRemove(sub) { return window.fb.safeRemove(BASE + "/" + sub); }
+    function newKey() { return window.fb.ref(BASE).push().key; }
+
+    function guard() {
+      if (!isAdmin) {
+        window.appUI.toast("Nur Admins können die Academy bearbeiten");
+        return false;
+      }
+      return true;
+    }
+
+    // ── Rendering: linke Modul-Liste ─────────────────────────────
+    var LIST_OPTS = { includeUnpublished: true };
+
+    function typeChip(m) {
+      return m.type === "open"
+        ? '<span class="text-[9px] font-bold px-[7px] py-[2px] rounded-full bg-info/10 text-info">OFFEN</span>'
+        : '<span class="text-[9px] font-bold px-[7px] py-[2px] rounded-full bg-brand-dim text-brand">KURS</span>';
+    }
+    function pubDot(on) {
+      return (
+        '<span class="w-2 h-2 rounded-full shrink-0 ' +
+        (on ? "bg-success" : "bg-[#ccc]") +
+        '" title="' + (on ? "Veröffentlicht" : "Entwurf") + '"></span>'
+      );
+    }
+
+    function renderList() {
+      var host = document.getElementById("modList");
+      var mods = A.sortModules(content, LIST_OPTS);
+      if (!mods.length) {
+        host.innerHTML =
+          '<div class="bg-card border-[0.5px] border-line rounded-xl px-4 py-5 text-[12px] text-ink-mute text-center">Noch keine Überthemen.<br/>Leg unten das erste an.</div>';
+        return;
+      }
+      host.innerHTML = mods
+        .map(function (m, i) {
+          var lessons = A.sortLessons(m, LIST_OPTS);
+          var isSel = sel.mid === m.id;
+          var head =
+            '<div class="w-full flex items-center gap-2 px-3 py-[10px]">' +
+            '<button type="button" data-selmod="' + m.id + '" class="flex-1 min-w-0 flex items-center gap-2 bg-transparent border-0 cursor-pointer text-left p-0">' +
+            pubDot(m.published) +
+            '<span class="text-[12px] font-bold flex-1 min-w-0 truncate ' + (isSel ? "text-brand" : "text-ink") + '">' + esc(m.title || "Ohne Titel") + "</span>" +
+            typeChip(m) +
+            '<span class="text-[10px] text-ink-mute shrink-0">' + lessons.length + "</span>" +
+            "</button>" +
+            '<span class="flex flex-col gap-[1px] shrink-0">' +
+            '<button type="button" data-modmove="' + m.id + '|-1" class="acad-edit text-[9px] leading-none text-ink-mute hover:text-brand bg-transparent border-0 cursor-pointer px-1 ' + (i === 0 ? "invisible" : "") + '" title="Nach oben">▲</button>' +
+            '<button type="button" data-modmove="' + m.id + '|1" class="acad-edit text-[9px] leading-none text-ink-mute hover:text-brand bg-transparent border-0 cursor-pointer px-1 ' + (i === mods.length - 1 ? "invisible" : "") + '" title="Nach unten">▼</button>' +
+            "</span>" +
+            "</div>";
+
+          var body = "";
+          if (isSel) {
+            body =
+              '<div class="border-t-[0.5px] border-line px-2 py-2 flex flex-col gap-[2px]">' +
+              lessons
+                .map(function (l, j) {
+                  var isLSel = sel.lid === l.id;
+                  return (
+                    '<div class="flex items-center gap-1 rounded-lg ' + (isLSel ? "bg-brand-dim" : "hover:bg-page") + '">' +
+                    '<button type="button" data-sellesson="' + m.id + "|" + l.id + '" class="flex-1 min-w-0 flex items-center gap-2 px-2 py-[7px] bg-transparent border-0 cursor-pointer text-left">' +
+                    pubDot(l.published) +
+                    '<span class="text-[11.5px] font-semibold truncate ' + (isLSel ? "text-brand" : "text-ink-soft") + '">' + esc(l.title || "Ohne Titel") + "</span>" +
+                    "</button>" +
+                    '<button type="button" data-lessonmove="' + m.id + "|" + l.id + '|-1" class="acad-edit text-[9px] text-ink-mute hover:text-brand bg-transparent border-0 cursor-pointer px-1 ' + (j === 0 ? "invisible" : "") + '" title="Nach oben">▲</button>' +
+                    '<button type="button" data-lessonmove="' + m.id + "|" + l.id + '|1" class="acad-edit text-[9px] text-ink-mute hover:text-brand bg-transparent border-0 cursor-pointer px-1 mr-1 ' + (j === lessons.length - 1 ? "invisible" : "") + '" title="Nach unten">▼</button>' +
+                    "</div>"
+                  );
+                })
+                .join("") +
+              '<button type="button" data-addlesson="' + m.id + '" class="acad-edit text-[11px] font-bold text-ink-mute hover:text-brand bg-transparent border-0 cursor-pointer text-left px-2 py-[7px]">＋ Lektion</button>' +
+              "</div>";
+          }
+
+          return (
+            '<div class="bg-card border-[0.5px] rounded-xl overflow-hidden ' +
+            (isSel ? "border-brand-border" : "border-line") + '">' +
+            head + body + "</div>"
+          );
+        })
+        .join("");
+    }
+
+    // ── Rendering: rechter Editor ────────────────────────────────
+    function getMod(mid) {
+      return content && content.modules && content.modules[mid]
+        ? content.modules[mid]
+        : null;
+    }
+    function getLesson(mid, lid) {
+      var m = getMod(mid);
+      return m && m.lessons && m.lessons[lid] ? m.lessons[lid] : null;
+    }
+
+    function emptyPane(msg) {
+      return (
+        '<div class="bg-card border-[0.5px] border-line rounded-xl px-5 py-10 text-center text-[12px] text-ink-mute">' +
+        msg + "</div>"
+      );
+    }
+
+    var INPUT_CLS =
+      "w-full text-[13px] font-semibold border-[1.5px] border-line rounded-lg px-3 py-2 outline-none text-ink bg-white focus:border-brand disabled:opacity-50";
+    var BTN_PRIMARY =
+      "text-[12px] font-bold text-white bg-brand border-0 rounded-lg px-4 py-2 cursor-pointer hover:bg-[#a82929] disabled:opacity-40 disabled:cursor-not-allowed";
+    var BTN_GHOST =
+      "text-[11px] font-bold text-ink-soft bg-transparent border-[0.5px] border-line rounded-lg px-3 py-2 cursor-pointer hover:border-brand hover:text-brand disabled:opacity-40";
+    var BTN_DANGER =
+      "text-[11px] font-bold text-brand bg-transparent border-[0.5px] border-brand-border rounded-lg px-3 py-2 cursor-pointer hover:bg-brand-dim disabled:opacity-40";
+
+    function sectionLabel(t) {
+      return (
+        '<div class="flex items-center gap-2 mb-[6px] mt-4"><span class="w-1 h-3 bg-brand"></span><span class="text-[10px] font-bold tracking-[0.12em] uppercase text-ink-mute">' +
+        t + "</span></div>"
+      );
+    }
+
+    function renderEditor() {
+      var pane = document.getElementById("editorPane");
+      if (!sel.mid) {
+        pane.innerHTML = emptyPane(
+          "Wähle links ein Überthema — oder leg ein neues an."
+        );
+        return;
+      }
+      var m = getMod(sel.mid);
+      if (!m) { sel = { mid: null, lid: null }; pane.innerHTML = emptyPane("Wähle links ein Überthema."); return; }
+      if (sel.lid) {
+        var l = getLesson(sel.mid, sel.lid);
+        if (!l) { sel.lid = null; renderModuleEditor(pane, m); return; }
+        renderLessonEditor(pane, m, l);
+      } else {
+        renderModuleEditor(pane, m);
+      }
+    }
+
+    // — Modul-Editor —
+    function renderModuleEditor(pane, m) {
+      pane.innerHTML =
+        '<div class="bg-card border-[0.5px] border-line rounded-xl px-4 md:px-5 py-4">' +
+        '<div class="flex items-center gap-2 flex-wrap mb-3">' +
+        '<h2 class="text-[15px] font-extrabold text-ink flex-1 min-w-[140px]">Überthema bearbeiten</h2>' +
+        '<button type="button" id="modDeleteBtn" class="acad-edit ' + BTN_DANGER + '">Löschen</button>' +
+        "</div>" +
+        sectionLabel("Titel") +
+        '<input id="modTitle" class="acad-edit ' + INPUT_CLS + '" placeholder="z.B. Brand Basics" value="' + esc(m.title || "") + '"/>' +
+        sectionLabel("Beschreibung") +
+        '<textarea id="modDesc" rows="2" class="acad-edit ' + INPUT_CLS + '" placeholder="Kurz: worum geht es in diesem Überthema?">' + esc(m.description || "") + "</textarea>" +
+        sectionLabel("Typ") +
+        '<select id="modType" class="acad-edit ' + INPUT_CLS + ' cursor-pointer">' +
+        '<option value="course"' + (m.type !== "open" ? " selected" : "") + ">Kurs — Lektionen werden Schritt für Schritt freigeschaltet</option>" +
+        '<option value="open"' + (m.type === "open" ? " selected" : "") + ">Offen — immer zugänglich (z.B. Marketing-Updates)</option>" +
+        "</select>" +
+        sectionLabel("Sichtbarkeit") +
+        '<label class="flex items-center gap-2 cursor-pointer select-none">' +
+        '<input type="checkbox" id="modPublished"' + (m.published ? " checked" : "") + ' class="acad-edit accent-[#c13030] w-4 h-4"/>' +
+        '<span class="text-[12px] font-semibold text-ink-soft">Veröffentlicht (für Kunden sichtbar, sobald die Academy live ist)</span>' +
+        "</label>" +
+        '<div class="flex items-center gap-2 mt-5">' +
+        '<button type="button" id="modSaveBtn" class="acad-edit ' + BTN_PRIMARY + '">Speichern</button>' +
+        '<span id="modSaveStatus" class="text-[11px] text-ink-mute"></span>' +
+        "</div>" +
+        "</div>";
+
+      document.getElementById("modSaveBtn").addEventListener("click", function () {
+        if (!guard()) return;
+        var upd = {};
+        var p = "modules/" + sel.mid + "/";
+        upd[p + "title"] = document.getElementById("modTitle").value.trim();
+        upd[p + "description"] = document.getElementById("modDesc").value.trim();
+        upd[p + "type"] = document.getElementById("modType").value;
+        upd[p + "published"] = document.getElementById("modPublished").checked;
+        upd[p + "updatedAt"] = window.fb.ts();
+        acadUpdate(upd).then(function () {
+          document.getElementById("modSaveStatus").textContent = "✓ gespeichert";
+          window.appUI.toast("Überthema gespeichert");
+        });
+      });
+
+      document.getElementById("modDeleteBtn").addEventListener("click", function () {
+        if (!guard()) return;
+        var count = A.sortLessons(m, LIST_OPTS).length;
+        window.appUI
+          .confirm({
+            title: "Überthema löschen?",
+            text:
+              '„' + (m.title || "Ohne Titel") + '" mit ' + count +
+              " Lektion" + (count === 1 ? "" : "en") +
+              " wird endgültig gelöscht. Der Fortschritt der Kunden in anderen Überthemen bleibt erhalten.",
+            okLabel: "Endgültig löschen",
+          })
+          .then(function (ok) {
+            if (!ok) return;
+            acadRemove("modules/" + sel.mid).then(function () {
+              sel = { mid: null, lid: null };
+              window.appUI.toast("Überthema gelöscht");
+            });
+          });
+      });
+    }
+
+    // — Lektions-Editor —
+    function rowInputs(items, kind) {
+      // kind: "link" (label+url) | "task" (text)
+      return items
+        .map(function (it) {
+          if (kind === "link") {
+            return (
+              '<div class="flex items-center gap-2" data-row="' + esc(it.id) + '">' +
+              '<input data-f="label" class="acad-edit ' + INPUT_CLS + ' !w-[38%]" placeholder="Bezeichnung" value="' + esc(it.label || "") + '"/>' +
+              '<input data-f="url" class="acad-edit ' + INPUT_CLS + ' flex-1" placeholder="https://…" value="' + esc(it.url || "") + '"/>' +
+              '<button type="button" data-delrow class="acad-edit text-[13px] text-ink-mute hover:text-brand bg-transparent border-0 cursor-pointer px-1" title="Entfernen">✕</button>' +
+              "</div>"
+            );
+          }
+          return (
+            '<div class="flex items-center gap-2" data-row="' + esc(it.id) + '">' +
+            '<span class="text-[13px] shrink-0" aria-hidden="true">☐</span>' +
+            '<input data-f="text" class="acad-edit ' + INPUT_CLS + ' flex-1" placeholder="Was soll der Kunde erledigen?" value="' + esc(it.text || "") + '"/>' +
+            '<button type="button" data-delrow class="acad-edit text-[13px] text-ink-mute hover:text-brand bg-transparent border-0 cursor-pointer px-1" title="Entfernen">✕</button>' +
+            "</div>"
+          );
+        })
+        .join("");
+    }
+
+    var TB_BTN =
+      "acad-edit text-[12px] font-bold text-ink-soft bg-transparent border-[0.5px] border-line rounded-md px-[9px] py-[5px] cursor-pointer hover:border-brand hover:text-brand";
+
+    function renderLessonEditor(pane, m, l) {
+      pane.innerHTML =
+        '<div class="bg-card border-[0.5px] border-line rounded-xl px-4 md:px-5 py-4">' +
+        '<div class="flex items-center gap-2 flex-wrap mb-1">' +
+        '<button type="button" id="backToModBtn" class="' + BTN_GHOST + '">←</button>' +
+        '<div class="flex-1 min-w-[140px]">' +
+        '<div class="text-[10px] font-bold tracking-[0.12em] uppercase text-ink-mute">' + esc(m.title || "") + "</div>" +
+        '<h2 class="text-[15px] font-extrabold text-ink">Lektion bearbeiten</h2>' +
+        "</div>" +
+        '<span id="dirtyBadge" class="hidden text-[10px] font-bold px-2 py-[3px] rounded-full bg-brand-dim text-brand">ungespeichert</span>' +
+        '<button type="button" id="lessonDeleteBtn" class="acad-edit ' + BTN_DANGER + '">Löschen</button>' +
+        "</div>" +
+        '<div id="externHint" class="hidden mt-2 text-[11px] font-bold text-[#8a6d1a] bg-[#fdf6e3] border-[0.5px] border-[#8a6d1a]/30 rounded-lg px-3 py-2">Inhalt wurde extern geändert — deine offene Bearbeitung bleibt hier erhalten. Speichern überschreibt die externe Änderung.</div>' +
+        sectionLabel("Titel") +
+        '<input id="lsTitle" class="acad-edit ' + INPUT_CLS + '" placeholder="z.B. Deine Zielgruppe verstehen" value="' + esc(l.title || "") + '"/>' +
+        sectionLabel("Video (YouTube-Link oder direkte Video-URL)") +
+        '<div class="flex items-center gap-2">' +
+        '<input id="lsVideo" class="acad-edit ' + INPUT_CLS + ' flex-1" placeholder="https://youtu.be/… oder https://…/video.mp4" value="' + esc(l.videoUrl || "") + '"/>' +
+        '<span id="videoBadge" class="text-[10px] font-bold px-2 py-[3px] rounded-full bg-page text-ink-mute shrink-0">—</span>' +
+        "</div>" +
+        '<div id="videoPreview" class="mt-2"></div>' +
+        '<div class="text-[10px] text-ink-mute mt-1">Tipp: YouTube-Videos als „Nicht gelistet" hochladen. Für eigene Dateien am besten eine .mp4-URL (z.B. Bunny Stream).</div>' +
+        sectionLabel("Inhalt") +
+        '<div class="flex items-center gap-1 flex-wrap mb-[6px]">' +
+        '<button type="button" data-cmd="bold" class="' + TB_BTN + '" title="Fett"><b>B</b></button>' +
+        '<button type="button" data-cmd="italic" class="' + TB_BTN + '" title="Kursiv"><i>I</i></button>' +
+        '<button type="button" data-cmd="underline" class="' + TB_BTN + '" title="Unterstrichen"><u>U</u></button>' +
+        '<button type="button" data-block="h2" class="' + TB_BTN + '" title="Überschrift">H2</button>' +
+        '<button type="button" data-block="h3" class="' + TB_BTN + '" title="Zwischenüberschrift">H3</button>' +
+        '<button type="button" data-block="p" class="' + TB_BTN + '" title="Normaler Text">¶</button>' +
+        '<button type="button" data-cmd="insertUnorderedList" class="' + TB_BTN + '" title="Liste">• Liste</button>' +
+        '<button type="button" data-cmd="insertOrderedList" class="' + TB_BTN + '" title="Nummerierte Liste">1. Liste</button>' +
+        '<button type="button" id="tbLinkBtn" class="' + TB_BTN + '" title="Link einfügen">🔗 Link</button>' +
+        '<button type="button" data-cmd="removeFormat" class="' + TB_BTN + '" title="Formatierung entfernen">⌫ Format</button>' +
+        "</div>" +
+        '<div id="lsContent" contenteditable="true" class="acad-edit uwa-prose w-full min-h-[240px] border-[1.5px] border-line rounded-lg px-4 py-3 outline-none bg-white focus:border-brand"></div>' +
+        sectionLabel("Links") +
+        '<div id="linksRows" class="flex flex-col gap-2">' + rowInputs(A.toArr(l.links), "link") + "</div>" +
+        '<button type="button" id="addLinkBtn" class="acad-edit ' + BTN_GHOST + ' mt-2">＋ Link</button>' +
+        sectionLabel("Aufgaben-Check (alle nötig, um die Lektion abzuschließen)") +
+        '<div id="tasksRows" class="flex flex-col gap-2">' + rowInputs(A.toArr(l.tasks), "task") + "</div>" +
+        '<button type="button" id="addTaskBtn" class="acad-edit ' + BTN_GHOST + ' mt-2">＋ Aufgabe</button>' +
+        sectionLabel("Sichtbarkeit") +
+        '<label class="flex items-center gap-2 cursor-pointer select-none">' +
+        '<input type="checkbox" id="lsPublished"' + (l.published ? " checked" : "") + ' class="acad-edit accent-[#c13030] w-4 h-4"/>' +
+        '<span class="text-[12px] font-semibold text-ink-soft">Veröffentlicht</span>' +
+        "</label>" +
+        '<div class="flex items-center gap-2 mt-5">' +
+        '<button type="button" id="lsSaveBtn" class="acad-edit ' + BTN_PRIMARY + '">Speichern</button>' +
+        '<span id="lsSaveStatus" class="text-[11px] text-ink-mute"></span>' +
+        "</div>" +
+        "</div>";
+
+      // Rich-Text sanitisiert einsetzen (nicht als Template-String oben,
+      // sonst würde doppelt escaped).
+      document.getElementById("lsContent").innerHTML = A.sanitizeHtml(l.contentHtml || "");
+      dirty = false;
+      externChanged = false;
+      updateVideoPreview();
+
+      // — Events —
+      pane.querySelectorAll("input, [contenteditable], select, textarea").forEach(function (el) {
+        el.addEventListener("input", markDirty);
+      });
+      document.getElementById("lsPublished").addEventListener("change", markDirty);
+
+      document.getElementById("backToModBtn").addEventListener("click", function () {
+        leaveIfClean(function () { sel.lid = null; renderAll(); });
+      });
+
+      document.getElementById("lsVideo").addEventListener("input", updateVideoPreview);
+
+      // Toolbar: mousedown verhindert Fokus-/Selektion-Verlust
+      pane.querySelectorAll("[data-cmd]").forEach(function (b) {
+        b.addEventListener("mousedown", function (e) {
+          e.preventDefault();
+          document.execCommand(b.dataset.cmd, false, null);
+          markDirty();
+        });
+      });
+      pane.querySelectorAll("[data-block]").forEach(function (b) {
+        b.addEventListener("mousedown", function (e) {
+          e.preventDefault();
+          document.execCommand("formatBlock", false, "<" + b.dataset.block + ">");
+          markDirty();
+        });
+      });
+      document.getElementById("tbLinkBtn").addEventListener("mousedown", function (e) {
+        e.preventDefault();
+        var selection = window.getSelection();
+        var range = selection && selection.rangeCount ? selection.getRangeAt(0) : null;
+        window.appUI
+          .prompt({ title: "Link-Adresse", placeholder: "https://…", okLabel: "Einfügen" })
+          .then(function (url) {
+            if (!url || !url.trim()) return;
+            url = url.trim();
+            if (!/^https?:\/\//i.test(url)) url = "https://" + url;
+            var ed = document.getElementById("lsContent");
+            ed.focus();
+            if (range) { selection.removeAllRanges(); selection.addRange(range); }
+            document.execCommand("createLink", false, url);
+            markDirty();
+          });
+      });
+
+      wireRows("linksRows", "addLinkBtn", "link");
+      wireRows("tasksRows", "addTaskBtn", "task");
+
+      document.getElementById("lsSaveBtn").addEventListener("click", saveLesson);
+      document.getElementById("lessonDeleteBtn").addEventListener("click", function () {
+        if (!guard()) return;
+        window.appUI
+          .confirm({
+            title: "Lektion löschen?",
+            text: '„' + (l.title || "Ohne Titel") + '" wird endgültig gelöscht.',
+            okLabel: "Endgültig löschen",
+          })
+          .then(function (ok) {
+            if (!ok) return;
+            dirty = false;
+            acadRemove("modules/" + sel.mid + "/lessons/" + sel.lid).then(function () {
+              sel.lid = null;
+              window.appUI.toast("Lektion gelöscht");
+            });
+          });
+      });
+    }
+
+    function markDirty() {
+      if (dirty) return;
+      dirty = true;
+      var b = document.getElementById("dirtyBadge");
+      if (b) b.classList.remove("hidden");
+    }
+
+    function leaveIfClean(go) {
+      if (!dirty) { go(); return; }
+      window.appUI
+        .confirm({
+          title: "Ungespeicherte Änderungen",
+          text: "Deine Änderungen an dieser Lektion sind noch nicht gespeichert. Trotzdem verlassen?",
+          okLabel: "Verwerfen",
+        })
+        .then(function (ok) {
+          if (!ok) return;
+          dirty = false;
+          go();
+        });
+    }
+
+    function updateVideoPreview() {
+      var url = document.getElementById("lsVideo").value.trim();
+      var badge = document.getElementById("videoBadge");
+      var prev = document.getElementById("videoPreview");
+      var d = A.detectVideo(url);
+      if (!d) {
+        badge.textContent = "—";
+        prev.innerHTML = "";
+        return;
+      }
+      badge.textContent = d.type === "youtube" ? "YouTube" : "Eigenes Video";
+      prev.innerHTML = A.videoEmbedHtml(d.type, url);
+    }
+
+    function wireRows(rowsId, addId, kind) {
+      var rows = document.getElementById(rowsId);
+      rows.addEventListener("click", function (e) {
+        var del = e.target.closest("[data-delrow]");
+        if (!del) return;
+        var row = del.closest("[data-row]");
+        if (row) { row.remove(); markDirty(); }
+      });
+      document.getElementById(addId).addEventListener("click", function () {
+        var it = { id: newKey() };
+        rows.insertAdjacentHTML("beforeend", rowInputs([it], kind));
+        var last = rows.lastElementChild;
+        last.querySelectorAll("input").forEach(function (i) {
+          i.addEventListener("input", markDirty);
+        });
+        var first = last.querySelector("input");
+        if (first) first.focus();
+        markDirty();
+      });
+    }
+
+    function collectRows(rowsId, kind) {
+      // Bestehende IDs bleiben stabil → Kunden-Fortschritt (tasks/<id>)
+      // überlebt ein erneutes Speichern.
+      var out = {};
+      var i = 0;
+      document.querySelectorAll("#" + rowsId + " [data-row]").forEach(function (row) {
+        var id = row.dataset.row;
+        if (kind === "link") {
+          var label = row.querySelector('[data-f="label"]').value.trim();
+          var url = row.querySelector('[data-f="url"]').value.trim();
+          if (!url) return;
+          out[id] = { label: label, url: url, order: i++ };
+        } else {
+          var text = row.querySelector('[data-f="text"]').value.trim();
+          if (!text) return;
+          out[id] = { text: text, order: i++ };
+        }
+      });
+      return out;
+    }
+
+    function saveLesson() {
+      if (!guard()) return;
+      var video = document.getElementById("lsVideo").value.trim();
+      var d = A.detectVideo(video);
+      var p = "modules/" + sel.mid + "/lessons/" + sel.lid + "/";
+      var upd = {};
+      upd[p + "title"] = document.getElementById("lsTitle").value.trim();
+      upd[p + "videoUrl"] = video;
+      upd[p + "videoType"] = d ? d.type : null;
+      upd[p + "contentHtml"] = A.sanitizeHtml(document.getElementById("lsContent").innerHTML);
+      upd[p + "links"] = collectRows("linksRows", "link");
+      upd[p + "tasks"] = collectRows("tasksRows", "task");
+      upd[p + "published"] = document.getElementById("lsPublished").checked;
+      upd[p + "updatedAt"] = window.fb.ts();
+      upd["modules/" + sel.mid + "/updatedAt"] = window.fb.ts();
+      var btn = document.getElementById("lsSaveBtn");
+      btn.disabled = true;
+      acadUpdate(upd)
+        .then(function () {
+          dirty = false;
+          externChanged = false;
+          btn.disabled = false;
+          var b = document.getElementById("dirtyBadge");
+          if (b) b.classList.add("hidden");
+          document.getElementById("lsSaveStatus").textContent = "✓ gespeichert";
+          window.appUI.toast("Lektion gespeichert");
+        })
+        .catch(function () { btn.disabled = false; });
+    }
+
+    // ── Strukturelle Aktionen (sofortige Writes) ─────────────────
+    function addModule() {
+      if (!guard()) return;
+      window.appUI
+        .prompt({ title: "Neues Überthema", placeholder: "z.B. Brand Basics", okLabel: "Anlegen" })
+        .then(function (title) {
+          if (!title || !title.trim()) return;
+          var mods = A.sortModules(content, LIST_OPTS);
+          var id = newKey();
+          acadSet("modules/" + id, {
+            title: title.trim(),
+            description: "",
+            type: "course",
+            order: mods.length,
+            published: false,
+            updatedAt: window.fb.ts(),
+          }).then(function () {
+            sel = { mid: id, lid: null };
+            window.appUI.toast("Überthema angelegt — noch unveröffentlicht");
+          });
+        });
+    }
+
+    function addLesson(mid) {
+      if (!guard()) return;
+      window.appUI
+        .prompt({ title: "Neue Lektion", placeholder: "z.B. Deine Zielgruppe verstehen", okLabel: "Anlegen" })
+        .then(function (title) {
+          if (!title || !title.trim()) return;
+          var m = getMod(mid);
+          var ls = A.sortLessons(m, LIST_OPTS);
+          var id = newKey();
+          acadSet("modules/" + mid + "/lessons/" + id, {
+            title: title.trim(),
+            order: ls.length,
+            videoUrl: "",
+            videoType: null,
+            contentHtml: "",
+            published: false,
+            updatedAt: window.fb.ts(),
+          }).then(function () {
+            sel = { mid: mid, lid: id };
+            window.appUI.toast("Lektion angelegt — noch unveröffentlicht");
+          });
+        });
+    }
+
+    function moveItem(list, id, dir, pathFor) {
+      var idx = -1;
+      list.forEach(function (it, i) { if (it.id === id) idx = i; });
+      var swap = idx + dir;
+      if (idx < 0 || swap < 0 || swap >= list.length) return;
+      var arr = list.slice();
+      var tmp = arr[idx];
+      arr[idx] = arr[swap];
+      arr[swap] = tmp;
+      var upd = {};
+      arr.forEach(function (it, i) { upd[pathFor(it.id)] = i; });
+      acadUpdate(upd);
+    }
+
+    // ── Klick-Delegation für die linke Liste ─────────────────────
+    document.getElementById("modList").addEventListener("click", function (e) {
+      var t;
+      if ((t = e.target.closest("[data-modmove]"))) {
+        if (!guard()) return;
+        var parts = t.dataset.modmove.split("|");
+        moveItem(A.sortModules(content, LIST_OPTS), parts[0], parseInt(parts[1], 10), function (id) {
+          return "modules/" + id + "/order";
+        });
+        return;
+      }
+      if ((t = e.target.closest("[data-lessonmove]"))) {
+        if (!guard()) return;
+        var lp = t.dataset.lessonmove.split("|");
+        moveItem(A.sortLessons(getMod(lp[0]), LIST_OPTS), lp[1], parseInt(lp[2], 10), function (id) {
+          return "modules/" + lp[0] + "/lessons/" + id + "/order";
+        });
+        return;
+      }
+      if ((t = e.target.closest("[data-addlesson]"))) {
+        addLesson(t.dataset.addlesson);
+        return;
+      }
+      if ((t = e.target.closest("[data-sellesson]"))) {
+        var sp = t.dataset.sellesson.split("|");
+        if (sel.mid === sp[0] && sel.lid === sp[1]) return;
+        leaveIfClean(function () {
+          sel = { mid: sp[0], lid: sp[1] };
+          renderAll();
+        });
+        return;
+      }
+      if ((t = e.target.closest("[data-selmod]"))) {
+        var mid = t.dataset.selmod;
+        leaveIfClean(function () {
+          sel = sel.mid === mid && !sel.lid ? { mid: null, lid: null } : { mid: mid, lid: null };
+          renderAll();
+        });
+      }
+    });
+
+    document.getElementById("addModuleBtn").addEventListener("click", addModule);
+
+    // ── enabled-Toggle (Phase-2-Schalter) ────────────────────────
+    var enabledState = false;
+    function renderEnabled() {
+      var t = document.getElementById("enabledToggle");
+      t.classList.toggle("bg-brand", enabledState);
+      t.classList.toggle("bg-[#ddd]", !enabledState);
+      t.classList.toggle("justify-end", enabledState);
+      t.classList.toggle("justify-start", !enabledState);
+    }
+    document.getElementById("enabledToggle").addEventListener("click", function () {
+      if (!guard()) return;
+      if (!enabledState) {
+        window.appUI
+          .confirm({
+            title: "Academy für Kunden freischalten?",
+            text: "Alle Kunden mit Raum-Code sehen dann die veröffentlichten Inhalte unter /academy. Du kannst jederzeit wieder deaktivieren.",
+            okLabel: "Freischalten",
+          })
+          .then(function (ok) { if (ok) acadSet("enabled", true); });
+      } else {
+        acadSet("enabled", false).then(function () {
+          window.appUI.toast("Academy für Kunden deaktiviert");
+        });
+      }
+    });
+
+    // ── Read-only-Gating (settings.astro-Muster) ─────────────────
+    function applyReadOnly() {
+      document.querySelectorAll("#acadRoot .acad-edit").forEach(function (el) {
+        if (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.tagName === "SELECT" || el.tagName === "BUTTON") {
+          el.disabled = !isAdmin;
+        }
+        if (el.getAttribute("contenteditable") !== null) {
+          el.setAttribute("contenteditable", isAdmin ? "true" : "false");
+        }
+      });
+      var toggle = document.getElementById("enabledToggle");
+      toggle.style.opacity = isAdmin ? "" : "0.4";
+      toggle.style.cursor = isAdmin ? "pointer" : "not-allowed";
+    }
+
+    function statusText() {
+      var mods = A.sortModules(content, LIST_OPTS);
+      var pub = mods.filter(function (m) { return m.published; }).length;
+      var nLessons = 0;
+      mods.forEach(function (m) { nLessons += A.sortLessons(m, LIST_OPTS).length; });
+      var s =
+        mods.length + " Überthemen (" + pub + " veröffentlicht) · " +
+        nLessons + " Lektionen · Kunden-Zugang: " +
+        (enabledState ? "AKTIV" : "aus");
+      if (!isAdmin) s += " · Nur lesen — du bist kein Admin.";
+      return s;
+    }
+
+    // ── Render-Wurzel ────────────────────────────────────────────
+    function renderAll() {
+      renderList();
+      if (dirty && sel.lid) {
+        // Editor NICHT neu rendern — offene Bearbeitung schützen
+        if (externChanged) {
+          var hint = document.getElementById("externHint");
+          if (hint) hint.classList.remove("hidden");
+        }
+      } else {
+        renderEditor();
+      }
+      document.getElementById("acadStatus").textContent = statusText();
+      applyReadOnly();
+    }
+
+    // ── Boot ─────────────────────────────────────────────────────
+    window.appUI.onAuth(function (me) {
+      if (!me || !me.uid) return;
+      window.fb.ref("admins/" + me.uid).on("value", function (s) {
+        isAdmin = !!s.val();
+        renderAll();
+      });
+      window.fb.ref(BASE).on(
+        "value",
+        function (s) {
+          content = s.val() || {};
+          enabledState = content.enabled === true;
+          renderEnabled();
+          if (dirty && sel.lid) externChanged = true;
+          renderAll();
+        },
+        function (err) {
+          document.getElementById("acadStatus").textContent =
+            "Lese-Fehler: " + (err.code || err.message) +
+            " — sind die Firebase-Rules für workspace/academy gesetzt?";
+        }
+      );
+    });
+  })();
+</script>
