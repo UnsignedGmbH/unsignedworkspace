@@ -209,6 +209,17 @@
 
     var rootRef = db.ref("rooms/" + room);
 
+    // Listener waehrend der Migration aktiv halten — sonst schlaegt der Tausch lautlos fehl:
+    // transaction() ruft seinen Callback ZUERST mit dem LOKAL GECACHTEN Wert auf. Hat der
+    // Aufrufer keinen Listener auf dem Raum (z.B. die Admin-Seite /migrate), ist das `null`;
+    // unser "nur wenn noch base64"-Check greift dann nicht und die Transaktion bricht SOFORT
+    // ab, ohne je den Server zu fragen. Folge: Bild landet in Storage, DB-Wert bleibt base64.
+    // Mit aktivem Listener ist der Raum gesynct und der Callback sieht den echten Wert —
+    // genau deshalb funktioniert der Lazy-Pfad in den Tools (die haben einen Listener).
+    var keepWarm = function () {};
+    rootRef.on("value", keepWarm);
+    function releaseWarm() { try { rootRef.off("value", keepWarm); } catch (e) {} }
+
     return rootRef.once("value").then(function (snap) {
       var data = snap.val();
       var items = [];
@@ -216,6 +227,7 @@
       var total = items.length;
 
       if (!total) {
+        releaseWarm();
         onProgress({ phase: "empty", total: 0, done: 0, failed: 0 });
         return { migrated: 0, failed: 0, total: 0, skipped: false };
       }
@@ -235,7 +247,13 @@
               if (typeof curr === "string" && curr.indexOf("data:") === 0) return url;
               return; // abort, lassen wie es ist
             });
-          }).then(function () { return true; })
+          }).then(function (res) {
+            // NUR ein wirklich committeter Tausch zaehlt als migriert. Ein Abbruch
+            // (committed:false) resolved ebenfalls ohne Fehler — wer den als Erfolg zaehlt,
+            // meldet gruene Haken fuers Nichtstun. Genau das ist hier passiert ("26/26 ✓",
+            // real getauscht: 0). Lieber als Fehler sichtbar machen und erneut laufen lassen.
+            return !!(res && res.committed);
+          })
             .catch(function (err) {
               try { console.warn("[" + tag + "] migrate failed", item.path, err && err.message); } catch (e) {}
               return false;
@@ -251,6 +269,7 @@
               if (ok) done++; else failed++;
               onProgress({ phase: "progress", total: total, done: done, failed: failed });
               if (done + failed >= total) {
+                releaseWarm();
                 resolve({ migrated: done, failed: failed, total: total, skipped: false });
               } else {
                 pump();
@@ -262,6 +281,7 @@
         pump();
       });
     }).catch(function (err) {
+      releaseWarm();
       try { console.error("[" + tag + "] migrate root-read failed", err); } catch (e) {}
       // Flag wieder freigeben damit beim nächsten Page-Load erneut versucht wird.
       try { sessionStorage.removeItem(sessionKey); } catch (e) {}
