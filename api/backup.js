@@ -19,7 +19,7 @@ import admin from 'firebase-admin';
 
 const BUCKET = 'unsignedworkspace.firebasestorage.app';
 const DB_URL = 'https://unsignedworkspace-default-rtdb.europe-west1.firebasedatabase.app';
-const RETENTION_DAYS = parseInt(process.env.BACKUP_RETENTION_DAYS, 10) || 30;
+const RETENTION_DAYS = parseInt(process.env.BACKUP_RETENTION_DAYS, 10) || 14;
 
 let _init = false;
 let _initErr = null;

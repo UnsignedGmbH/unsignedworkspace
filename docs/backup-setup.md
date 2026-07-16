@@ -11,7 +11,7 @@ Alarm schlägt, wenn die Seite/DB down ist oder die Backups ausbleiben.
 - **`api/backup.js`**
   - `GET /api/backup` → **Cron**: liest die komplette RTDB und legt sie als JSON in
     Firebase Storage ab: `backups/rtdb/<zeitstempel>.json`. Danach werden Snapshots älter
-    als **30 Tage** gelöscht. Geschützt per `CRON_SECRET` (nur Vercel kann auslösen).
+    als **14 Tage** gelöscht. Geschützt per `CRON_SECRET` (nur Vercel kann auslösen).
   - `POST /api/backup` → **Owner-Download**: erzeugt ein frisches Backup, speichert es und
     gibt es als Datei-Download zurück. Nur für Admins (Firebase-ID-Token + `admins/<uid>`).
   - `GET /api/backup?status=1` → Frische-Info fürs Dashboard (kein Datenexport).
@@ -42,7 +42,7 @@ Ohne gesetztes Secret antwortet der Endpoint mit 401 (bewusst — kein offener E
 3. Speichern → einmal **neu deployen** (damit die Variable greift).
 
 Optional (haben sinnvolle Defaults, nur bei Bedarf setzen):
-- `BACKUP_RETENTION_DAYS` (Default `30`) — wie viele Tage Snapshots behalten werden.
+- `BACKUP_RETENTION_DAYS` (Default `14`) — wie viele Tage Snapshots behalten werden.
 - `BACKUP_STALE_HOURS` (Default `48`) — ab wann `?full=1` „überfällig" meldet.
 
 > `FIREBASE_SERVICE_ACCOUNT` ist schon gesetzt (nutzt notify/genimage bereits) — nichts zu tun.
