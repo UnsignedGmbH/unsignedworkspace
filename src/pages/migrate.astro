@@ -1,0 +1,260 @@
+---
+import AppLayout from "../layouts/AppLayout.astro";
+---
+
+<AppLayout title="Bilder-Migration" active="settings">
+  <div class="space-y-3 max-w-[720px]">
+    <div id="migNotAdmin" class="hidden bg-card border-[0.5px] border-line rounded-[9px] px-4 py-3">
+      <div class="text-[13px] font-semibold text-ink">Nur für Admins</div>
+      <div class="text-[11px] text-ink-mute mt-[2px]">Diese Seite ist Admins vorbehalten.</div>
+    </div>
+
+    <div id="migMain" class="hidden space-y-3">
+      <div class="bg-card border-[0.5px] border-line rounded-[9px] px-4 py-3">
+        <div class="text-[13px] font-semibold text-ink">Was diese Seite macht</div>
+        <div class="text-[11px] text-ink-mute mt-[2px] leading-[1.55]">
+          Ältere Kundenbilder liegen als base64 direkt in der Datenbank. Hier werden sie in den
+          Storage verschoben: Bild wird kopiert, geprüft — und erst dann wird in der Datenbank
+          der Link gesetzt. Geht etwas schief, bleibt das Original unangetastet. Mehrfach
+          ausführbar: schon Migriertes wird übersprungen.
+        </div>
+      </div>
+
+      <div class="bg-card border-[0.5px] border-line rounded-[9px] px-4 py-3 flex items-center gap-3">
+        <div class="flex-1">
+          <div class="text-[13px] font-semibold text-ink">1. Sicherheitsnetz</div>
+          <div id="migBackupStatus" class="text-[11px] text-ink-mute mt-[1px]">
+            Zuerst ein frisches Voll-Backup ziehen.
+          </div>
+        </div>
+        <button id="migBackupBtn" type="button" class="text-[11px] font-bold text-white bg-brand hover:bg-brand-dark px-3 py-2 rounded-lg cursor-pointer border-0 shrink-0">🔒 Backup jetzt</button>
+      </div>
+
+      <div class="bg-card border-[0.5px] border-line rounded-[9px] px-4 py-3">
+        <div class="text-[13px] font-semibold text-ink">2. Testlauf (1 Raum)</div>
+        <div id="migTestStatus" class="text-[11px] text-ink-mute mt-[1px] mb-2">
+          Migriert genau einen Raum. Danach im Portal prüfen, ob die Bilder normal aussehen.
+        </div>
+        <div class="flex items-center gap-2">
+          <select id="migTestRoom" class="flex-1 text-[12px] border-[1.5px] border-line rounded-lg px-2 py-[6px] bg-white text-ink outline-none focus:border-brand"></select>
+          <button id="migTestBtn" type="button" class="text-[11px] font-bold text-white bg-brand hover:bg-brand-dark px-3 py-2 rounded-lg cursor-pointer border-0 shrink-0">🧪 Testlauf</button>
+        </div>
+      </div>
+
+      <div class="bg-card border-[0.5px] border-line rounded-[9px] px-4 py-3 flex items-center gap-3">
+        <div class="flex-1">
+          <div class="text-[13px] font-semibold text-ink">3. Alle Räume migrieren</div>
+          <div id="migAllStatus" class="text-[11px] text-ink-mute mt-[1px]">Lade Kundenliste…</div>
+        </div>
+        <button id="migAllBtn" type="button" class="text-[11px] font-bold text-white bg-brand hover:bg-brand-dark px-3 py-2 rounded-lg cursor-pointer border-0 shrink-0">▶ Alle migrieren</button>
+      </div>
+
+      <div class="bg-card border-[0.5px] border-line rounded-[9px] px-4 py-3">
+        <div class="flex items-center justify-between">
+          <div class="text-[13px] font-semibold text-ink">Protokoll</div>
+          <div id="migSummary" class="text-[11px] text-ink-mute"></div>
+        </div>
+        <pre id="migLog" class="mt-2 text-[11px] leading-[1.5] text-ink-soft bg-page rounded-lg p-2 max-h-[320px] overflow-auto whitespace-pre-wrap">–</pre>
+      </div>
+    </div>
+  </div>
+</AppLayout>
+
+<script is:inline src="/tools/_shared/storage-utils.js"></script>
+<script is:inline>
+  (function () {
+    var customers = [];
+    var running = false;
+
+    function el(id) { return document.getElementById(id); }
+
+    function log(line) {
+      var pre = el("migLog");
+      if (!pre) return;
+      if (pre.textContent === "–") pre.textContent = "";
+      pre.textContent += line + "\n";
+      pre.scrollTop = pre.scrollHeight;
+    }
+
+    function setBusy(b) {
+      running = b;
+      ["migBackupBtn", "migTestBtn", "migAllBtn"].forEach(function (id) {
+        var x = el(id);
+        if (!x) return;
+        x.disabled = b;
+        x.style.opacity = b ? "0.5" : "";
+        x.style.cursor = b ? "not-allowed" : "pointer";
+      });
+    }
+
+    function currentUser() {
+      try { return window.firebase && window.firebase.auth().currentUser; }
+      catch (e) { return null; }
+    }
+
+    // ── Sicherheitsnetz: Voll-Backup (ohne den Snapshot herunterzuladen) ──
+    function doBackup() {
+      var cu = currentUser();
+      if (!cu) {
+        window.appUI.toast("Nicht eingeloggt.");
+        return Promise.reject(new Error("no-user"));
+      }
+      el("migBackupStatus").textContent = "Backup läuft…";
+      return cu.getIdToken().then(function (tok) {
+        return fetch("/api/backup", {
+          method: "POST",
+          headers: { Authorization: "Bearer " + tok, "Content-Type": "application/json" },
+          body: JSON.stringify({ download: false }),
+        });
+      }).then(function (r) {
+        if (!r.ok) {
+          return r.json().then(function (e) {
+            throw new Error((e && e.error) || ("HTTP " + r.status));
+          });
+        }
+        return r.json();
+      }).then(function (d) {
+        var mb = ((d && d.bytes) || 0) / 1048576;
+        var txt = "✓ gesichert (" + mb.toFixed(1) + " MB)";
+        el("migBackupStatus").textContent = txt;
+        log("[backup] " + txt + " → " + (d && d.path));
+        return d;
+      }).catch(function (e) {
+        el("migBackupStatus").textContent = "Fehler: " + e.message;
+        log("[backup] ✗ " + e.message);
+        throw e;
+      });
+    }
+
+    // ── Kundenliste ──
+    function loadCustomers() {
+      return window.fb.ref("workspace/customers").once("value").then(function (s) {
+        var v = s.val() || {};
+        customers = Object.keys(v).map(function (id) {
+          var c = v[id] || {};
+          return { id: id, name: c.name || "(ohne Name)", room: c.room || "" };
+        }).filter(function (c) { return !!c.room; });
+
+        var sel = el("migTestRoom");
+        while (sel.firstChild) sel.removeChild(sel.firstChild);
+        customers.forEach(function (c) {
+          var o = document.createElement("option");
+          o.value = c.room;
+          o.textContent = c.name + " (" + c.room + ")";
+          sel.appendChild(o);
+        });
+        el("migAllStatus").textContent = customers.length + " Kundenräume gefunden.";
+        log("[init] " + customers.length + " Kundenräume gefunden.");
+        return customers;
+      });
+    }
+
+    // ── Ein Raum ──
+    function migrateOneRoom(c) {
+      var db = window.firebase.database();
+      return window.storageUtils.migrateRoom(db, c.room, "admin", {
+        force: true,
+        maxConcurrent: 2,
+      }).then(function (r) {
+        r = r || {};
+        if (r.skipped) {
+          log("  " + c.room + " (" + c.name + "): übersprungen — " + (r.reason || "?"));
+        } else if (!r.total) {
+          log("  " + c.room + " (" + c.name + "): nichts zu tun");
+        } else {
+          log("  " + c.room + " (" + c.name + "): " + r.migrated + "/" + r.total + " ✓" +
+              (r.failed ? " — " + r.failed + " fehlgeschlagen" : ""));
+        }
+        return r;
+      }).catch(function (e) {
+        log("  " + c.room + " (" + c.name + "): ✗ " + (e && e.message));
+        return { migrated: 0, failed: 0, total: 0 };
+      });
+    }
+
+    // ── Testlauf ──
+    function onTest() {
+      if (running) return;
+      var room = el("migTestRoom").value;
+      var c = customers.filter(function (x) { return x.room === room; })[0];
+      if (!c) { window.appUI.toast("Kein Raum gewählt."); return; }
+      setBusy(true);
+      el("migTestStatus").textContent = "Testlauf läuft…";
+      log("[test] Starte Testlauf für " + c.room + " (" + c.name + ")");
+      migrateOneRoom(c).then(function (r) {
+        el("migTestStatus").textContent =
+          "✓ fertig: " + (r.migrated || 0) + " migriert, " + (r.failed || 0) + " fehlgeschlagen";
+        log("[test] fertig — jetzt prüfen: /portal?room=" + c.room);
+        setBusy(false);
+      });
+    }
+
+    // ── Alle Räume, sequenziell ──
+    function onAll() {
+      if (running) return;
+      if (!customers.length) { window.appUI.toast("Keine Räume geladen."); return; }
+      window.appUI.confirm({
+        title: "Alle Räume migrieren?",
+        description: customers.length + " Kundenräume werden nacheinander migriert. Das kann " +
+          "ein paar Minuten dauern — lass den Tab offen. Der Vorgang ist sicher und beliebig " +
+          "wiederholbar; schon Migriertes wird übersprungen.",
+        okLabel: "Starten",
+      }).then(function (ok) {
+        if (!ok) return;
+        setBusy(true);
+        var totMig = 0, totFail = 0, roomsWithFail = 0, i = 0;
+        log("[all] Starte Voll-Migration über " + customers.length + " Räume…");
+
+        function next() {
+          if (i >= customers.length) {
+            log("[all] FERTIG — " + totMig + " Bilder migriert, " + totFail +
+                " fehlgeschlagen, " + roomsWithFail + " Räume mit Fehlern.");
+            el("migAllStatus").textContent =
+              "✓ Durchlauf fertig. Jetzt ein frisches Backup ziehen — es sollte deutlich kleiner sein.";
+            setBusy(false);
+            return;
+          }
+          var c = customers[i++];
+          el("migAllStatus").textContent = "Migriere " + i + "/" + customers.length + " — " + c.room;
+          migrateOneRoom(c).then(function (r) {
+            totMig += (r.migrated || 0);
+            totFail += (r.failed || 0);
+            if (r.failed) roomsWithFail++;
+            el("migSummary").textContent = totMig + " migriert · " + totFail + " Fehler";
+            next();
+          });
+        }
+        next();
+      });
+    }
+
+    // ── Boot ──
+    function init(me) {
+      if (!me || !me.uid) return;
+      if (!window.storageUtils || !window.storageUtils.migrateRoom) {
+        log("[init] FEHLER: storage-utils.js nicht geladen.");
+        return;
+      }
+      window.fb.ref("admins/" + me.uid).on("value", function (s) {
+        var isAdmin = !!s.val();
+        el("migMain").classList.toggle("hidden", !isAdmin);
+        el("migNotAdmin").classList.toggle("hidden", isAdmin);
+        if (isAdmin && !customers.length) {
+          loadCustomers().catch(function (e) {
+            log("[init] Kundenliste nicht ladbar: " + (e && e.message));
+            el("migAllStatus").textContent = "Kundenliste nicht ladbar.";
+          });
+        }
+      });
+    }
+
+    el("migBackupBtn").addEventListener("click", function () {
+      if (running) return;
+      setBusy(true);
+      doBackup().catch(function () {}).then(function () { setBusy(false); });
+    });
+    el("migTestBtn").addEventListener("click", onTest);
+    el("migAllBtn").addEventListener("click", onAll);
+    window.appUI.onAuth(init);
+  })();
+</script>
