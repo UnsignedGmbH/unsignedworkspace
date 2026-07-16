@@ -10,6 +10,8 @@
 // POST /api/backup            → OWNER-DOWNLOAD. Auth: Bearer <Firebase-ID-Token> eines Admins.
 //                               Erzeugt ein frisches Backup, legt es ab UND liefert das JSON
 //                               als Datei-Download zurück (Off-Site-Kopie auf das Gerät).
+//                               Body { download:false } → nur ablegen, Metadaten als JSON
+//                               zurück (kein 100-MB-Transfer in den Browser).
 //
 // WICHTIG: Backups enthalten ALLE Kundendaten. Sie werden OHNE öffentlichen Download-Token
 // abgelegt → nur über das Admin-SDK / die Firebase-Console / diesen (auth-geschützten)
@@ -192,9 +194,19 @@ export default async function handler(req, res) {
     } catch (e) {
       return res.status(e.code || 401).json({ error: e.message });
     }
+    // { download:false } → nur ablegen + Metadaten zurueck (z.B. /migrate-Sicherheitsnetz;
+    // spart es, den kompletten Snapshot in den Browser zu laden). Default = Datei-Download.
+    let pbody = req.body;
+    if (typeof pbody === 'string') { try { pbody = JSON.parse(pbody); } catch (e) { pbody = {}; } }
+    pbody = pbody || {};
+    const wantsDownload = pbody.download !== false;
+
     try {
       const r = await runBackup();
       try { await pruneOld(); } catch (e) { /* nicht kritisch */ }
+      if (!wantsDownload) {
+        return res.status(200).json({ ok: true, path: r.path, bytes: r.bytes, ts: r.ts });
+      }
       const fname = 'unsigned-backup-' + r.ts.slice(0, 10) + '.json';
       res.setHeader('Content-Type', 'application/json; charset=utf-8');
       res.setHeader('Content-Disposition', 'attachment; filename="' + fname + '"');
