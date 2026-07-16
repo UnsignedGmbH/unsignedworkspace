@@ -13,6 +13,8 @@
 //   window.storageUtils.migrateDataUrlField(dbRef, fieldName, storagePath)
 //   window.storageUtils.migrateRoom(db, room, tag, opts) — Lazy-Migration aller
 //     base64-Bilder eines Customer-Raums nach Storage (idempotent, safe).
+//     opts.force = true umgeht den sessionStorage-Guard (fuer den Admin-Bulklauf
+//     auf /migrate, der Raeume im selben Tab wiederholen koennen muss).
 
 (function () {
   if (window.storageUtils) return;
@@ -188,14 +190,18 @@
     if (!getStorage()) return Promise.resolve({ skipped: true, reason: "no-storage" });
 
     var sessionKey = "__mig_room_v1_" + room;
-    try {
-      if (sessionStorage.getItem(sessionKey) === "1") {
-        return Promise.resolve({ skipped: true, reason: "session-flag" });
-      }
-      // Set flag IMMEDIATELY so a second tool-load in the same tab doesn't
-      // re-trigger before we even finish reading the root.
-      sessionStorage.setItem(sessionKey, "1");
-    } catch (e) { /* sessionStorage unavailable, run anyway */ }
+    // opts.force: der Admin-Bulklauf (/migrate) will einen Raum ggf. mehrfach im selben
+    // Tab pruefen/fortsetzen. Der Guard schuetzt nur den Lazy-Pfad vor Mehrfach-Triggern.
+    if (!opts.force) {
+      try {
+        if (sessionStorage.getItem(sessionKey) === "1") {
+          return Promise.resolve({ skipped: true, reason: "session-flag" });
+        }
+        // Set flag IMMEDIATELY so a second tool-load in the same tab doesn't
+        // re-trigger before we even finish reading the root.
+        sessionStorage.setItem(sessionKey, "1");
+      } catch (e) { /* sessionStorage unavailable, run anyway */ }
+    }
 
     var maxConcurrent = opts.maxConcurrent || 2;
     var onProgress = opts.onProgress || function () {};
