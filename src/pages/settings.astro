@@ -293,6 +293,40 @@ const notifications = [
       </div>
     </section>
 
+    <section id="backupSection" class="uw-set hidden" data-open="false">
+      <button type="button" class="uw-set-h">
+        <svg class="uw-set-chev" viewBox="0 0 10 10" fill="none"><path d="M2 4l3 3 3-3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span class="w-1 h-3 bg-brand rounded-sm shrink-0"></span>
+        <h3 class="text-[12px] font-bold text-ink m-0">Datensicherung</h3>
+      </button>
+      <div class="uw-set-body">
+      <div class="bg-card border-[0.5px] border-line rounded-[9px] px-4 py-3">
+        <div class="text-[13px] font-semibold text-ink">Automatisches Backup</div>
+        <div class="text-[11px] text-ink-mute mt-[2px] leading-[1.55]">
+          Jede Nacht wird die komplette Datenbank (alle Kundenräume) automatisch
+          gesichert. Die letzten 30 Tage bleiben gespeichert.
+        </div>
+        <div id="backupStatus" class="text-[11px] text-ink-mute mt-2">Status wird geladen…</div>
+      </div>
+
+      <div class="bg-card border-[0.5px] border-line rounded-[9px] px-4 py-3 mt-[6px] flex items-center gap-3">
+        <div class="flex-1">
+          <div class="text-[13px] font-semibold text-ink">Kopie herunterladen</div>
+          <div class="text-[11px] text-ink-mute mt-[1px]">
+            Erzeugt ein frisches Backup und lädt es als Datei auf dieses Gerät —
+            deine Off-Site-Sicherung.
+          </div>
+        </div>
+        <button
+          id="backupDownloadBtn"
+          type="button"
+          class="text-[11px] font-bold text-white bg-brand hover:bg-brand-dark px-3 py-2 rounded-lg cursor-pointer border-0 shrink-0"
+          >⬇ Herunterladen</button
+        >
+      </div>
+      </div>
+    </section>
+
     <section id="adminSection" class="uw-set hidden" data-open="false">
       <button type="button" class="uw-set-h">
         <svg class="uw-set-chev" viewBox="0 0 10 10" fill="none"><path d="M2 4l3 3 3-3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -889,5 +923,110 @@ const notifications = [
       });
     }
     window.appUI.onAuth(initCrDefaults);
+
+    // ── Datensicherung (Backup) — nur Admin ────────────────────────
+    function initBackupUi(me) {
+      if (!me || !me.uid) return;
+      var section = document.getElementById("backupSection");
+      var statusEl = document.getElementById("backupStatus");
+      var btn = document.getElementById("backupDownloadBtn");
+      if (!section || !btn || !statusEl) return;
+
+      var isAdmin = false;
+
+      function fmtAge(ts) {
+        var then = Date.parse(ts);
+        if (isNaN(then)) return "";
+        var mins = Math.floor((Date.now() - then) / 60000);
+        if (mins < 1) return "gerade eben";
+        if (mins < 60) return "vor " + mins + " Min";
+        var hrs = Math.floor(mins / 60);
+        if (hrs < 48) return "vor " + hrs + " Std";
+        return "vor " + Math.floor(hrs / 24) + " Tagen";
+      }
+      function fmtSize(b) {
+        if (!b) return "";
+        if (b < 1024) return b + " B";
+        if (b < 1048576) return Math.round(b / 1024) + " KB";
+        return (b / 1048576).toFixed(1) + " MB";
+      }
+      function currentUser() {
+        try { return window.firebase && window.firebase.auth().currentUser; }
+        catch (e) { return null; }
+      }
+
+      function loadStatus() {
+        var cu = currentUser();
+        if (!cu) return;
+        cu.getIdToken().then(function (tok) {
+          return fetch("/api/backup?status=1", {
+            headers: { Authorization: "Bearer " + tok },
+          });
+        }).then(function (r) { return r.json(); }).then(function (d) {
+          if (d && d.latest && d.latest.ts) {
+            statusEl.textContent =
+              "Letztes Backup: " + fmtAge(d.latest.ts) +
+              " · " + (d.count || 0) + " gespeichert" +
+              (d.latest.bytes ? " · " + fmtSize(d.latest.bytes) : "");
+          } else if (d && typeof d.count === "number" && d.count === 0) {
+            statusEl.textContent =
+              "Noch kein Backup — das erste läuft heute Nacht (oder lade jetzt eins herunter).";
+          } else if (d && d.error) {
+            statusEl.textContent = "Status nicht verfügbar (" + d.error + ").";
+          } else {
+            statusEl.textContent = "Status nicht verfügbar.";
+          }
+        }).catch(function () {
+          statusEl.textContent = "Status nicht verfügbar.";
+        });
+      }
+
+      window.fb.ref("admins/" + me.uid).on("value", function (s) {
+        isAdmin = !!s.val();
+        if (isAdmin) {
+          section.classList.remove("hidden");
+          loadStatus();
+        }
+      });
+
+      btn.addEventListener("click", function () {
+        if (!isAdmin) return;
+        var cu = currentUser();
+        if (!cu) { window.appUI.toast("Nicht eingeloggt."); return; }
+        var orig = btn.textContent;
+        btn.disabled = true;
+        btn.textContent = "Erstelle…";
+        cu.getIdToken().then(function (tok) {
+          return fetch("/api/backup", {
+            method: "POST",
+            headers: { Authorization: "Bearer " + tok },
+          });
+        }).then(function (r) {
+          if (!r.ok) {
+            return r.json().then(function (e) {
+              throw new Error((e && e.error) || ("HTTP " + r.status));
+            });
+          }
+          return r.blob();
+        }).then(function (blob) {
+          var url = URL.createObjectURL(blob);
+          var a = document.createElement("a");
+          a.href = url;
+          a.download = "unsigned-backup-" + new Date().toISOString().slice(0, 10) + ".json";
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          setTimeout(function () { URL.revokeObjectURL(url); }, 2000);
+          window.appUI.toast("Backup heruntergeladen ✓");
+          loadStatus();
+        }).catch(function (e) {
+          window.appUI.toast("Fehler: " + e.message);
+        }).then(function () {
+          btn.disabled = false;
+          btn.textContent = orig;
+        });
+      });
+    }
+    window.appUI.onAuth(initBackupUi);
   })();
 </script>
