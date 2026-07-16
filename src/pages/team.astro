@@ -58,6 +58,7 @@ import AppLayout from "../layouts/AppLayout.astro";
     var listEl = document.getElementById("teamList");
     var members = {};
     var presence = {};
+    var isAdmin = false; // gesetzt vom admins-Listener (initInvites) → steuert "Freigeben"
 
     function render() {
       var ui = window.appUI;
@@ -75,6 +76,7 @@ import AppLayout from "../layouts/AppLayout.astro";
           var online = ui.isPresenceFresh(p, now);
           var isMe = window.ME && window.ME.uid === uid;
           var role = isMe ? "owner" : m.role || "member";
+          var pend = !isMe && !m.role; // rollenlos = wartet auf Admin-Freigabe
           var uidSafe = ui.escapeHtml(uid);
           return (
             '<div class="bg-card border-[0.5px] border-line rounded-[10px] px-4 py-[14px] flex items-center gap-[14px]" data-uid="' +
@@ -99,12 +101,18 @@ import AppLayout from "../layouts/AppLayout.astro";
             (online ? "Online" : "Offline") +
             "</div>" +
             '<span class="ml-3 text-[9px] font-bold px-[9px] py-[3px] rounded-full whitespace-nowrap ' +
-            (role === "owner"
+            (pend
+              ? "bg-[#fdf1e0] text-[#8a5a00]"
+              : role === "owner"
               ? "bg-[#fde8e8] text-[#A32D2D]"
               : "bg-[#E6F1FB] text-[#0C447C]") +
             '">' +
-            (isMe ? "Du" : role === "owner" ? "Owner" : "Member") +
+            (isMe ? "Du" : pend ? "Ausstehend" : role === "owner" ? "Owner" : "Member") +
             "</span>" +
+            (pend && isAdmin
+              ? '<button type="button" data-act="approve" data-uid="' + uidSafe +
+                '" class="ml-2 text-[11px] font-bold text-white bg-brand border-0 rounded-lg px-3 py-[6px] cursor-pointer hover:bg-[#a82929] whitespace-nowrap" title="Zugriff freigeben">✓ Freigeben</button>'
+              : "") +
             (isMe
               ? ""
               : '<button type="button" data-act="remove" data-uid="' + uidSafe +
@@ -131,6 +139,26 @@ import AppLayout from "../layouts/AppLayout.astro";
               window.fb.ref("presence/" + uid).remove(),
             ])
               .then(function () { ui.toast("Mitglied entfernt ✓"); })
+              .catch(function (e) { ui.toast("Fehler: " + (e.code || e.message)); });
+          });
+        });
+      });
+
+      // Admin gibt ein ausstehendes (rollenloses) Mitglied frei → Rolle "member".
+      listEl.querySelectorAll('[data-act="approve"]').forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          var uid = btn.dataset.uid;
+          var m = members[uid] || {};
+          ui.confirm({
+            title: "Mitglied freigeben?",
+            description:
+              '„' + (m.name || m.email || uid) +
+              '" bekommt Zugriff aufs Dashboard (Rolle: Mitglied).',
+            okLabel: "Freigeben",
+          }).then(function (ok) {
+            if (!ok) return;
+            window.fb.ref("team/" + uid + "/role").set("member")
+              .then(function () { ui.toast("Freigegeben ✓"); })
               .catch(function (e) { ui.toast("Fehler: " + (e.code || e.message)); });
           });
         });
@@ -235,13 +263,16 @@ import AppLayout from "../layouts/AppLayout.astro";
         });
       }
 
-      // Show section only for admins
+      // Show section only for admins — und Admin-Status merken (steuert die
+      // "Freigeben"-Buttons in der Mitgliederliste).
       window.fb.ref("admins/" + me.uid).on("value", function (s) {
-        if (s.val()) {
+        isAdmin = !!s.val();
+        if (isAdmin) {
           section.classList.remove("hidden");
         } else {
           section.classList.add("hidden");
         }
+        renderThrottled();
       });
 
       window.fb.ref("invites").on("value", function (s) {

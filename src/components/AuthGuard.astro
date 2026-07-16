@@ -10,7 +10,9 @@
         return setTimeout(check, 60);
       }
       window.firebase.auth().onAuthStateChanged(function (user) {
-        if (!user) {
+        // Owner-Seiten brauchen echte E-Mail-Auth. Anonyme (Kunden-)Sessions
+        // werden wie "nicht eingeloggt" behandelt → Login, KEIN team-Eintrag.
+        if (!user || user.isAnonymous) {
           var here = location.pathname + location.search;
           var next = here && here !== "/" ? "?next=" + encodeURIComponent(here) : "";
           window.location.replace("/" + next);
@@ -22,103 +24,98 @@
           name: (user.email || "").split("@")[0],
         };
 
-        // Profile: never overwrite role on a re-auth.
         var teamRef = window.fb.ref("team/" + user.uid);
         teamRef.once("value").then(function (snap) {
           var existing = snap.val() || {};
-          var patch = {
+          // NUR Profil schreiben — NIEMALS die Rolle. Rollen vergibt ausschließlich
+          // ein Admin (siehe DB-Regeln). Neue Nutzer bekommen so einen rollenlosen
+          // "Pending"-Eintrag, den ein Admin unter Team freigibt. Das verhindert die
+          // alten Geister-Rollen (anonyme/fremde Sessions, die sich selbst member setzten).
+          teamRef.update({
             uid: user.uid,
             email: user.email,
             name: existing.name || window.ME.name,
-          };
-          if (!existing.role) patch.role = "member";
-          teamRef.update(patch).then(function () {
-            // After team profile exists, try to claim a pending invite.
-            tryClaimInvite(user);
-          });
-        });
+          }).catch(function () {});
 
-        var pres = window.fb.ref("presence/" + user.uid);
-        pres.update({
-          online: true,
-          lastSeen: window.fb.ts(),
-          uid: user.uid,
-          email: user.email,
-          name: window.ME.name,
+          if (existing.role) {
+            // Freigegebenes Team-Mitglied → normal weiter.
+            window.ME.role = existing.role;
+            setupPresence(user);
+            document.dispatchEvent(
+              new CustomEvent("auth-ready", { detail: window.ME })
+            );
+          } else {
+            // Noch nicht freigeschaltet → Pending-Screen, KEIN auth-ready
+            // (die Seite lädt keine Owner-Daten, die der Nutzer eh nicht lesen darf).
+            showPending(user);
+          }
+        }).catch(function () {
+          showPending(user);
         });
-        pres.onDisconnect().update({
-          online: false,
-          lastSeen: window.fb.ts(),
-        });
-
-        // Heartbeat: alle 30s lastSeen aktualisieren, damit der Owner-Filter
-        // (presence/<uid>/lastSeen aelter als TTL = offline) Browser-Crashes
-        // erkennt und keine Zombie-Online-Anzeigen entstehen.
-        // Pausiert wenn Tab unsichtbar (Browser drosseln Timer dort sowieso).
-        var HEARTBEAT_INT = (window.appUI && window.appUI.CONST.PRESENCE_HEARTBEAT_MS) || 30000;
-        function beat() {
-          if (document.visibilityState !== "visible") return;
-          pres.update({ online: true, lastSeen: window.fb.ts() }).catch(function () {});
-        }
-        var heartbeatId = setInterval(beat, HEARTBEAT_INT);
-        document.addEventListener("visibilitychange", function () {
-          if (document.visibilityState === "visible") beat();
-        });
-        // Beim Verlassen Cleanup (verhindert offene Intervals nach Logout)
-        window.addEventListener("pagehide", function () {
-          clearInterval(heartbeatId);
-        });
-
-        document.dispatchEvent(
-          new CustomEvent("auth-ready", { detail: window.ME })
-        );
       });
     }
 
-    // ── Invite Claim ──────────────────────────────────────
-    function tryClaimInvite(user) {
-      var token;
-      try { token = localStorage.getItem("uw.pending_invite"); } catch (e) {}
-      if (!token) return;
-      window.fb.ref("invites/" + token).once("value").then(function (s) {
-        if (!s.exists()) {
-          // Invite gone — clear and ignore
-          try { localStorage.removeItem("uw.pending_invite"); } catch (e) {}
-          return;
-        }
-        var inv = s.val() || {};
-        // Expired?
-        if (inv.expires && Date.now() > inv.expires) {
-          try { localStorage.removeItem("uw.pending_invite"); } catch (e) {}
-          console.warn("[invite] expired", token);
-          return;
-        }
-        // Apply role to own team profile
-        var role = inv.role === "admin" ? "admin" : "member";
-        var updates = { role: role, invitedBy: inv.invitedBy || null, invitedAt: window.fb.ts() };
-        window.fb.ref("team/" + user.uid).update(updates).then(function () {
-          // For admin invites, also need to write admins/<uid>=true.
-          // Bootstrap rule lets us if admins is empty OR if invites_admin_grant marks us.
-          if (role === "admin") {
-            return window.fb.ref("invites_admin_grant/" + user.uid).set(true).then(function () {
-              return window.fb.ref("admins/" + user.uid).set(true);
-            }).then(function () {
-              return window.fb.ref("invites_admin_grant/" + user.uid).remove();
-            });
-          }
-        }).then(function () {
-          // Mark invite as accepted (for owner's UI)
-          return window.fb.ref("invites/" + token).update({
-            acceptedBy: user.uid, acceptedAt: window.fb.ts(),
-          }).catch(function () { /* OK if rules block — invite still 'used' */ });
-        }).then(function () {
-          try { localStorage.removeItem("uw.pending_invite"); } catch (e) {}
-        }).catch(function (err) {
-          console.warn("[invite] claim failed:", err && (err.code || err.message));
-        });
-      }).catch(function (err) {
-        console.warn("[invite] read failed:", err && (err.code || err.message));
+    function setupPresence(user) {
+      var pres = window.fb.ref("presence/" + user.uid);
+      pres.update({
+        online: true,
+        lastSeen: window.fb.ts(),
+        uid: user.uid,
+        email: user.email,
+        name: window.ME.name,
       });
+      pres.onDisconnect().update({
+        online: false,
+        lastSeen: window.fb.ts(),
+      });
+
+      // Heartbeat: alle 30s lastSeen aktualisieren, damit der Owner-Filter
+      // (presence/<uid>/lastSeen aelter als TTL = offline) Browser-Crashes
+      // erkennt und keine Zombie-Online-Anzeigen entstehen.
+      // Pausiert wenn Tab unsichtbar (Browser drosseln Timer dort sowieso).
+      var HEARTBEAT_INT = (window.appUI && window.appUI.CONST.PRESENCE_HEARTBEAT_MS) || 30000;
+      function beat() {
+        if (document.visibilityState !== "visible") return;
+        pres.update({ online: true, lastSeen: window.fb.ts() }).catch(function () {});
+      }
+      var heartbeatId = setInterval(beat, HEARTBEAT_INT);
+      document.addEventListener("visibilitychange", function () {
+        if (document.visibilityState === "visible") beat();
+      });
+      // Beim Verlassen Cleanup (verhindert offene Intervals nach Logout)
+      window.addEventListener("pagehide", function () {
+        clearInterval(heartbeatId);
+      });
+    }
+
+    // Vollbild-Hinweis für noch nicht freigeschaltete Konten.
+    function showPending(user) {
+      try {
+        if (document.getElementById("uw-pending")) return;
+        var ov = document.createElement("div");
+        ov.id = "uw-pending";
+        ov.style.cssText =
+          "position:fixed;inset:0;z-index:100000;background:#faf9f7;display:flex;" +
+          "flex-direction:column;align-items:center;justify-content:center;gap:14px;" +
+          "text-align:center;padding:24px;font-family:Montserrat,system-ui,sans-serif;color:#111";
+        // Nur STATISCHE Markup-Strings via innerHTML; die E-Mail wird unten
+        // per textContent gesetzt (keine Interpolation von Nutzerdaten ins HTML).
+        ov.innerHTML =
+          '<div style="font-size:40px" aria-hidden="true">⏳</div>' +
+          '<div style="font-size:18px;font-weight:800">Fast geschafft</div>' +
+          '<div style="font-size:13px;color:#555;max-width:360px;line-height:1.55">Dein Konto ist angelegt, aber ein Admin muss dich noch freischalten. Meld dich kurz bei deinem Team — danach hast du Zugriff.</div>' +
+          '<div id="uw-pending-email" style="font-size:11px;color:#999"></div>' +
+          '<button id="uw-pending-logout" type="button" style="margin-top:8px;background:#111;color:#fff;border:0;border-radius:10px;padding:10px 18px;font-weight:700;font-size:13px;cursor:pointer">Abmelden</button>';
+        (document.body || document.documentElement).appendChild(ov);
+        var em = document.getElementById("uw-pending-email");
+        if (em) em.textContent = user.email || "";
+        var lo = document.getElementById("uw-pending-logout");
+        if (lo) lo.addEventListener("click", function () {
+          window.firebase.auth().signOut()
+            .then(function () { location.replace("/"); })
+            .catch(function () { location.replace("/"); });
+        });
+      } catch (e) {}
     }
 
     check();
