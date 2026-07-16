@@ -1,0 +1,57 @@
+{
+  "rules": {
+    "rooms": {
+      "$room": { ".read": true, ".write": true }
+    },
+    "workspace": {
+      "customers": {
+        ".read": "root.child('team/'+auth.uid+'/role').exists() || root.child('admins/'+auth.uid).val() === true",
+        ".indexOn": ["lastActive", "arch", "createdBy"],
+        "$id": {
+          ".read": "root.child('team/'+auth.uid+'/role').exists() || root.child('admins/'+auth.uid).val() === true",
+          ".write": "(root.child('team/'+auth.uid+'/role').exists() || root.child('admins/'+auth.uid).val() === true) && (!data.exists() || data.child('createdBy').val() == auth.uid || newData.child('createdBy').val() == auth.uid || root.child('admins/'+auth.uid).val() === true)"
+        }
+      },
+      "brand":    { ".read": true, ".write": "auth != null && root.child('admins/'+auth.uid).val() === true" },
+      "defaults": { ".read": true, ".write": "auth != null && root.child('admins/'+auth.uid).val() === true" },
+      "academy":  { ".read": "auth != null", ".write": "auth != null && root.child('admins/'+auth.uid).val() === true" }
+    },
+    "team": {
+      ".read": "root.child('team/'+auth.uid+'/role').exists() || root.child('admins/'+auth.uid).val() === true",
+      "$uid": {
+        ".read": "auth != null && ($uid == auth.uid || root.child('team/'+auth.uid+'/role').exists() || root.child('admins/'+auth.uid).val() === true)",
+        ".write": "root.child('admins/'+auth.uid).val() === true || ($uid == auth.uid && newData.child('role').val() == data.child('role').val())"
+      }
+    },
+    "presence": {
+      ".read": "root.child('team/'+auth.uid+'/role').exists() || root.child('admins/'+auth.uid).val() === true",
+      "$uid": {
+        ".read": "auth != null && ($uid == auth.uid || root.child('team/'+auth.uid+'/role').exists() || root.child('admins/'+auth.uid).val() === true)",
+        ".write": "auth != null && ($uid == auth.uid || root.child('admins/'+auth.uid).val() === true)"
+      }
+    },
+    "admins": {
+      ".read": "root.child('team/'+auth.uid+'/role').exists() || root.child('admins/'+auth.uid).val() === true",
+      "$uid": {
+        ".read": "auth != null && ($uid == auth.uid || root.child('admins/'+auth.uid).val() === true)",
+        ".write": "root.child('admins/'+auth.uid).val() === true"
+      }
+    },
+    "invites": {
+      ".read": "auth != null",
+      ".write": "auth != null && root.child('admins/'+auth.uid).val() === true"
+    },
+    "invites_admin_grant": {
+      "$uid": {
+        ".read": "auth != null && $uid == auth.uid",
+        ".write": "root.child('admins/'+auth.uid).val() === true"
+      }
+    },
+    "standalone": {
+      "$uid": {
+        ".read": "auth != null && $uid == auth.uid",
+        ".write": "auth != null && $uid == auth.uid"
+      }
+    }
+  }
+}
