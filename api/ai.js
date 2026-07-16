@@ -395,7 +395,7 @@ export default async function handler(req, res) {
   const room = (body.room || '').toString();
   const tool = (body.tool || 'content').toString();
   const instruction = (body.instruction || '').toString();
-  if (!room) return res.status(400).json({ error: 'room fehlt' });
+  if (!/^[A-Za-z0-9_-]{3,64}$/.test(room)) return res.status(400).json({ error: 'Ungültiger room.' });
   if (!instruction.trim()) return res.status(400).json({ error: 'Kein Befehl angegeben.' });
 
   // ── Rate-Limit pro Raum/Tag ────────────────────────────────────────────────

@@ -380,7 +380,13 @@ const { title = "Unsigned Workspace" } = Astro.props;
       // A · D · R Status — Tap = Cache-Reset, Long-Press = Detail-Panel
       // A: Auth   D: Database-Connection   R: Read-Test (team-once)
       (function () {
-        if (window.UW_DIAG_DISABLED) return;
+        // Für KUNDEN (Portal mit ?room=) ausblenden — die kryptische A·D·R-Pille
+        // (+ versehentlicher Cache-Reset) verwirrt. Kunden haben jetzt die
+        // freundliche Auto-Recovery (Soft-Reconnect, IndexedDB-Banner,
+        // "Zurücksetzen"-Screen). Owner/Team behalten die Diagnose.
+        var _isCustomer = false;
+        try { _isCustomer = !!new URLSearchParams(location.search).get("room"); } catch (e) {}
+        if (window.UW_DIAG_DISABLED || _isCustomer) return;
         var pill, panel;
         function ensure() {
           if (pill) return pill;
@@ -565,6 +571,15 @@ const { title = "Unsigned Workspace" } = Astro.props;
           });
         }
 
+        // Probe-Pfad: anonyme KUNDEN dürfen "team" NICHT lesen — früher schlug die
+        // Probe bei jedem Kunden fehl und löste alle 90s (+ bei jedem Tab-Return)
+        // einen goOffline/goOnline-Reconnect aus → Live-Sync brach periodisch ab.
+        // Daher im Kunden-Kontext den EIGENEN Raum lesen (immer erlaubt, echter
+        // Server-Roundtrip); nur ohne Raum (Owner/Team) weiter "team".
+        var PROBE_PATH = (function () {
+          try { var r = new URLSearchParams(location.search).get("room"); if (r) return "rooms/" + r + "/_ping"; } catch (e) {}
+          return "team";
+        })();
         function probeOnce(timeoutMs, cb) {
           var settled = false;
           var to = setTimeout(function () {
@@ -572,7 +587,7 @@ const { title = "Unsigned Workspace" } = Astro.props;
             settled = true;
             cb(false, "timeout", null);
           }, timeoutMs);
-          window.firebase.database().ref("team").once("value")
+          window.firebase.database().ref(PROBE_PATH).once("value")
             .then(function (s) {
               if (settled) return;
               settled = true;

@@ -348,21 +348,40 @@ function saveCustomItems() {
   document.querySelectorAll('.notes-area').forEach(function(ta, i) {
     custom['notes-' + i] = ta.value;
   });
-  _D.ref('rooms/' + _R + '/cr_items').set(custom);
+  _D.ref('rooms/' + _R + '/cr_items').set(custom)
+    .catch(function () { showSaveErr(); });
 }
 function saveState(s) {
-  try { localStorage.setItem(KEY, JSON.stringify(s)); showSaved(); } catch {}
+  try { localStorage.setItem(KEY, JSON.stringify(s)); } catch {}
   if (_R && _D) {
-    _D.ref('rooms/' + _R + '/cr_checks').set(s);
+    // "Gespeichert ✓" ERST wenn der Server-Write wirklich durch ist — sonst
+    // sah der Kunde bei wackligem Netz "gespeichert", obwohl der Write floppte.
+    _D.ref('rooms/' + _R + '/cr_checks').set(s)
+      .then(function () { showSaved(); })
+      .catch(function () { showSaveErr(); });
+  } else {
+    showSaved(); // rein lokal (kein Raum) → nichts zu synchronisieren
   }
 }
 
 function showSaved() {
   const el = document.getElementById('saved-toast');
   if (!el) return;
+  el.textContent = 'Gespeichert ✓';
+  el.style.background = '#111';
   el.style.opacity = '1';
   clearTimeout(el._t);
   el._t = setTimeout(() => { el.style.opacity = '0'; }, 1800);
+}
+
+function showSaveErr() {
+  const el = document.getElementById('saved-toast');
+  if (!el) return;
+  el.textContent = '⚠ Nicht gespeichert — Verbindung prüfen';
+  el.style.background = '#c13030';
+  el.style.opacity = '1';
+  clearTimeout(el._t);
+  el._t = setTimeout(() => { el.style.opacity = '0'; }, 5000);
 }
 
 function toggleItem(item) {
@@ -420,7 +439,7 @@ function updateProgress() {
   });
   try { window.parent.postMessage({type:'crPct', pct: pct}, '*'); } catch(e) {}
   // Mirror progress to Firebase so the owner sees updates regardless of who edits.
-  if (_R && _D) { try { _D.ref('rooms/' + _R + '/cr_pct').set(pct); } catch(e) {} }
+  if (_R && _D) { _D.ref('rooms/' + _R + '/cr_pct').set(pct).catch(function(){}); }
 }
 
 function persistState() {

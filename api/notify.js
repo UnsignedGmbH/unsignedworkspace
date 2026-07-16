@@ -5,6 +5,8 @@
 
 import admin from 'firebase-admin';
 
+const NOTIFY_DAILY_LIMIT = parseInt(process.env.NOTIFY_DAILY_LIMIT, 10) || 50; // pro Raum/Tag
+
 let _initDone = false;
 function initAdmin() {
   if (_initDone) return;
@@ -55,14 +57,31 @@ export default async function handler(req, res) {
   const room = (body.room || '').toString();
   const title = (body.title || '').toString().slice(0, 200);
   const text = (body.body || '').toString().slice(0, 500);
-  const url = (body.url || '/portal').toString();
+  let url = (body.url || '/portal').toString();
 
-  if (!room) {
-    return res.status(400).json({ error: 'room fehlt' });
+  if (!/^[A-Za-z0-9_-]{3,64}$/.test(room)) {
+    return res.status(400).json({ error: 'Ungültiger room.' });
   }
   if (!title) {
     return res.status(400).json({ error: 'title fehlt' });
   }
+  // url MUSS ein same-origin-Pfad sein — kein externes Ziel (Anti-Phishing:
+  // sonst könnte der Klick auf die Benachrichtigung auf eine Fremdseite führen).
+  if (!url.startsWith('/') || url.startsWith('//') || url.indexOf('://') !== -1) {
+    url = '/portal';
+  }
+
+  // Rate-Limit pro Raum/Tag (Anti-Spam) — der Endpoint ist nur durch den
+  // ratbaren Raum-Code geschützt; verhindert eine Push-Flut an Kundengeräte.
+  try {
+    const day = new Date().toISOString().slice(0, 10);
+    const ref = admin.database().ref('rooms/' + room + '/_notify/day_' + day);
+    const tx = await ref.transaction(function (cur) { return (cur || 0) + 1; });
+    const count = (tx && tx.snapshot && tx.snapshot.val()) || 0;
+    if (count > NOTIFY_DAILY_LIMIT) {
+      return res.status(429).json({ error: 'Tageslimit für Benachrichtigungen erreicht.' });
+    }
+  } catch (e) { /* nicht kritisch */ }
 
   let tokens = [];
   try {

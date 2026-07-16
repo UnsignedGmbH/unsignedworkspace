@@ -48,7 +48,7 @@ export default async function handler(req, res) {
   body = body || {};
   const room = (body.room || '').toString().trim();
   const email = (body.email || '').toString().trim();
-  if (!room) return res.status(400).json({ error: 'room fehlt' });
+  if (!/^[A-Za-z0-9_-]{3,64}$/.test(room)) return res.status(400).json({ error: 'Ungültiger room.' });
   if (!EMAIL_RE.test(email) || email.length > 200) {
     return res.status(400).json({ error: 'Bitte eine gültige E-Mail-Adresse eingeben.' });
   }
