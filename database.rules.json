@@ -12,6 +12,10 @@
           ".write": "(root.child('team/'+auth.uid+'/role').exists() || root.child('admins/'+auth.uid).val() === true) && (!data.exists() || data.child('createdBy').val() == auth.uid || newData.child('createdBy').val() == auth.uid || root.child('admins/'+auth.uid).val() === true)"
         }
       },
+      "calc": {
+        ".read":  "root.child('team/'+auth.uid+'/role').exists() || root.child('admins/'+auth.uid).val() === true",
+        ".write": "root.child('team/'+auth.uid+'/role').exists() || root.child('admins/'+auth.uid).val() === true"
+      },
       "brand":    { ".read": true, ".write": "auth != null && root.child('admins/'+auth.uid).val() === true" },
       "defaults": { ".read": true, ".write": "auth != null && root.child('admins/'+auth.uid).val() === true" },
       "academy":  { ".read": "auth != null", ".write": "auth != null && root.child('admins/'+auth.uid).val() === true" }

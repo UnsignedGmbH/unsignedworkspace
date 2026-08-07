@@ -1,0 +1,1887 @@
+---
+import AppLayout from "../layouts/AppLayout.astro";
+---
+
+<AppLayout title="Kalkulatoren" active="kalkulatoren">
+  <link
+    rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Anton&family=IBM+Plex+Sans:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap"
+  />
+
+  <div id="kalkRoot">
+    <!-- ═══════ TABS ═══════ -->
+    <div class="ktabs" id="kTabs">
+      <button class="ktab" data-tab="fulfillment">📦 Fulfillment</button>
+      <button class="ktab" data-tab="shooting">📸 Shooting</button>
+      <button class="ktab" data-tab="preis">🏷️ Preisrechner</button>
+    </div>
+
+    <!-- ═══════ KUNDEN-LEISTE (Fulfillment + Shooting) ═══════ -->
+    <div class="custbar" id="kCustbar">
+      <span class="lbl">Kunden</span>
+      <div class="chips" id="kChips"></div>
+      <button class="chip add" id="kAddClient">+ Neuer Kunde</button>
+    </div>
+
+    <!-- ═══════ TAB: FULFILLMENT ═══════ -->
+    <section data-tab="fulfillment" id="secFulfillment" style="display:none;">
+      <div class="empty" id="fEmpty" style="display:none;">
+        Noch kein Kunde ausgewählt. Lege oben mit „+ Neuer Kunde" den ersten an.
+      </div>
+      <div class="layout" id="fLayout">
+        <div>
+          <div class="card">
+            <h2><span class="n">01</span> Kunde</h2>
+            <div class="field">
+              <label>Kundenname</label>
+              <input type="text" class="name" id="f_cname" />
+            </div>
+            <div class="btnrow">
+              <button class="del-btn" id="fDeleteClient">Kunde löschen</button>
+              <label class="del-btn imp" title="Backup-JSON aus dem alten HTML-Kalkulator laden">
+                Alte Daten importieren<input type="file" id="fImport" accept="application/json" hidden />
+              </label>
+            </div>
+          </div>
+
+          <div class="card">
+            <h2><span class="n">02</span> Lager</h2>
+            <div class="two">
+              <div class="field">
+                <label>Eingelagerte Stück</label>
+                <input type="number" id="f_pieces" min="0" step="50" inputmode="numeric" />
+              </div>
+              <div class="field">
+                <label>Teile pro Regalfach</label>
+                <input type="number" id="f_perFach" min="1" step="1" inputmode="numeric" />
+              </div>
+            </div>
+            <div class="field">
+              <label>Belegte Regalfächer <span class="hint">automatisch, überschreibbar</span></label>
+              <input type="number" id="f_faecher" min="0" step="1" inputmode="numeric" />
+              <div class="derived">Ergibt aus Bestand: <b><span id="f_faecherAuto">0</span> Fächer</b></div>
+            </div>
+          </div>
+
+          <div class="card">
+            <h2><span class="n">03</span> Volumen pro Monat</h2>
+            <div class="field">
+              <label>Bestellungen / Monat <span class="valbox" id="f_ordersVal">0</span></label>
+              <input type="range" id="f_orders" min="0" max="2000" step="10" />
+            </div>
+            <div class="field">
+              <label>Ø Artikel pro Bestellung <span class="valbox" id="f_aviVal">1,5</span></label>
+              <input type="range" id="f_avi" min="1" max="6" step="0.1" />
+            </div>
+            <div class="two">
+              <div class="field">
+                <label>Retourenquote %</label>
+                <input type="number" id="f_ret" min="0" max="100" step="1" inputmode="numeric" />
+              </div>
+              <div class="field">
+                <label>Wareneingänge <span class="hint">Kartons/Monat</span></label>
+                <input type="number" id="f_cartons" min="0" step="1" inputmode="numeric" />
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <h2 class="tarife-head" id="fTarifeHead">
+              <span class="n">04</span> Tarife <span class="hint">team-geteilt</span>
+              <span class="arrow" id="fTarifeArrow" style="margin-left:auto;">[ anpassen + ]</span>
+            </h2>
+            <div class="tarife-body" id="fTarifeBody">
+              <div class="trow"><span>Grundgebühr <span class="unit">/ Monat</span></span><input type="number" id="ft_grund" step="1" inputmode="decimal" /></div>
+              <div class="trow"><span>Lagerung <span class="unit">/ Fach / Monat</span></span><input type="number" id="ft_lager" step="0.1" inputmode="decimal" /></div>
+              <div class="trow"><span>Wareneingang <span class="unit">/ Karton</span></span><input type="number" id="ft_we" step="0.1" inputmode="decimal" /></div>
+              <div class="trow"><span>P&amp;P Grundpreis <span class="unit">bis 250 Best.</span></span><input type="number" id="ft_pp1" step="0.05" inputmode="decimal" /></div>
+              <div class="trow"><span>P&amp;P Grundpreis <span class="unit">251–750</span></span><input type="number" id="ft_pp2" step="0.05" inputmode="decimal" /></div>
+              <div class="trow"><span>P&amp;P Grundpreis <span class="unit">ab 751</span></span><input type="number" id="ft_pp3" step="0.05" inputmode="decimal" /></div>
+              <div class="trow"><span>Weiterer Artikel <span class="unit">/ Pick</span></span><input type="number" id="ft_extra" step="0.05" inputmode="decimal" /></div>
+              <div class="trow"><span>Retoure <span class="unit">/ Stück</span></span><input type="number" id="ft_ret" step="0.1" inputmode="decimal" /></div>
+              <div class="trow"><span>Setup <span class="unit">einmalig</span></span><input type="number" id="ft_setup" step="1" inputmode="decimal" /></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="result">
+          <div class="result-head">
+            <div class="k">Monatliche Kalkulation</div>
+            <div class="cust" id="fRcust">–</div>
+          </div>
+          <div class="breakdown" id="fBreakdown"></div>
+          <div class="total">
+            <div class="big"><span class="bl">Umsatz / Monat</span><span class="bval" id="fMonthTotal">0 €</span></div>
+          </div>
+          <div class="metrics">
+            <div class="metric"><div class="ml">Pro Bestellung</div><div class="mv" id="fCpo">0,00 €</div></div>
+            <div class="metric"><div class="ml">Jahr (inkl. Setup)</div><div class="mv" id="fYearTotal">0 €</div></div>
+          </div>
+          <div class="setup-note">Einmaliges Setup <b id="fSetupNote">199 €</b> fällt nur im ersten Monat an und ist im Monatsumsatz oben nicht enthalten. Alle Werte netto zzgl. USt. Versand läuft über den DHL-Account des Kunden.</div>
+          <div class="printbar">
+            <button class="print-btn" id="fPdfBtn">Angebot als PDF speichern</button>
+            <div class="print-hint">Erzeugt ein gebrandetes Angebotsblatt für den aktuellen Kunden als PDF-Download.</div>
+          </div>
+        </div>
+      </div>
+      <div class="sticky-total" id="fSticky">Umsatz / Monat: <b id="fStickyVal">0 €</b></div>
+    </section>
+
+    <!-- ═══════ TAB: SHOOTING ═══════ -->
+    <section data-tab="shooting" id="secShooting" style="display:none;">
+      <div class="empty" id="sEmpty" style="display:none;">
+        Noch kein Kunde ausgewählt. Lege oben mit „+ Neuer Kunde" den ersten an.
+      </div>
+      <div class="layout" id="sLayout">
+        <div>
+          <div class="card">
+            <h2><span class="n">01</span> Positionen <span class="hint">an/aus pro Kunde</span></h2>
+            <div id="sPositions"></div>
+            <div class="derived" style="margin-top:12px;">Nur angehakte Positionen zählen und erscheinen im Kunden-PDF. Preise sind pro Kunde überschreibbar — der Katalog liegt unten in den Tarifen.</div>
+          </div>
+
+          <div class="card" id="sRightsCard">
+            <h2>
+              <span class="n">02</span> Nutzungsrechte
+              <label class="pos-tog hdr" title="Nutzungsrechte ein-/ausschalten"><input type="checkbox" id="s_rightsOn" /></label>
+              <span class="arrow" id="sRightsOff" style="margin-left:auto;"></span>
+            </h2>
+            <div class="checks" id="sChannels"></div>
+            <div class="field" style="margin-top:16px;">
+              <label>Laufzeit</label>
+              <div class="seg" id="sDuration">
+                <button data-d="1y">1 Jahr</button>
+                <button data-d="2y">2 Jahre</button>
+                <button data-d="unlim">Unbegrenzt</button>
+              </div>
+            </div>
+            <label class="checkrow" id="sExclusiveRow">
+              <input type="checkbox" id="s_exclusive" />
+              <span>Exklusive Nutzung <span class="hint" id="sExclusiveHint"></span></span>
+            </label>
+            <div class="derived" style="margin-top:12px;">Nutzungsrechte gesamt: <b id="sRightsSum">0 €</b></div>
+          </div>
+
+          <div class="card">
+            <h2><span class="n">03</span> Models</h2>
+            <div id="sModels"></div>
+            <button class="addbtn" id="sAddModel">+ Model hinzufügen</button>
+            <div class="derived" style="margin-top:10px;">Models haben eigene Bildrechte — der Buyout deckt deren Nutzung mit ab.</div>
+          </div>
+
+          <div class="card">
+            <h2><span class="n">04</span> Eigene Positionen <span class="hint">nur dieser Kunde</span></h2>
+            <div id="sCustoms"></div>
+            <button class="addbtn" id="sAddCustom">+ Position hinzufügen</button>
+          </div>
+
+          <div class="card">
+            <h2 class="tarife-head" id="sTarifeHead">
+              <span class="n">05</span> Tarife &amp; Katalog <span class="hint">team-geteilt</span>
+              <span class="arrow" id="sTarifeArrow" style="margin-left:auto;">[ anpassen + ]</span>
+            </h2>
+            <div class="tarife-body" id="sTarifeBody">
+              <div class="cat-title">Positions-Katalog <span class="hint">gilt für alle Kunden</span></div>
+              <div id="sCatEditor"></div>
+              <button class="addbtn" id="sAddCatPos">+ Katalog-Position anlegen</button>
+              <div class="cat-title" style="margin-top:22px;">Sätze &amp; Faktoren</div>
+              <div class="trow"><span>Nutzungsrechte zählen zu <span class="unit">Split</span></span>
+                <select id="st_rightsBucket">
+                  <option value="studio">Studio</option>
+                  <option value="fotograf">Fotograf</option>
+                  <option value="extern">Extern</option>
+                </select>
+              </div>
+              <div class="trow"><span>Model Halbtag <span class="unit">Standard-Satz</span></span><input type="number" id="st_modelHalbtag" step="10" inputmode="decimal" /></div>
+              <div class="trow"><span>Model Ganztag <span class="unit">Standard-Satz</span></span><input type="number" id="st_modelGanztag" step="10" inputmode="decimal" /></div>
+              <div class="trow"><span>Model Buyout <span class="unit">Standard</span></span><input type="number" id="st_modelBuyout" step="10" inputmode="decimal" /></div>
+              <div class="trow"><span>Kanal: Social Media</span><input type="number" id="st_ch_social" step="5" inputmode="decimal" /></div>
+              <div class="trow"><span>Kanal: Website</span><input type="number" id="st_ch_website" step="5" inputmode="decimal" /></div>
+              <div class="trow"><span>Kanal: Kampagne / Ads</span><input type="number" id="st_ch_kampagne" step="5" inputmode="decimal" /></div>
+              <div class="trow"><span>Kanal: Print</span><input type="number" id="st_ch_print" step="5" inputmode="decimal" /></div>
+              <div class="trow"><span>Kanal: Out-of-Home</span><input type="number" id="st_ch_ooh" step="5" inputmode="decimal" /></div>
+              <div class="trow"><span>Faktor: 2 Jahre <span class="unit">×</span></span><input type="number" id="st_dur_2y" step="0.1" inputmode="decimal" /></div>
+              <div class="trow"><span>Faktor: Unbegrenzt <span class="unit">×</span></span><input type="number" id="st_dur_unlim" step="0.1" inputmode="decimal" /></div>
+              <div class="trow"><span>Faktor: Exklusiv <span class="unit">×</span></span><input type="number" id="st_exclusive" step="0.1" inputmode="decimal" /></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="result">
+          <div class="result-head">
+            <div class="k">Shooting-Kalkulation</div>
+            <div class="cust" id="sRcust">–</div>
+          </div>
+          <div class="breakdown" id="sBreakdown"></div>
+          <div class="total">
+            <div class="big"><span class="bl">Gesamt netto</span><span class="bval" id="sTotal">0 €</span></div>
+          </div>
+          <div class="metrics" id="sSplit"></div>
+          <div class="setup-note">Interne Aufteilung — erscheint nicht auf dem Kunden-PDF. Alle Werte netto zzgl. USt.</div>
+          <div class="printbar">
+            <button class="print-btn" id="sPdfBtn">Angebot als PDF speichern</button>
+            <div class="print-hint">Erzeugt ein gebrandetes Angebotsblatt inkl. Nutzungsrechte-Erklärung — ohne interne Aufteilung.</div>
+          </div>
+        </div>
+      </div>
+      <div class="sticky-total" id="sSticky">Gesamt netto: <b id="sStickyVal">0 €</b></div>
+    </section>
+
+    <!-- ═══════ TAB: PREISRECHNER ═══════ -->
+    <section data-tab="preis" id="secPreis" style="display:none;">
+      <div class="pr-head">
+        <div class="pr-sub">Schätzwerte EK (China / Türkei) &amp; Kundenpreis · alle Werte editierbar · ohne Speichern</div>
+        <div class="pr-controls">
+          <div class="seg" id="curSeg" style="width:140px;">
+            <button data-c="eur" class="on">€ EUR</button>
+            <button data-c="usd">$ USD</button>
+          </div>
+          <label class="checkrow slim"><input type="checkbox" id="showEK" checked /> <span>EK anzeigen (intern)</span></label>
+        </div>
+      </div>
+      <div class="layout pr">
+        <div>
+          <div class="card">
+            <h2>Produkt</h2>
+            <div class="two">
+              <div class="field"><label>Artikel</label><select id="product"></select></div>
+              <div class="field"><label>Stoff / GSM</label><select id="gsm"></select></div>
+            </div>
+            <div class="two">
+              <div class="field"><label>Produktion</label>
+                <div class="seg" id="originSeg">
+                  <button data-o="cn" class="on">🇨🇳 China</button>
+                  <button data-o="tr">🇹🇷 Türkei</button>
+                </div>
+              </div>
+              <div class="field"><label>Stückzahl</label>
+                <div class="seg" id="qtySeg">
+                  <button data-q="50">50</button>
+                  <button data-q="100" class="on">100</button>
+                  <button data-q="300">300</button>
+                  <button data-q="500">500+</button>
+                </div>
+              </div>
+            </div>
+            <div class="two">
+              <label class="checkrow slim"><input type="checkbox" id="logistics" checked /> <span>Fracht &amp; Zoll einrechnen</span></label>
+              <label class="checkrow slim"><input type="checkbox" id="labels" /> <span>Custom Necklabel + Hangtag</span></label>
+            </div>
+          </div>
+
+          <div class="card">
+            <h2>Veredelung</h2>
+            <div id="decoList"></div>
+            <button class="addbtn" id="addDeco">+ Veredelung hinzufügen</button>
+            <div class="setupinfo" id="setupInfo" style="display:none;"></div>
+          </div>
+
+          <details class="editor card">
+            <summary>⚙️ Preisdaten bearbeiten (EK-Basis, Faktoren, Veredelung)</summary>
+            <div id="editorBody" style="margin-top:10px;"></div>
+          </details>
+        </div>
+
+        <div class="result">
+          <div class="result-head">
+            <div class="k">Kalkulation <span class="tag" id="qtyTag">100 Stk</span></div>
+          </div>
+          <div class="prbody">
+            <div id="ekBlock">
+              <div class="ml">EK pro Stück (geschätzt)</div>
+              <div class="result-big ek" id="ekOut">–</div>
+            </div>
+            <div style="margin-top:14px;">
+              <div class="ml">Kundenpreis pro Stück (VK)</div>
+              <div class="result-big vk" id="vkOut">–</div>
+            </div>
+            <div style="margin:16px 0 6px;">
+              <div class="rline"><span class="l">Blank (Basis)</span><span id="rBlank">–</span></div>
+              <div class="rline"><span class="l">Veredelung</span><span id="rDeco">–</span></div>
+              <div class="rline"><span class="l">Labels/Tags</span><span id="rLabels">–</span></div>
+              <div class="rline"><span class="l">Fracht &amp; Zoll</span><span id="rShip">–</span></div>
+              <div class="rline" id="rTotalEkLine"><span class="l"><b>EK gesamt (Auftrag)</b></span><span id="rTotalEk">–</span></div>
+              <div class="rline"><span class="l"><b>VK gesamt (Auftrag)</b></span><span class="vk" id="rTotalVk">–</span></div>
+            </div>
+            <div class="three">
+              <div class="field"><label>VK-Faktor</label><input type="number" id="factor" value="1.5" step="0.1" min="1" inputmode="decimal" /></div>
+              <div class="field"><label>Rundung VK</label>
+                <select id="rounding">
+                  <option value="none">keine</option>
+                  <option value="0.5" selected>auf 0,50</option>
+                  <option value="1">auf 1,00</option>
+                </select>
+              </div>
+              <div class="field"><label>Kurs EUR→USD</label><input type="number" id="fxRate" value="1.16" step="0.01" min="0.5" inputmode="decimal" /></div>
+            </div>
+            <div class="note">
+              ⚠️ <b>Richtwerte, unverbindlich.</b> China-Preise kalibriert auf echte MM·BULALA-Quotations (Juni–August 2026, USD→EUR @1,16, ab Werk) – Türkei-Werte sind Marktschätzungen. Viele Quotes enthalten bereits einfache Veredelung; bei Blank + Veredelung eher am unteren Rand der Spanne bleiben. Einmalkosten sind nicht im Stückpreis: Sample ca. 70–150 $ (7–8 Tage), Bulk ca. 35–40 Tage. Verbindliche Preise immer bei der Produktion anfragen.
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <footer class="kfoot">
+      Unsigned GmbH · Schützenstr. 3 · 96279 Weidhausen b. Coburg · @unsigned26<br />
+      <span class="mk">Interne Kalkulatoren</span> · nicht für Kundenversand
+    </footer>
+  </div>
+
+  <!-- ═══════ PRINT SHEET: FULFILLMENT ═══════ -->
+  <div id="psFulfillment" class="ps-wrap">
+    <div class="ps-page">
+      <div class="ps-top">
+        <div class="ps-brand">UNSIGNED<span>.</span></div>
+        <div class="ps-meta">Fulfillment Angebot<br /><span id="psf_date"></span><br />für <span id="psf_client"></span></div>
+      </div>
+      <div class="ps-eyebrow">Lager / Kommissionierung / Versand</div>
+      <h1 class="ps-h1">Fulfillment,<br />das <span>skaliert.</span></h1>
+      <p class="ps-intro">Zusammenstellung eurer Fulfillment-Konditionen und eine Beispielkalkulation auf Basis eures aktuellen Volumens. Der Versand läuft über euren eigenen DHL-Geschäftskundenaccount, ihr behaltet eure verhandelten Konditionen und zahlt keine Versandmarge.</p>
+      <div class="ps-cols">
+        <div>
+          <div class="ps-label">Leistungen &amp; Preise</div>
+          <div class="ps-rrow"><span>Setup &amp; Onboarding</span><span class="ps-p" id="psf_setup"></span></div>
+          <div class="ps-rrow"><span>Grundgebühr / Monat</span><span class="ps-p" id="psf_grund"></span></div>
+          <div class="ps-rrow"><span>Wareneingang / Karton</span><span class="ps-p" id="psf_we"></span></div>
+          <div class="ps-rrow"><span>Lagerung / Fach / Monat</span><span class="ps-p" id="psf_lager"></span></div>
+          <div class="ps-rrow"><span>Pick &amp; Pack · bis 250</span><span class="ps-p" id="psf_pp1"></span></div>
+          <div class="ps-rrow"><span>Pick &amp; Pack · 251–750</span><span class="ps-p" id="psf_pp2"></span></div>
+          <div class="ps-rrow"><span>Pick &amp; Pack · ab 751</span><span class="ps-p" id="psf_pp3"></span></div>
+          <div class="ps-rrow"><span>Weiterer Artikel</span><span class="ps-p" id="psf_extra"></span></div>
+          <div class="ps-rrow"><span>Retoure komplett</span><span class="ps-p" id="psf_ret"></span></div>
+          <div class="ps-rrow ps-incl"><span>Standard-Verpackung</span><span class="ps-p">inklusive</span></div>
+          <div class="ps-rrow ps-incl"><span>Versand</span><span class="ps-p">über euren DHL-Account</span></div>
+        </div>
+        <div>
+          <div class="ps-label sand">Eure Beispielkalkulation</div>
+          <div class="ps-exsub" id="psf_exsub"></div>
+          <div id="psf_rows"></div>
+          <div class="ps-total"><span>Fulfillment / Monat</span><span id="psf_month"></span></div>
+          <div class="ps-setupnote">Einmaliges Setup <b id="psf_setupnote"></b> nur im ersten Monat. Die Monatswerte sind eine Kalkulation auf Basis eures Volumens und schwanken mit der tatsächlichen Bestellmenge.</div>
+        </div>
+      </div>
+      <div class="ps-foot">
+        <div>Unsigned GmbH · Schützenstr. 3 · 96279 Weidhausen b. Coburg · @unsigned26</div>
+        <div>Alle Preise netto zzgl. USt.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════ PRINT SHEET: SHOOTING ═══════ -->
+  <div id="psShooting" class="ps-wrap">
+    <div class="ps-page">
+      <div class="ps-top">
+        <div class="ps-brand">UNSIGNED<span>.</span></div>
+        <div class="ps-meta">Shooting Angebot<br /><span id="pss_date"></span><br />für <span id="pss_client"></span></div>
+      </div>
+      <div class="ps-eyebrow">Studio / Produktion / Bildrechte</div>
+      <h1 class="ps-h1">Ein Shooting,<br />das <span>sitzt.</span></h1>
+      <p class="ps-intro">Euer Angebot für ein professionelles Shooting bei Unsigned — Studio, Equipment, Fotografie und Bearbeitung aus einer Hand, inklusive sauber geregelter Nutzungsrechte.</p>
+      <div class="ps-single">
+        <div class="ps-label">Positionen</div>
+        <div id="pss_rows"></div>
+        <div class="ps-total"><span>Gesamt netto</span><span id="pss_total"></span></div>
+      </div>
+      <div class="ps-rights" id="pss_rightsBlock">
+        <div class="ps-label sand">Nutzungsrechte — kurz erklärt</div>
+        <p class="ps-rights-text">Der Fotograf ist Urheber jedes Bildes — ohne Lizenz darf niemand die Fotos verwenden. Mit diesem Paket erhaltet ihr die Nutzungsrechte für <b id="pss_rights_scope"></b>, Laufzeit <b id="pss_rights_dur"></b><span id="pss_rights_excl"></span>. Damit seid ihr rechtlich auf der sicheren Seite und vor Abmahnungen geschützt.<span id="pss_rights_models"></span></p>
+      </div>
+      <div class="ps-foot">
+        <div>Unsigned GmbH · Schützenstr. 3 · 96279 Weidhausen b. Coburg · @unsigned26</div>
+        <div>Alle Preise netto zzgl. USt.</div>
+      </div>
+    </div>
+  </div>
+</AppLayout>
+
+<style is:global>
+  /* ═══════════ Kalkulatoren — dunkle Insel im hellen Workspace ═══════════ */
+  #kalkRoot {
+    --jet: #0e0e0e; --panel: #161616; --panel2: #1d1d1d;
+    --off: #f5f3ee; --sand: #b9ac94; --kred: #b53c3c; --kred-deep: #a81e1e;
+    --kline: rgba(245, 243, 238, 0.12); --kmuted: rgba(245, 243, 238, 0.5);
+    background: var(--jet); color: var(--off);
+    font-family: "IBM Plex Sans", sans-serif; -webkit-font-smoothing: antialiased;
+    border-radius: 16px; padding: 20px 20px 28px; max-width: 1080px; margin: 0 auto;
+  }
+  #kalkRoot .ktabs { display: flex; gap: 8px; overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 14px; border-bottom: 1px solid var(--kline); margin-bottom: 16px; }
+  #kalkRoot .ktab { flex-shrink: 0; font-family: "Anton", sans-serif; font-size: 15px; letter-spacing: 1.5px; text-transform: uppercase; background: var(--panel); border: 1px solid var(--kline); color: var(--kmuted); padding: 10px 18px; cursor: pointer; transition: 0.15s; }
+  #kalkRoot .ktab.on { background: var(--kred); border-color: var(--kred); color: var(--off); }
+  #kalkRoot .ktab:hover:not(.on) { border-color: var(--kred); color: var(--sand); }
+
+  #kalkRoot .custbar { display: flex; gap: 8px; align-items: center; margin-bottom: 16px; flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 4px; }
+  #kalkRoot .custbar .lbl { font-family: "Space Mono", monospace; font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--kmuted); flex-shrink: 0; }
+  #kalkRoot .chips { display: flex; gap: 8px; flex-shrink: 0; }
+  #kalkRoot .chip { flex-shrink: 0; font-family: "Space Mono", monospace; font-size: 11px; letter-spacing: 0.5px; padding: 8px 14px; background: var(--panel); border: 1px solid var(--kline); color: var(--off); cursor: pointer; text-transform: uppercase; transition: 0.15s; white-space: nowrap; }
+  #kalkRoot .chip:hover { border-color: var(--kred); color: var(--sand); }
+  #kalkRoot .chip.cust.active { background: var(--kred); border-color: var(--kred); color: var(--off); }
+  #kalkRoot .chip.add { color: var(--sand); border-style: dashed; }
+
+  #kalkRoot .layout { display: grid; grid-template-columns: 1fr 380px; gap: 24px; align-items: start; }
+  #kalkRoot .empty { font-family: "Space Mono", monospace; font-size: 12px; color: var(--kmuted); border: 1px dashed var(--kline); padding: 28px 20px; text-align: center; line-height: 1.7; }
+
+  #kalkRoot .card { background: var(--panel); border: 1px solid var(--kline); padding: 22px 22px 24px; margin-bottom: 20px; }
+  #kalkRoot .card h2 { font-family: "Space Mono", monospace; font-size: 10px; letter-spacing: 2.5px; text-transform: uppercase; color: var(--kred); margin-bottom: 18px; display: flex; align-items: center; gap: 10px; }
+  #kalkRoot .card h2 .n { color: var(--kmuted); }
+  #kalkRoot .card h2 .hint { color: var(--kmuted); letter-spacing: 1px; text-transform: none; }
+
+  #kalkRoot .field { margin-bottom: 18px; }
+  #kalkRoot .field:last-child { margin-bottom: 0; }
+  #kalkRoot .field label, #kalkRoot .field > label { display: flex; justify-content: space-between; align-items: baseline; font-size: 12.5px; font-weight: 500; margin-bottom: 8px; color: var(--off); }
+  #kalkRoot .field label .hint { font-family: "Space Mono", monospace; font-size: 9.5px; color: var(--kmuted); font-weight: 400; }
+  #kalkRoot .field .valbox { font-family: "Space Mono", monospace; font-weight: 700; color: var(--sand); font-size: 13px; }
+
+  #kalkRoot input[type="text"], #kalkRoot input[type="number"], #kalkRoot select {
+    width: 100%; background: var(--panel2); border: 1px solid var(--kline); color: var(--off);
+    font-family: "Space Mono", monospace; font-size: 14px; padding: 10px 12px; outline: none; border-radius: 0;
+  }
+  #kalkRoot input[type="text"]:focus, #kalkRoot input[type="number"]:focus, #kalkRoot select:focus { border-color: var(--kred); }
+  #kalkRoot input[type="text"].name { font-family: "IBM Plex Sans", sans-serif; }
+
+  #kalkRoot input[type="range"] { -webkit-appearance: none; appearance: none; width: 100%; height: 2px; background: var(--kline); outline: none; margin-top: 4px; }
+  #kalkRoot input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; background: var(--kred); cursor: pointer; border-radius: 0; }
+  #kalkRoot input[type="range"]::-moz-range-thumb { width: 18px; height: 18px; background: var(--kred); cursor: pointer; border: none; border-radius: 0; }
+
+  #kalkRoot .two { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  #kalkRoot .three { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-top: 14px; }
+  #kalkRoot .derived { font-family: "Space Mono", monospace; font-size: 10.5px; color: var(--kmuted); margin-top: 6px; line-height: 1.6; }
+  #kalkRoot .derived b { color: var(--sand); font-weight: 700; }
+
+  #kalkRoot .tarife-head { cursor: pointer; user-select: none; }
+  #kalkRoot .tarife-head .arrow { color: var(--kmuted); font-family: "Space Mono", monospace; }
+  #kalkRoot .tarife-body { display: none; }
+  #kalkRoot .tarife-body.open { display: block; }
+  #kalkRoot .trow { display: grid; grid-template-columns: 1fr 110px; gap: 12px; align-items: center; margin-bottom: 12px; }
+  #kalkRoot .trow span { font-size: 12px; }
+  #kalkRoot .trow .unit { font-family: "Space Mono", monospace; font-size: 9px; color: var(--kmuted); }
+
+  #kalkRoot .btnrow { display: flex; gap: 10px; margin-top: 16px; }
+  #kalkRoot .del-btn { flex: 1; background: transparent; border: 1px solid var(--kline); color: var(--kmuted); font-family: "Space Mono", monospace; font-size: 10px; letter-spacing: 1px; text-transform: uppercase; padding: 9px; cursor: pointer; transition: 0.15s; text-align: center; }
+  #kalkRoot .del-btn:hover { border-color: var(--kred); color: var(--kred); }
+  #kalkRoot .del-btn.imp:hover { border-color: var(--sand); color: var(--sand); }
+  #kalkRoot .addbtn { width: 100%; background: none; border: 1px dashed var(--kline); color: var(--sand); padding: 10px; cursor: pointer; font-family: "Space Mono", monospace; font-size: 11px; letter-spacing: 0.5px; text-transform: uppercase; transition: 0.15s; }
+  #kalkRoot .addbtn:hover { border-color: var(--sand); }
+
+  #kalkRoot .checks { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  #kalkRoot .checkrow { display: flex; align-items: center; gap: 10px; font-size: 12.5px; cursor: pointer; user-select: none; padding: 9px 12px; background: var(--panel2); border: 1px solid var(--kline); margin: 0; }
+  #kalkRoot .checkrow.on { border-color: var(--kred); }
+  #kalkRoot .checkrow input { width: auto; accent-color: var(--kred); flex-shrink: 0; }
+  #kalkRoot .checkrow .hint { font-family: "Space Mono", monospace; font-size: 9.5px; color: var(--kmuted); }
+  #kalkRoot .checkrow.slim { background: none; border: none; padding: 6px 0; color: var(--kmuted); }
+  #sExclusiveRow { margin-top: 12px; }
+
+  #kalkRoot .item-row { background: var(--panel2); border: 1px solid var(--kline); padding: 12px; margin-bottom: 10px; }
+  #kalkRoot .item-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  #kalkRoot .item-head b { font-size: 12px; font-family: "Space Mono", monospace; letter-spacing: 1px; text-transform: uppercase; color: var(--kmuted); }
+  #kalkRoot .x { background: none; border: none; color: var(--kmuted); cursor: pointer; font-size: 15px; padding: 2px 6px; }
+  #kalkRoot .x:hover { color: var(--kred); }
+  #kalkRoot .item-grid { display: grid; grid-template-columns: 1.4fr 1fr 1fr 1fr; gap: 10px; }
+  #kalkRoot .item-grid.custom { grid-template-columns: 2fr 1fr; }
+  #kalkRoot .item-grid.cat { grid-template-columns: 1.6fr 1fr 1fr 0.8fr; }
+  #kalkRoot .item-grid label { display: block; font-size: 10px; color: var(--kmuted); margin-bottom: 4px; }
+
+  /* ── Positions-Zeilen (Katalog an/aus pro Kunde) ── */
+  #kalkRoot .pos-row { display: grid; grid-template-columns: 22px 1fr 62px 90px 92px; gap: 10px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--kline); opacity: 0.45; transition: opacity 0.12s; }
+  #kalkRoot .pos-row:last-child { border-bottom: none; }
+  #kalkRoot .pos-row.on { opacity: 1; }
+  #kalkRoot .pos-row.pauschal { grid-template-columns: 22px 1fr 90px 92px; }
+  #kalkRoot .pos-tog { display: flex; align-items: center; margin: 0; }
+  #kalkRoot .pos-tog input { width: 17px; height: 17px; accent-color: var(--kred); cursor: pointer; }
+  #kalkRoot .pos-tog.hdr { margin-left: 2px; }
+  #kalkRoot .pos-name { font-size: 12.5px; line-height: 1.3; min-width: 0; }
+  #kalkRoot .pos-name small { display: block; font-family: "Space Mono", monospace; font-size: 9px; color: var(--kmuted); margin-top: 2px; }
+  #kalkRoot .pos-qty, #kalkRoot .pos-price { text-align: right; padding: 8px 9px; font-size: 13px; }
+  #kalkRoot .pos-row input:disabled { opacity: 0.5; cursor: not-allowed; }
+  #kalkRoot .pos-line { font-family: "Space Mono", monospace; font-size: 12.5px; font-weight: 700; color: var(--sand); text-align: right; white-space: nowrap; }
+  #kalkRoot .cat-title { font-family: "Space Mono", monospace; font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--sand); margin-bottom: 12px; }
+  #kalkRoot .cat-title .hint { color: var(--kmuted); letter-spacing: 1px; text-transform: none; margin-left: 6px; }
+  #kalkRoot .cat-btns { display: flex; gap: 2px; }
+  #kalkRoot .cat-btns .x:disabled { opacity: 0.25; cursor: default; }
+  #kalkRoot .cat-def { margin-top: 8px; font-size: 11px; }
+  #kalkRoot .card.rights-off .checks, #kalkRoot .card.rights-off .field,
+  #kalkRoot .card.rights-off #sExclusiveRow, #kalkRoot .card.rights-off .derived { opacity: 0.4; }
+
+  #kalkRoot .result { position: sticky; top: 12px; background: linear-gradient(180deg, var(--panel2), var(--panel)); border: 1px solid var(--kline); }
+  #kalkRoot .result-head { padding: 20px 22px 16px; border-bottom: 1px solid var(--kline); }
+  #kalkRoot .result-head .k { font-family: "Space Mono", monospace; font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--kmuted); }
+  #kalkRoot .result-head .cust { font-family: "Anton", sans-serif; font-size: 22px; text-transform: uppercase; letter-spacing: 1px; margin-top: 6px; word-break: break-word; }
+  #kalkRoot .breakdown { padding: 8px 22px 6px; }
+  #kalkRoot .bd-row { display: flex; justify-content: space-between; align-items: baseline; padding: 9px 0; border-bottom: 1px solid var(--kline); }
+  #kalkRoot .bd-row .bn { font-size: 12px; }
+  #kalkRoot .bd-row .bn small { display: block; font-family: "Space Mono", monospace; font-size: 9px; color: var(--kmuted); margin-top: 2px; }
+  #kalkRoot .bd-row .bv { font-family: "Space Mono", monospace; font-size: 13px; font-weight: 700; white-space: nowrap; }
+  #kalkRoot .total { padding: 18px 22px 20px; }
+  #kalkRoot .total .big { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 4px; }
+  #kalkRoot .total .big .bl { font-family: "Anton", sans-serif; font-size: 15px; text-transform: uppercase; letter-spacing: 1px; }
+  #kalkRoot .total .big .bval { font-family: "Anton", sans-serif; font-size: 30px; color: var(--kred); line-height: 0.9; }
+  #kalkRoot .metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--kline); border-top: 1px solid var(--kline); }
+  #kalkRoot .metric { background: var(--panel); padding: 14px 18px; }
+  #kalkRoot .metric .ml, #kalkRoot .ml { font-family: "Space Mono", monospace; font-size: 8.5px; letter-spacing: 1px; text-transform: uppercase; color: var(--kmuted); }
+  #kalkRoot .metric .mv { font-family: "Space Mono", monospace; font-size: 15px; font-weight: 700; color: var(--sand); margin-top: 5px; }
+  #kalkRoot .setup-note { padding: 12px 22px 16px; font-family: "Space Mono", monospace; font-size: 9.5px; color: var(--kmuted); line-height: 1.6; border-top: 1px solid var(--kline); }
+  #kalkRoot .setup-note b { color: var(--sand); }
+  #kalkRoot .printbar { padding: 14px 22px 18px; border-top: 1px solid var(--kline); }
+  #kalkRoot .print-btn { width: 100%; background: var(--kred); color: var(--off); border: none; font-family: "Anton", sans-serif; font-size: 15px; letter-spacing: 1.5px; text-transform: uppercase; padding: 14px; cursor: pointer; transition: 0.15s; }
+  #kalkRoot .print-btn:hover { background: var(--kred-deep); }
+  #kalkRoot .print-btn:disabled { opacity: 0.5; cursor: wait; }
+  #kalkRoot .print-hint { font-family: "Space Mono", monospace; font-size: 8.5px; color: var(--kmuted); line-height: 1.6; margin-top: 10px; text-align: center; }
+
+  #kalkRoot .sticky-total { display: none; }
+
+  /* Preisrechner-spezifisch (Unsigned-Look) */
+  #kalkRoot .pr-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
+  #kalkRoot .pr-sub { font-family: "Space Mono", monospace; font-size: 10px; color: var(--kmuted); letter-spacing: 0.5px; }
+  #kalkRoot .pr-controls { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  #kalkRoot .seg { display: flex; background: var(--panel2); border: 1px solid var(--kline); overflow: hidden; }
+  #kalkRoot .seg button { flex: 1; background: none; border: none; color: var(--kmuted); padding: 9px 8px; cursor: pointer; font-family: "Space Mono", monospace; font-size: 11px; white-space: nowrap; }
+  #kalkRoot .seg button.on { background: var(--kred); color: var(--off); }
+  #kalkRoot .result-big { font-family: "Anton", sans-serif; font-size: 26px; letter-spacing: 0.5px; margin-top: 4px; }
+  #kalkRoot .result-big.ek { color: var(--sand); }
+  #kalkRoot .result-big.vk { color: var(--kred); }
+  #kalkRoot .prbody { padding: 16px 22px 20px; }
+  #kalkRoot .rline { display: flex; justify-content: space-between; padding: 9px 0; border-bottom: 1px solid var(--kline); font-size: 12px; }
+  #kalkRoot .rline:last-child { border-bottom: none; }
+  #kalkRoot .rline .l { color: var(--kmuted); }
+  #kalkRoot .rline .vk { color: var(--kred); }
+  #kalkRoot .rline span:last-child { font-family: "Space Mono", monospace; font-size: 11.5px; white-space: nowrap; }
+  #kalkRoot .tag { display: inline-block; font-size: 9px; padding: 2px 8px; background: rgba(181, 60, 60, 0.18); color: var(--kred); margin-left: 6px; letter-spacing: 1px; }
+  #kalkRoot .note { font-size: 10.5px; color: var(--kmuted); line-height: 1.6; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--kline); }
+  #kalkRoot .note b { color: var(--sand); }
+  #kalkRoot .setupinfo { background: rgba(185, 172, 148, 0.08); border: 1px solid rgba(185, 172, 148, 0.3); padding: 10px 12px; font-size: 11px; color: var(--sand); margin-top: 12px; line-height: 1.5; }
+  #kalkRoot details.editor summary { cursor: pointer; color: var(--sand); font-family: "Space Mono", monospace; font-size: 11px; letter-spacing: 1px; text-transform: uppercase; padding: 4px 0; }
+  #kalkRoot table.edit { width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 16px; }
+  #kalkRoot table.edit th { color: var(--kmuted); text-align: left; padding: 6px 4px; font-weight: 500; border-bottom: 1px solid var(--kline); font-family: "Space Mono", monospace; font-size: 9px; letter-spacing: 1px; text-transform: uppercase; }
+  #kalkRoot table.edit td { padding: 4px; }
+  #kalkRoot table.edit input { padding: 5px 6px; font-size: 11px; }
+  #kalkRoot .deco-item { background: var(--panel2); border: 1px solid var(--kline); padding: 12px; margin-bottom: 10px; }
+  #kalkRoot .deco-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  #kalkRoot .deco-head b { font-size: 12px; font-family: "Space Mono", monospace; letter-spacing: 1px; text-transform: uppercase; color: var(--kmuted); }
+  #kalkRoot .deco-grid { display: grid; grid-template-columns: 1.2fr 1fr; gap: 10px; }
+  #kalkRoot .deco-grid label { display: block; font-size: 10px; color: var(--kmuted); margin-bottom: 4px; }
+
+  #kalkRoot .kfoot { margin-top: 30px; font-family: "Space Mono", monospace; font-size: 9px; letter-spacing: 0.5px; color: var(--kmuted); text-transform: uppercase; text-align: center; line-height: 1.8; }
+  #kalkRoot .kfoot .mk { color: var(--kred); }
+
+  /* ── Mobile ── */
+  @media (max-width: 860px) {
+    #kalkRoot { padding: 14px 12px 90px; border-radius: 12px; }
+    #kalkRoot .layout { grid-template-columns: 1fr; }
+    #kalkRoot .result { position: static; }
+    #kalkRoot .card { padding: 16px 14px 18px; }
+    #kalkRoot input[type="text"], #kalkRoot input[type="number"], #kalkRoot select { font-size: 16px; }
+    #kalkRoot .item-grid { grid-template-columns: 1fr 1fr; }
+    #kalkRoot .item-grid.cat { grid-template-columns: 1fr 1fr; }
+    #kalkRoot .checks { grid-template-columns: 1fr; }
+    /* Positions-Zeile zweizeilig: Name oben, Eingaben darunter */
+    #kalkRoot .pos-row {
+      grid-template-columns: 22px 1fr 1fr 1fr;
+      grid-template-areas: "tog name name name" ". qty price line";
+      row-gap: 8px; padding: 12px 0;
+    }
+    #kalkRoot .pos-row.pauschal { grid-template-areas: "tog name name name" ". . price line"; }
+    #kalkRoot .pos-tog { grid-area: tog; }
+    #kalkRoot .pos-name { grid-area: name; }
+    #kalkRoot .pos-qty { grid-area: qty; }
+    #kalkRoot .pos-price { grid-area: price; }
+    #kalkRoot .pos-line { grid-area: line; align-self: center; }
+    #kalkRoot .sticky-total { display: block; position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; background: var(--jet); border-top: 1px solid var(--kline); padding: 12px 18px calc(12px + env(safe-area-inset-bottom)); font-family: "Anton", sans-serif; font-size: 14px; letter-spacing: 1px; text-transform: uppercase; text-align: center; color: var(--off); }
+    #kalkRoot .sticky-total b { color: var(--kred); font-size: 17px; margin-left: 6px; }
+    #kalkRoot .three { grid-template-columns: 1fr; }
+  }
+
+  /* ═══════════ A4-Print-Sheets (nur für PDF-Snapshot, nie sichtbar) ═══════════ */
+  .ps-wrap { display: none; }
+  .ps-page {
+    width: 794px; min-height: 1123px; background: #0e0e0e; color: #f5f3ee;
+    padding: 68px 68px 53px; position: relative; box-sizing: border-box;
+    font-family: "IBM Plex Sans", sans-serif; -webkit-font-smoothing: antialiased;
+  }
+  .ps-page .ps-top { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid rgba(245, 243, 238, 0.12); padding-bottom: 30px; }
+  .ps-page .ps-brand { font-family: "Anton", sans-serif; font-size: 26px; letter-spacing: 2px; text-transform: uppercase; }
+  .ps-page .ps-brand span { color: #b53c3c; }
+  .ps-page .ps-meta { text-align: right; font-family: "Space Mono", monospace; font-size: 8.5px; letter-spacing: 1px; color: rgba(245, 243, 238, 0.5); text-transform: uppercase; line-height: 1.7; }
+  .ps-page .ps-eyebrow { font-family: "Space Mono", monospace; font-size: 9px; letter-spacing: 3px; text-transform: uppercase; color: #b53c3c; margin-top: 42px; }
+  .ps-page .ps-h1 { font-family: "Anton", sans-serif; font-size: 46px; line-height: 0.92; text-transform: uppercase; letter-spacing: 1px; margin: 15px 0 0; }
+  .ps-page .ps-h1 span { color: #b9ac94; }
+  .ps-page .ps-intro { max-width: 567px; margin: 19px 0 0; font-size: 11px; line-height: 1.6; color: rgba(245, 243, 238, 0.5); }
+  .ps-page .ps-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 45px; margin-top: 38px; }
+  .ps-page .ps-single { max-width: 560px; margin-top: 38px; }
+  .ps-page .ps-label { font-family: "Space Mono", monospace; font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: #b53c3c; border-bottom: 1px solid rgba(245, 243, 238, 0.12); padding-bottom: 9px; margin-bottom: 11px; }
+  .ps-page .ps-label.sand { color: #b9ac94; }
+  .ps-page .ps-rrow { display: flex; justify-content: space-between; align-items: baseline; padding: 8px 0; border-bottom: 1px solid rgba(245, 243, 238, 0.06); font-size: 10.5px; }
+  .ps-page .ps-rrow .ps-p { font-family: "Space Mono", monospace; font-weight: 700; font-size: 11px; white-space: nowrap; }
+  .ps-page .ps-rrow.ps-incl .ps-p { color: #b9ac94; font-size: 9px; font-weight: 400; }
+  .ps-page .ps-exsub { font-family: "Space Mono", monospace; font-size: 9px; color: rgba(245, 243, 238, 0.5); line-height: 1.5; margin-bottom: 11px; }
+  .ps-page .ps-exrow { display: flex; justify-content: space-between; align-items: baseline; padding: 8px 0; border-bottom: 1px solid rgba(245, 243, 238, 0.06); }
+  .ps-page .ps-exrow .en { font-size: 10.5px; }
+  .ps-page .ps-exrow .en small { display: block; font-family: "Space Mono", monospace; font-size: 8px; color: rgba(245, 243, 238, 0.5); margin-top: 1px; }
+  .ps-page .ps-exrow .ev { font-family: "Space Mono", monospace; font-size: 11px; font-weight: 700; white-space: nowrap; }
+  .ps-page .ps-total { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 19px; padding-top: 15px; border-top: 2px solid #b53c3c; }
+  .ps-page .ps-total span:first-child { font-family: "Anton", sans-serif; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; }
+  .ps-page .ps-total span:last-child { font-family: "Anton", sans-serif; font-size: 26px; color: #b53c3c; }
+  .ps-page .ps-setupnote { font-family: "Space Mono", monospace; font-size: 8.5px; color: rgba(245, 243, 238, 0.5); line-height: 1.6; margin-top: 15px; }
+  .ps-page .ps-setupnote b { color: #b9ac94; }
+  .ps-page .ps-rights { margin-top: 38px; max-width: 560px; }
+  .ps-page .ps-rights-text { font-size: 10.5px; line-height: 1.7; color: rgba(245, 243, 238, 0.65); margin: 0; }
+  .ps-page .ps-rights-text b { color: #f5f3ee; }
+  .ps-page .ps-foot { position: absolute; left: 68px; right: 68px; bottom: 45px; display: flex; justify-content: space-between; border-top: 1px solid rgba(245, 243, 238, 0.12); padding-top: 15px; font-family: "Space Mono", monospace; font-size: 8px; letter-spacing: 0.5px; color: rgba(245, 243, 238, 0.5); text-transform: uppercase; }
+</style>
+
+<script is:inline src="/tools/_shared/calc-pdf.js"></script>
+<script is:inline>
+  /* XSS-Hinweis: Alle dynamischen HTML-Fragmente in dieser Datei escapen
+   * User-Content ausnahmslos über esc() (= window.appUI.escapeHtml, Repo-Standard,
+   * gleiches Pattern wie customers.astro/customer.astro). Zahlen werden vor der
+   * Interpolation mit +x zu Number gecastet. */
+  (function () {
+    "use strict";
+
+    var $ = function (id) { return document.getElementById(id); };
+    var esc = function (s) { return window.appUI.escapeHtml(s); };
+    var eur = function (n) { return (+n || 0).toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " €"; };
+    var eur0 = function (n) { return Math.round(+n || 0).toLocaleString("de-DE") + " €"; };
+    var deb = function (fn, ms) {
+      var t = null;
+      return function () { clearTimeout(t); t = setTimeout(fn, ms || 350); };
+    };
+
+    var BASE = "workspace/calc";
+    var DEF_SET_F = { grund: 79, lager: 6.9, we: 3, pp1: 1.9, pp2: 1.7, pp3: 1.5, extra: 0.4, ret: 3.5, setup: 199 };
+    // Standard-Positions-Katalog. Feste Slug-Keys (nicht push-IDs), damit zwei
+    // gleichzeitig seedende Team-Mitglieder byte-identisch schreiben statt den
+    // Katalog zu verdoppeln. `def` = beim neuen Kunden vorausgewählt.
+    var DEF_CATALOG = {
+      studiomiete: { name: "Studiomiete", unit: "pauschal", price: 400, bucket: "studio", def: true, ord: 0 },
+      equipment: { name: "Equipment-Pauschale", unit: "pauschal", price: 200, bucket: "studio", def: true, ord: 1 },
+      shooting: { name: "Shooting + Bearbeitung", unit: "pauschal", price: 1400, bucket: "fotograf", def: true, ord: 2 },
+      zusatztag: { name: "Zusatztag Shooting", unit: "tag", price: 800, bucket: "fotograf", def: false, ord: 3 },
+      retusche: { name: "Extra-Retusche", unit: "bild", price: 25, bucket: "fotograf", def: false, ord: 4 },
+      hmu: { name: "Hair & Make-up", unit: "tag", price: 350, bucket: "extern", def: false, ord: 5 },
+      stylist: { name: "Stylist", unit: "tag", price: 350, bucket: "extern", def: false, ord: 6 },
+      assistent: { name: "Foto-Assistent", unit: "tag", price: 200, bucket: "extern", def: false, ord: 7 },
+      location: { name: "Location-Miete extern", unit: "pauschal", price: 400, bucket: "extern", def: false, ord: 8 },
+      props: { name: "Requisiten / Props", unit: "pauschal", price: 100, bucket: "extern", def: false, ord: 9 },
+      video: { name: "Videograf / BTS", unit: "tag", price: 600, bucket: "extern", def: false, ord: 10 },
+      catering: { name: "Catering am Set", unit: "person", price: 20, bucket: "extern", def: false, ord: 11 },
+      anfahrt: { name: "Anfahrt / Reisekosten", unit: "pauschal", price: 0, bucket: "extern", def: false, ord: 12 },
+    };
+    // unit -> [Label im Editor, Singular, Plural]. "pauschal" hat kein Mengenfeld.
+    var UNITS = {
+      pauschal: ["Pauschal", null, null],
+      tag: ["pro Tag", "Tag", "Tage"],
+      bild: ["pro Bild", "Bild", "Bilder"],
+      person: ["pro Person", "Person", "Personen"],
+      stk: ["pro Stück", "Stück", "Stück"],
+    };
+    var BUCKETS = { studio: "Studio", fotograf: "Fotograf", extern: "Extern" };
+
+    var DEF_SET_S = {
+      modelHalbtag: 300, modelGanztag: 500, modelBuyout: 150,
+      rightsBucket: "studio",
+      rights: {
+        channels: { social: 100, website: 75, kampagne: 125, print: 100, ooh: 150 },
+        duration: { "1y": 1, "2y": 1.6, unlim: 2.5 },
+        exclusive: 1.5,
+      },
+      catalog: DEF_CATALOG,
+    };
+    // Legacy-Felder aus der Vor-Katalog-Version: beim Merge überspringen, damit
+    // sie nicht zurück in S.setS wandern. Der erste sSaveSet räumt sie aus der RTDB.
+    var LEGACY_SET_S = ["studioMiete", "equipment", "fotograf"];
+    var DEF_DATA_F = { pieces: 0, perFach: 50, faecher: 0, orders: 200, avi: 1.5, ret: 10, cartons: 0 };
+    var DEF_DATA_S = function () {
+      return {
+        positions: {},
+        models: {},
+        rights: { on: true, channels: { social: true, website: true, kampagne: true, print: false, ooh: false }, duration: "1y", exclusive: false },
+        custom: {},
+      };
+    };
+    var CHANNELS = [
+      ["social", "Social Media"],
+      ["website", "Website"],
+      ["kampagne", "Kampagne / Ads"],
+      ["print", "Print"],
+      ["ooh", "Out-of-Home"],
+    ];
+    var DUR_LABEL = { "1y": "1 Jahr", "2y": "2 Jahre", unlim: "Unbegrenzt" };
+
+    // ── State ──
+    var S = {
+      me: null,
+      clients: {},          // id -> record
+      order: [],            // sortierte ids
+      active: null,
+      setF: null, setS: null,
+      dataF: null, dataS: null,
+      tab: localStorage.getItem("uw.calc.tab") || "fulfillment",
+    };
+    var listeners = [];     // [{ref, cb}] für pagehide-Cleanup
+    var dataListeners = []; // per-Client, bei Wechsel detacht
+    var lastWritten = {};   // path -> JSON (Anti-Echo)
+    var renderPending = {}; // tabKey -> bool (Focus-Guard)
+
+    function trackOn(path, cb, bucket) {
+      var ref = window.fb.ref(path);
+      ref.on("value", cb, function (err) {
+        console.error("[kalk] listener error", path, err);
+        window.toast("Lese-Fehler " + path + ": " + (err.code || err.message), "error");
+      });
+      (bucket || listeners).push({ ref: ref, cb: cb });
+    }
+    function offBucket(bucket) {
+      bucket.forEach(function (l) { try { l.ref.off("value", l.cb); } catch (e) {} });
+      bucket.length = 0;
+    }
+    window.addEventListener("pagehide", function () {
+      offBucket(listeners); offBucket(dataListeners);
+    });
+
+    // Focus-Guard: solange ein Input im kalkRoot fokussiert ist, keine Remote-Re-Renders
+    // (verhindert dass Live-Sync das aktive Tippen eines Kollegen zerschießt).
+    function inputFocused() {
+      var a = document.activeElement;
+      return a && $("kalkRoot").contains(a) && /^(INPUT|SELECT|TEXTAREA)$/.test(a.tagName);
+    }
+    document.addEventListener("focusout", function () {
+      setTimeout(function () {
+        if (inputFocused()) return;
+        Object.keys(renderPending).forEach(function (k) {
+          if (renderPending[k]) { renderPending[k] = false; RENDER[k](); }
+        });
+      }, 30);
+    });
+    function scheduleRender(key) {
+      if (inputFocused()) { renderPending[key] = true; return; }
+      RENDER[key]();
+    }
+
+    // Anti-Echo: eigene Writes beim Zurück-Echo nicht erneut rendern.
+    // Key-Order-unabhängig serialisieren: die RTDB gibt Objekt-Keys sortiert
+    // zurück, lokal stehen sie in Einfüge-/ord-Reihenfolge. Ohne das Sortieren
+    // würde jeder Save als "kein Echo" gelten → Voll-Re-Render mitten im Tippen.
+    function stable(v) {
+      if (v === null || typeof v !== "object") return v;
+      if (Array.isArray(v)) return v.map(stable);
+      var out = {};
+      Object.keys(v).sort().forEach(function (k) { out[k] = stable(v[k]); });
+      return out;
+    }
+    function coreJson(obj) {
+      var c = {};
+      Object.keys(obj || {}).forEach(function (k) {
+        if (k !== "updated" && k !== "updatedBy") c[k] = obj[k];
+      });
+      return JSON.stringify(stable(c));
+    }
+    function writeData(path, obj) {
+      lastWritten[path] = coreJson(obj);
+      obj.updated = window.fb.ts();
+      obj.updatedBy = S.me.uid;
+      window.fb.safeSet(path, obj);
+    }
+    // One-shot: ein Write unterdrückt genau EIN Echo. Ohne das Löschen würde
+    // ein späterer Re-Attach (Kundenwechsel hin und zurück) denselben Snapshot
+    // wieder als Echo werten und der Render bliebe stale.
+    function isEcho(path, val) {
+      if (lastWritten[path] && lastWritten[path] === coreJson(val || {})) {
+        delete lastWritten[path];
+        return true;
+      }
+      return false;
+    }
+
+    // ═══════════ TABS ═══════════
+    function setTab(t) {
+      S.tab = t;
+      localStorage.setItem("uw.calc.tab", t);
+      [].forEach.call(document.querySelectorAll("#kTabs .ktab"), function (b) {
+        b.classList.toggle("on", b.dataset.tab === t);
+      });
+      [].forEach.call(document.querySelectorAll("#kalkRoot section[data-tab]"), function (s) {
+        s.style.display = s.dataset.tab === t ? "block" : "none";
+      });
+      $("kCustbar").style.display = t === "preis" ? "none" : "flex";
+    }
+    $("kTabs").addEventListener("click", function (e) {
+      var b = e.target.closest(".ktab");
+      if (b) setTab(b.dataset.tab);
+    });
+
+    // ═══════════ KUNDEN ═══════════
+    function renderChips() {
+      $("kChips").innerHTML = S.order.map(function (id) {
+        var c = S.clients[id];
+        return '<button class="chip cust' + (id === S.active ? " active" : "") + '" data-id="' + esc(id) + '">' + esc(c.name || "Kunde") + "</button>";
+      }).join("");
+    }
+    $("kChips").addEventListener("click", function (e) {
+      var b = e.target.closest(".chip");
+      if (b && b.dataset.id) setActiveClient(b.dataset.id);
+    });
+    $("kAddClient").addEventListener("click", function () {
+      window.appUI.prompt({ title: "Neuer Kunde", placeholder: "Kundenname", okLabel: "Anlegen" }).then(function (name) {
+        if (!name) return;
+        var ref = window.fb.ref(BASE + "/clients").push();
+        window.fb.safeSet(ref, { name: name, created: window.fb.ts(), createdBy: S.me.uid }).then(function () {
+          setActiveClient(ref.key);
+        });
+      });
+    });
+    $("fDeleteClient").addEventListener("click", function () {
+      if (!S.active) return;
+      var c = S.clients[S.active];
+      window.appUI.confirm({
+        title: "Kunde löschen?",
+        description: '"' + (c ? c.name : "") + '" wird mit allen Kalkulationen (Fulfillment + Shooting) für das ganze Team gelöscht.',
+        okLabel: "Löschen",
+      }).then(function (ok) {
+        if (!ok) return;
+        var id = S.active;
+        window.fb.safeRemove(BASE + "/clients/" + id);
+        window.fb.safeRemove(BASE + "/data/" + id);
+      });
+    });
+
+    function setActiveClient(id) {
+      if (S.active === id) return;
+      S.active = id;
+      try { localStorage.setItem("uw.calc.activeClient", id || ""); } catch (e) {}
+      S.dataF = null; S.dataS = null;
+      offBucket(dataListeners);
+      renderChips();
+      if (!id) { RENDER.fulfillment(); RENDER.shooting(); return; }
+      // Verwaiste Echo-Marker (Save ohne konsumiertes Echo) dürfen den ersten
+      // Snapshot des neu gewählten Kunden nicht verschlucken.
+      delete lastWritten[BASE + "/data/" + id + "/fulfillment"];
+      delete lastWritten[BASE + "/data/" + id + "/shooting"];
+
+      trackOn(BASE + "/data/" + id + "/fulfillment", function (snap) {
+        var v = snap.val();
+        if (v && isEcho(BASE + "/data/" + id + "/fulfillment", v)) { S.dataF = v; return; }
+        S.dataF = v || Object.assign({}, DEF_DATA_F);
+        scheduleRender("fulfillment");
+      }, dataListeners);
+
+      trackOn(BASE + "/data/" + id + "/shooting", function (snap) {
+        var v = snap.val();
+        if (v && isEcho(BASE + "/data/" + id + "/shooting", v)) { S.dataS = normS(v); return; }
+        S.dataS = v ? normS(v) : DEF_DATA_S();
+        scheduleRender("shooting");
+      }, dataListeners);
+    }
+
+    // Settings-Shape reparieren (RTDB verwirft leere Maps, alte Objekte haben
+    // evtl. keinen Katalog — bis der Nachtrag-Write durch ist muss gerendert werden).
+    function normSet(v) {
+      v.catalog = v.catalog || JSON.parse(JSON.stringify(DEF_CATALOG));
+      v.rightsBucket = v.rightsBucket || "studio";
+      v.rights = v.rights || JSON.parse(JSON.stringify(DEF_SET_S.rights));
+      v.rights.channels = v.rights.channels || {};
+      v.rights.duration = v.rights.duration || JSON.parse(JSON.stringify(DEF_SET_S.rights.duration));
+      Object.keys(v.catalog).forEach(function (k) {
+        var c = v.catalog[k];
+        if (!UNITS[c.unit]) c.unit = "pauschal";
+        if (!BUCKETS[c.bucket]) c.bucket = "extern";
+        if (typeof c.ord !== "number") c.ord = 999;
+      });
+      return v;
+    }
+
+    // RTDB lässt leere Objekte weg — Shape reparieren.
+    function normS(v) {
+      v.positions = v.positions || {};
+      v.models = v.models || {};
+      v.custom = v.custom || {};
+      v.rights = v.rights || DEF_DATA_S().rights;
+      v.rights.channels = v.rights.channels || {};
+      v.rights.duration = v.rights.duration || "1y";
+      v.rights.exclusive = !!v.rights.exclusive;
+      v.rights.on = v.rights.on !== false; // fehlend = an, nur explizites false schaltet aus
+      return v;
+    }
+
+    // ═══════════ FULFILLMENT ═══════════
+    var F_FIELDS = ["pieces", "perFach", "faecher", "orders", "avi", "ret", "cartons"];
+    var FT_FIELDS = ["grund", "lager", "we", "pp1", "pp2", "pp3", "extra", "ret", "setup"];
+
+    function fReadForm() {
+      if (!S.dataF) return;
+      F_FIELDS.forEach(function (k) { S.dataF[k] = +$("f_" + k).value || 0; });
+      if (S.dataF.perFach < 1) S.dataF.perFach = 1;
+      if (S.dataF.avi < 1) S.dataF.avi = 1;
+    }
+    function fWriteForm() {
+      F_FIELDS.forEach(function (k) { $("f_" + k).value = S.dataF[k]; });
+      $("f_faecherAuto").textContent = Math.ceil((+S.dataF.pieces || 0) / (+S.dataF.perFach || 1));
+    }
+    function ftWriteForm() {
+      FT_FIELDS.forEach(function (k) { $("ft_" + k).value = S.setF[k]; });
+    }
+    function ftReadForm() {
+      FT_FIELDS.forEach(function (k) { S.setF[k] = +$("ft_" + k).value || 0; });
+    }
+
+    var fSaveData = deb(function () {
+      if (!S.active || !S.dataF) return;
+      writeData(BASE + "/data/" + S.active + "/fulfillment", Object.assign({}, S.dataF));
+    });
+    var fSaveSet = deb(function () {
+      if (!S.setF) return;
+      var p = BASE + "/settings/fulfillment";
+      lastWritten[p] = coreJson(S.setF);
+      window.fb.safeSet(p, S.setF);
+    });
+    var fSaveName = deb(function () {
+      if (!S.active) return;
+      var name = $("f_cname").value.trim();
+      if (name) window.fb.safeUpdate(BASE + "/clients/" + S.active, { name: name });
+    });
+
+    function ppRate(orders) {
+      var t = S.setF;
+      if (orders <= 250) return t.pp1;
+      if (orders <= 750) return t.pp2;
+      return t.pp3;
+    }
+
+    // skipForms=true bei lokalen Eingaben: sonst überschreibt das Zurückschreiben
+    // des geparsten Werts halbfertige Eingaben wie "6," im fokussierten Feld.
+    function fCalcRender(skipForms) {
+      var noClient = !S.active;
+      $("fEmpty").style.display = noClient ? "block" : "none";
+      $("fLayout").style.display = noClient ? "none" : "grid";
+      $("fSticky").style.visibility = noClient ? "hidden" : "visible";
+      if (noClient || !S.dataF || !S.setF) return;
+
+      var c = S.clients[S.active] || {};
+      if (!skipForms) {
+        if (document.activeElement !== $("f_cname")) $("f_cname").value = c.name || "";
+        fWriteForm();
+        ftWriteForm();
+      }
+
+      var d = S.dataF, t = S.setF;
+      $("f_ordersVal").textContent = (+d.orders).toLocaleString("de-DE");
+      $("f_aviVal").textContent = (+d.avi).toLocaleString("de-DE", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+      $("fRcust").textContent = c.name || "–";
+
+      var ppBase = ppRate(d.orders);
+      var ppTotal = d.orders * ppBase;
+      var extraItems = Math.max(0, d.avi - 1) * d.orders;
+      var extraTotal = extraItems * t.extra;
+      var lager = d.faecher * t.lager;
+      var retCount = Math.round(d.orders * d.ret / 100);
+      var retTotal = retCount * t.ret;
+      var weTotal = d.cartons * t.we;
+      var month = t.grund + ppTotal + extraTotal + lager + retTotal + weTotal;
+
+      var rows = [
+        ["Grundgebühr", "monatlich fix", t.grund],
+        ["Pick & Pack", (+d.orders).toLocaleString("de-DE") + " × " + eur(ppBase), ppTotal],
+        ["Weitere Artikel", Math.round(extraItems).toLocaleString("de-DE") + " Picks × " + eur(t.extra), extraTotal],
+        ["Lagerung", (+d.faecher) + " Fächer × " + eur(t.lager), lager],
+        ["Retouren", retCount + " Stück (" + (+d.ret) + "%)", retTotal],
+        ["Wareneingang", (+d.cartons) + " Kartons × " + eur(t.we), weTotal],
+      ];
+      // Nur berechnete Zahlen/feste Labels — kein User-Content.
+      $("fBreakdown").innerHTML = rows.map(function (r) {
+        return '<div class="bd-row"><div class="bn">' + r[0] + "<small>" + r[1] + '</small></div><div class="bv">' + eur(r[2]) + "</div></div>";
+      }).join("");
+      $("fMonthTotal").textContent = eur0(month);
+      $("fStickyVal").textContent = eur0(month);
+      $("fCpo").textContent = d.orders > 0 ? eur(month / d.orders) : "–";
+      $("fYearTotal").textContent = eur0(month * 12 + t.setup);
+      $("fSetupNote").textContent = eur0(t.setup);
+
+      fCurrent = { rows: rows, month: month, name: c.name || "" };
+    }
+    var fCurrent = null;
+
+    // Input-Events
+    F_FIELDS.forEach(function (k) {
+      $("f_" + k).addEventListener("input", function () {
+        fReadForm();
+        if (k === "pieces" || k === "perFach") {
+          var auto = Math.ceil((+S.dataF.pieces || 0) / (+S.dataF.perFach || 1));
+          S.dataF.faecher = auto;
+          $("f_faecher").value = auto;
+          $("f_faecherAuto").textContent = auto;
+        }
+        fCalcRender(true);
+        fSaveData();
+      });
+    });
+    FT_FIELDS.forEach(function (k) {
+      $("ft_" + k).addEventListener("input", function () {
+        ftReadForm();
+        fCalcRender(true);
+        fSaveSet();
+      });
+    });
+    $("f_cname").addEventListener("input", function () {
+      var name = $("f_cname").value;
+      if (S.active && S.clients[S.active]) S.clients[S.active].name = name;
+      renderChips();
+      $("fRcust").textContent = name || "–";
+      fSaveName();
+    });
+    $("fTarifeHead").addEventListener("click", function () {
+      var b = $("fTarifeBody");
+      b.classList.toggle("open");
+      $("fTarifeArrow").textContent = b.classList.contains("open") ? "[ schließen − ]" : "[ anpassen + ]";
+    });
+
+    // PDF (Sheet wird ausschließlich per textContent + escaped rows befüllt)
+    $("fPdfBtn").addEventListener("click", function () {
+      if (!fCurrent || !S.setF) return;
+      var t = S.setF, d = S.dataF;
+      $("psf_date").textContent = new Date().toLocaleDateString("de-DE", { day: "2-digit", month: "long", year: "numeric" });
+      $("psf_client").textContent = fCurrent.name || "euren Store";
+      $("psf_setup").textContent = eur(t.setup) + " einmalig";
+      $("psf_grund").textContent = eur(t.grund);
+      $("psf_we").textContent = eur(t.we);
+      $("psf_lager").textContent = eur(t.lager);
+      $("psf_pp1").textContent = eur(t.pp1);
+      $("psf_pp2").textContent = eur(t.pp2);
+      $("psf_pp3").textContent = eur(t.pp3);
+      $("psf_extra").textContent = eur(t.extra);
+      $("psf_ret").textContent = eur(t.ret);
+      $("psf_exsub").textContent = (+d.orders).toLocaleString("de-DE") + " Bestellungen/Monat · Ø " +
+        (+d.avi).toLocaleString("de-DE", { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + " Artikel · " +
+        (+d.faecher) + " Regalfächer · " + (+d.ret) + "% Retouren";
+      $("psf_rows").innerHTML = fCurrent.rows.map(function (r) {
+        return '<div class="ps-exrow"><div class="en">' + r[0] + "<small>" + r[1] + '</small></div><div class="ev">' + eur(r[2]) + "</div></div>";
+      }).join("");
+      $("psf_month").textContent = eur0(fCurrent.month);
+      $("psf_setupnote").textContent = eur0(t.setup);
+      exportSheet("fPdfBtn", "psFulfillment", "Angebot_Fulfillment_" + slug(fCurrent.name));
+    });
+
+    // Import aus altem HTML-Kalkulator (Backup-JSON)
+    $("fImport").addEventListener("change", function (ev) {
+      var file = ev.target.files[0];
+      if (!file) return;
+      var reader = new FileReader();
+      reader.onload = function (e) {
+        ev.target.value = "";
+        var data;
+        try { data = JSON.parse(e.target.result); } catch (err) {
+          window.toast("Datei konnte nicht gelesen werden (kein gültiges JSON).", "error");
+          return;
+        }
+        if (!data || !Array.isArray(data.customers) || !data.customers.length) {
+          window.toast("Kein gültiges Kalkulator-Backup (customers fehlt).", "error");
+          return;
+        }
+        var n = 0;
+        data.customers.forEach(function (c) {
+          var ref = window.fb.ref(BASE + "/clients").push();
+          window.fb.safeSet(ref, { name: String(c.name || "Kunde"), created: window.fb.ts(), createdBy: S.me.uid });
+          window.fb.safeSet(BASE + "/data/" + ref.key + "/fulfillment", {
+            pieces: +c.pieces || 0, perFach: +c.perFach || 50, faecher: +c.faecher || 0,
+            orders: +c.orders || 0, avi: +c.avi || 1.5, ret: +c.ret || 0, cartons: +c.cartons || 0,
+            updated: window.fb.ts(), updatedBy: S.me.uid,
+          });
+          n++;
+        });
+        var done = function () { window.toast(n + " Kunden importiert.", "success"); };
+        if (data.tarife) {
+          window.appUI.confirm({
+            title: "Tarife übernehmen?",
+            description: "Das Backup enthält Tarife. Sollen die team-geteilten Fulfillment-Tarife damit überschrieben werden?",
+            okLabel: "Übernehmen",
+          }).then(function (ok) {
+            if (ok) {
+              var t = {};
+              FT_FIELDS.forEach(function (k) { t[k] = +data.tarife[k] || DEF_SET_F[k]; });
+              window.fb.safeSet(BASE + "/settings/fulfillment", t);
+            }
+            done();
+          });
+        } else done();
+      };
+      reader.readAsText(file);
+    });
+
+    // ═══════════ SHOOTING ═══════════
+    var ST_NUM = ["modelHalbtag", "modelGanztag", "modelBuyout"];
+
+    function stWriteForm() {
+      var t = S.setS;
+      ST_NUM.forEach(function (k) { $("st_" + k).value = t[k]; });
+      CHANNELS.forEach(function (ch) { $("st_ch_" + ch[0]).value = t.rights.channels[ch[0]]; });
+      $("st_dur_2y").value = t.rights.duration["2y"];
+      $("st_dur_unlim").value = t.rights.duration.unlim;
+      $("st_exclusive").value = t.rights.exclusive;
+    }
+    function stReadForm() {
+      var t = S.setS;
+      ST_NUM.forEach(function (k) { t[k] = +$("st_" + k).value || 0; });
+      CHANNELS.forEach(function (ch) { t.rights.channels[ch[0]] = +$("st_ch_" + ch[0]).value || 0; });
+      t.rights.duration["2y"] = +$("st_dur_2y").value || 1;
+      t.rights.duration.unlim = +$("st_dur_unlim").value || 1;
+      t.rights.exclusive = +$("st_exclusive").value || 1;
+    }
+
+    var sSaveData = deb(function () {
+      if (!S.active || !S.dataS) return;
+      writeData(BASE + "/data/" + S.active + "/shooting", JSON.parse(JSON.stringify(S.dataS)));
+    });
+    var sSaveSet = deb(function () {
+      if (!S.setS) return;
+      var p = BASE + "/settings/shooting";
+      lastWritten[p] = coreJson(S.setS);
+      window.fb.safeSet(p, JSON.parse(JSON.stringify(S.setS)));
+    });
+
+    function sortedKeys(map) { return Object.keys(map || {}).sort(); }
+
+    // ── Positions-Katalog ──
+    function catKeys() {
+      var cat = (S.setS && S.setS.catalog) || {};
+      return Object.keys(cat).sort(function (a, b) {
+        return ((+cat[a].ord || 0) - (+cat[b].ord || 0)) ||
+          String(cat[a].name || "").localeCompare(String(cat[b].name || "")) ||
+          a.localeCompare(b);
+      });
+    }
+    // Effektivwert: per-Kunde-Override, sonst Katalog-Default. Nichts wird
+    // redundant gespeichert — ein neuer Kunde rendert ohne einen einzigen Write.
+    function effPos(key) {
+      var cat = (S.setS.catalog || {})[key] || {};
+      var p = (S.dataS.positions || {})[key] || {};
+      return {
+        on: p.on != null ? !!p.on : !!cat.def,
+        qty: p.qty != null ? +p.qty : 1,
+        price: p.price != null ? +p.price : (+cat.price || 0),
+      };
+    }
+    // Untertitel der Positionszeile: "Pauschale" oder "2 Tage × 800,00 €"
+    function unitSub(cat, qty, price) {
+      if (cat.unit === "pauschal") return "Pauschale";
+      var u = UNITS[cat.unit] || UNITS.stk;
+      return qty + " " + (qty === 1 ? u[1] : u[2]) + " × " + eur(price);
+    }
+    // Patch auf positions/{key} anwenden; Felder die dem Katalog-Default
+    // entsprechen werden gelöscht, damit die Position dem Katalog weiter folgt.
+    function writePos(key, patch) {
+      var cat = (S.setS.catalog || {})[key] || {};
+      var p = S.dataS.positions[key] || (S.dataS.positions[key] = {});
+      Object.keys(patch).forEach(function (k) { p[k] = patch[k]; });
+      if (p.on != null && !!p.on === !!cat.def) delete p.on;
+      if (p.qty != null && +p.qty === 1) delete p.qty;
+      if (p.price != null && +p.price === (+cat.price || 0)) delete p.price;
+      if (!Object.keys(p).length) delete S.dataS.positions[key];
+    }
+
+    function sRenderPositions() {
+      $("sPositions").innerHTML = catKeys().map(function (k) {
+        var cat = S.setS.catalog[k], e = effPos(k);
+        var pauschal = cat.unit === "pauschal";
+        var qty = pauschal ? 1 : e.qty;
+        var dis = e.on ? "" : " disabled";
+        return '<div class="pos-row' + (e.on ? " on" : "") + (pauschal ? " pauschal" : "") + '">' +
+          '<label class="pos-tog"><input type="checkbox" data-pk="on" data-id="' + esc(k) + '"' + (e.on ? " checked" : "") + "></label>" +
+          '<div class="pos-name">' + esc(cat.name || "Position") +
+          "<small>" + esc((UNITS[cat.unit] || UNITS.stk)[0]) + " · " + esc(BUCKETS[cat.bucket] || "Extern") + "</small></div>" +
+          (pauschal ? "" : '<input class="pos-qty" type="number" min="0" step="1" inputmode="numeric" data-pk="qty" data-id="' + esc(k) + '" value="' + qty + '"' + dis + ">") +
+          '<input class="pos-price" type="number" step="10" inputmode="decimal" data-pk="price" data-id="' + esc(k) + '" value="' + e.price + '"' + dis + ">" +
+          '<div class="pos-line" data-line="' + esc(k) + '">' + (e.on ? eur(e.price * qty) : "–") + "</div>" +
+          "</div>";
+      }).join("");
+    }
+
+    function sRenderCatalog() {
+      var keys = catKeys();
+      $("sCatEditor").innerHTML = keys.map(function (k, i) {
+        var c = S.setS.catalog[k];
+        return '<div class="item-row cat-row">' +
+          '<div class="item-head">' +
+          '<b>' + esc(c.name || "Position") + "</b>" +
+          '<span class="cat-btns">' +
+          '<button class="x" data-cact="up" data-id="' + esc(k) + '"' + (i === 0 ? " disabled" : "") + ' title="nach oben">↑</button>' +
+          '<button class="x" data-cact="down" data-id="' + esc(k) + '"' + (i === keys.length - 1 ? " disabled" : "") + ' title="nach unten">↓</button>' +
+          '<button class="x" data-cact="del" data-id="' + esc(k) + '" title="löschen">✕</button>' +
+          "</span></div>" +
+          '<div class="item-grid cat">' +
+          '<div><label>Bezeichnung</label><input type="text" data-ck2="name" data-id="' + esc(k) + '" value="' + esc(c.name || "") + '"></div>' +
+          '<div><label>Einheit</label><select data-ck2="unit" data-id="' + esc(k) + '">' +
+          Object.keys(UNITS).map(function (u) {
+            return '<option value="' + u + '"' + (c.unit === u ? " selected" : "") + ">" + esc(UNITS[u][0]) + "</option>";
+          }).join("") + "</select></div>" +
+          '<div><label>Anteil</label><select data-ck2="bucket" data-id="' + esc(k) + '">' +
+          Object.keys(BUCKETS).map(function (b) {
+            return '<option value="' + b + '"' + (c.bucket === b ? " selected" : "") + ">" + esc(BUCKETS[b]) + "</option>";
+          }).join("") + "</select></div>" +
+          '<div><label>Preis €</label><input type="number" step="10" inputmode="decimal" data-ck2="price" data-id="' + esc(k) + '" value="' + (+c.price || 0) + '"></div>' +
+          "</div>" +
+          '<label class="checkrow slim cat-def"><input type="checkbox" data-ck2="def" data-id="' + esc(k) + '"' + (c.def ? " checked" : "") + "> <span>bei neuen Kunden vorausgewählt</span></label>" +
+          "</div>";
+      }).join("");
+    }
+
+    // ord dicht durchnummerieren (0..n-1) nach aktueller Sortierung
+    function renumberCatalog() {
+      catKeys().forEach(function (k, i) { S.setS.catalog[k].ord = i; });
+    }
+
+    function rightsSum() {
+      var t = S.setS, d = S.dataS;
+      var sum = 0;
+      CHANNELS.forEach(function (ch) {
+        if (d.rights.channels[ch[0]]) sum += +t.rights.channels[ch[0]] || 0;
+      });
+      var mult = +t.rights.duration[d.rights.duration] || 1;
+      if (d.rights.exclusive) mult *= +t.rights.exclusive || 1;
+      return sum * mult;
+    }
+
+    function sRenderModels() {
+      var d = S.dataS;
+      $("sModels").innerHTML = sortedKeys(d.models).map(function (id, i) {
+        var m = d.models[id];
+        return '<div class="item-row">' +
+          '<div class="item-head"><b>Model ' + (i + 1) + '</b><button class="x" data-act="delModel" data-id="' + esc(id) + '">✕</button></div>' +
+          '<div class="item-grid">' +
+          '<div><label>Name (optional)</label><input type="text" data-mk="name" data-id="' + esc(id) + '" value="' + esc(m.name || "") + '" placeholder="Model ' + (i + 1) + '"></div>' +
+          '<div><label>Einsatz</label><select data-mk="mode" data-id="' + esc(id) + '">' +
+          '<option value="halb"' + (m.mode === "halb" ? " selected" : "") + '>Halbtag</option>' +
+          '<option value="ganz"' + (m.mode === "ganz" ? " selected" : "") + '>Ganztag</option></select></div>' +
+          '<div><label>Satz €</label><input type="number" step="10" inputmode="decimal" data-mk="satz" data-id="' + esc(id) + '" value="' + (+m.satz || 0) + '"></div>' +
+          '<div><label>Buyout €</label><input type="number" step="10" inputmode="decimal" data-mk="buyout" data-id="' + esc(id) + '" value="' + (+m.buyout || 0) + '"></div>' +
+          "</div></div>";
+      }).join("");
+    }
+    function sRenderCustoms() {
+      var d = S.dataS;
+      $("sCustoms").innerHTML = sortedKeys(d.custom).map(function (id, i) {
+        var c = d.custom[id];
+        return '<div class="item-row">' +
+          '<div class="item-head"><b>Position ' + (i + 1) + '</b><button class="x" data-act="delCustom" data-id="' + esc(id) + '">✕</button></div>' +
+          '<div class="item-grid custom">' +
+          '<div><label>Bezeichnung</label><input type="text" data-ck="name" data-id="' + esc(id) + '" value="' + esc(c.name || "") + '" placeholder="z. B. Location-Miete"></div>' +
+          '<div><label>Preis €</label><input type="number" step="10" inputmode="decimal" data-ck="price" data-id="' + esc(id) + '" value="' + (+c.price || 0) + '"></div>' +
+          "</div></div>";
+      }).join("");
+    }
+    function sRenderChannels() {
+      var d = S.dataS, t = S.setS;
+      $("sChannels").innerHTML = CHANNELS.map(function (ch) {
+        var onC = !!d.rights.channels[ch[0]];
+        return '<label class="checkrow' + (onC ? " on" : "") + '"><input type="checkbox" data-chn="' + ch[0] + '"' + (onC ? " checked" : "") + "><span>" + ch[1] + ' <span class="hint">' + eur0(t.rights.channels[ch[0]]) + "</span></span></label>";
+      }).join("");
+      [].forEach.call($("sDuration").children, function (b) {
+        b.classList.toggle("on", b.dataset.d === d.rights.duration);
+      });
+      $("s_exclusive").checked = !!d.rights.exclusive;
+      $("sExclusiveRow").classList.toggle("on", !!d.rights.exclusive);
+      $("sExclusiveHint").textContent = "× " + (+t.rights.exclusive || 1).toLocaleString("de-DE");
+      $("s_rightsOn").checked = !!d.rights.on;
+      $("sRightsCard").classList.toggle("rights-off", !d.rights.on);
+      $("sRightsOff").textContent = d.rights.on ? "" : "[ nicht berechnet ]";
+      $("st_rightsBucket").value = t.rightsBucket || "studio";
+    }
+
+    function sCalcRender() {
+      var noClient = !S.active;
+      $("sEmpty").style.display = noClient ? "block" : "none";
+      $("sLayout").style.display = noClient ? "none" : "grid";
+      $("sSticky").style.visibility = noClient ? "hidden" : "visible";
+      if (noClient || !S.dataS || !S.setS) return;
+
+      var c = S.clients[S.active] || {};
+      $("sRcust").textContent = c.name || "–";
+      sRenderPositions();
+      sRenderChannels();
+      sRenderModels();
+      sRenderCustoms();
+      sRenderCatalog();
+      stWriteForm();
+
+      var r = sCompute();
+      $("sBreakdown").innerHTML = r.rows.map(function (x) {
+        return '<div class="bd-row"><div class="bn">' + esc(x[0]) + "<small>" + esc(x[1]) + '</small></div><div class="bv">' + eur(x[2]) + "</div></div>";
+      }).join("");
+      $("sTotal").textContent = eur0(r.total);
+      $("sStickyVal").textContent = eur0(r.total);
+      $("sRightsSum").textContent = eur0(r.rights);
+
+      $("sSplit").innerHTML = [
+        ["Studio-Anteil", r.buckets.studio],
+        ["Fotograf-Anteil", r.buckets.fotograf],
+        ["Extern-Anteil", r.buckets.extern],
+        ["Sonstige", r.customTotal],
+      ].map(function (x) {
+        return '<div class="metric"><div class="ml">' + x[0] + '</div><div class="mv">' + eur0(x[1]) + "</div></div>";
+      }).join("");
+
+      sCurrent = { rows: r.rows, total: r.total, name: c.name || "", chanNames: r.chanNames, hasModels: r.hasModels, rightsOn: r.rightsOn };
+    }
+
+    // Reine Rechnung — von sCalcRender (Voll-Render) und sCalcLight (nur Summen)
+    // gemeinsam genutzt, damit beide garantiert dasselbe Ergebnis liefern.
+    function sCompute() {
+      var t = S.setS, d = S.dataS;
+      var buckets = { studio: 0, fotograf: 0, extern: 0 };
+      var posRows = [], posTotal = 0, lines = {};
+
+      catKeys().forEach(function (k) {
+        var cat = t.catalog[k], e = effPos(k);
+        if (!e.on) { lines[k] = null; return; }
+        var qty = cat.unit === "pauschal" ? 1 : (+e.qty || 0);
+        var line = e.price * qty;
+        lines[k] = line;
+        posTotal += line;
+        buckets[BUCKETS[cat.bucket] ? cat.bucket : "extern"] += line;
+        posRows.push([cat.name || "Position", unitSub(cat, qty, e.price), line]);
+      });
+
+      var rightsOn = !!d.rights.on;
+      var rights = rightsOn ? rightsSum() : 0;
+      var chanNames = CHANNELS.filter(function (ch) { return d.rights.channels[ch[0]]; }).map(function (ch) { return ch[1]; });
+      var rightsRows = [];
+      if (rightsOn) {
+        buckets[BUCKETS[t.rightsBucket] ? t.rightsBucket : "studio"] += rights;
+        rightsRows.push(["Nutzungsrechte",
+          (chanNames.join(", ") || "keine Kanäle") + " · " + DUR_LABEL[d.rights.duration] + (d.rights.exclusive ? " · exklusiv" : ""),
+          rights]);
+      }
+
+      var modelsTotal = 0;
+      var modelRows = sortedKeys(d.models).map(function (id, i) {
+        var m = d.models[id];
+        var sum = (+m.satz || 0) + (+m.buyout || 0);
+        modelsTotal += sum;
+        return ["Model: " + (m.name || "Model " + (i + 1)), (m.mode === "halb" ? "Halbtag" : "Ganztag") + " " + eur0(m.satz) + " + Buyout " + eur0(m.buyout), sum];
+      });
+      buckets.extern += modelsTotal;
+
+      var customTotal = 0;
+      var customRows = sortedKeys(d.custom).map(function (id) {
+        var x = d.custom[id];
+        customTotal += +x.price || 0;
+        return [x.name || "Position", "eigene Position", +x.price || 0];
+      });
+
+      return {
+        rows: posRows.concat(rightsRows, modelRows, customRows),
+        lines: lines,
+        buckets: buckets,
+        rights: rights, rightsOn: rightsOn, chanNames: chanNames,
+        customTotal: customTotal,
+        hasModels: modelRows.length > 0,
+        total: posTotal + rights + modelsTotal + customTotal,
+      };
+    }
+    var sCurrent = null;
+
+    // Shooting-Events (delegiert für dynamische Rows)
+    $("sChannels").addEventListener("change", function (e) {
+      var chn = e.target.dataset.chn;
+      if (!chn) return;
+      S.dataS.rights.channels[chn] = e.target.checked;
+      sCalcRender(); sSaveData();
+    });
+    $("sDuration").addEventListener("click", function (e) {
+      var b = e.target.closest("button");
+      if (!b) return;
+      S.dataS.rights.duration = b.dataset.d;
+      sCalcRender(); sSaveData();
+    });
+    $("s_exclusive").addEventListener("change", function () {
+      S.dataS.rights.exclusive = $("s_exclusive").checked;
+      sCalcRender(); sSaveData();
+    });
+    $("s_rightsOn").addEventListener("change", function () {
+      S.dataS.rights.on = $("s_rightsOn").checked;
+      sCalcRender(); sSaveData();
+    });
+    $("sAddModel").addEventListener("click", function () {
+      var t = S.setS;
+      var id = window.fb.ref(BASE).push().key;
+      S.dataS.models[id] = { name: "", mode: "ganz", satz: +t.modelGanztag || 0, buyout: +t.modelBuyout || 0 };
+      sCalcRender(); sSaveData();
+    });
+    $("sAddCustom").addEventListener("click", function () {
+      var id = window.fb.ref(BASE).push().key;
+      S.dataS.custom[id] = { name: "", price: 0 };
+      sCalcRender(); sSaveData();
+    });
+    $("sModels").addEventListener("input", function (e) {
+      var id = e.target.dataset.id, k = e.target.dataset.mk;
+      if (!id || !k || !S.dataS.models[id]) return;
+      var m = S.dataS.models[id];
+      if (k === "name") m.name = e.target.value;
+      else if (k === "mode") {
+        m.mode = e.target.value;
+        m.satz = m.mode === "halb" ? (+S.setS.modelHalbtag || 0) : (+S.setS.modelGanztag || 0);
+      } else m[k] = +e.target.value || 0;
+      if (k === "mode") sCalcRender(); else sCalcLight();
+      sSaveData();
+    });
+    $("sCustoms").addEventListener("input", function (e) {
+      var id = e.target.dataset.id, k = e.target.dataset.ck;
+      if (!id || !k || !S.dataS.custom[id]) return;
+      if (k === "name") S.dataS.custom[id].name = e.target.value;
+      else S.dataS.custom[id].price = +e.target.value || 0;
+      sCalcLight(); sSaveData();
+    });
+    $("kalkRoot").addEventListener("click", function (e) {
+      var b = e.target.closest("[data-act]");
+      if (!b) return;
+      if (b.dataset.act === "delModel") { delete S.dataS.models[b.dataset.id]; sCalcRender(); sSaveData(); }
+      if (b.dataset.act === "delCustom") { delete S.dataS.custom[b.dataset.id]; sCalcRender(); sSaveData(); }
+    });
+    // Light-Recalc ohne Row-Rebuild (User tippt gerade in einer Row).
+    // Schreibt ausschließlich in <div>s — fasst nie ein <input> an, sonst
+    // springt der Cursor beim Tippen.
+    function sCalcLight() {
+      if (!S.dataS || !S.setS) return;
+      var r = sCompute();
+      Object.keys(r.lines).forEach(function (k) {
+        var el = document.querySelector('#sPositions [data-line="' + k + '"]');
+        if (el) el.textContent = r.lines[k] == null ? "–" : eur(r.lines[k]);
+      });
+      $("sRightsSum").textContent = eur0(r.rights);
+      $("sTotal").textContent = eur0(r.total);
+      $("sStickyVal").textContent = eur0(r.total);
+      var tiles = $("sSplit").querySelectorAll(".mv");
+      var vals = [r.buckets.studio, r.buckets.fotograf, r.buckets.extern, r.customTotal];
+      [].forEach.call(tiles, function (el, i) { el.textContent = eur0(vals[i]); });
+    }
+    ST_NUM.concat(["ch_social", "ch_website", "ch_kampagne", "ch_print", "ch_ooh", "dur_2y", "dur_unlim", "exclusive"]).forEach(function (k) {
+      $("st_" + k).addEventListener("input", function () {
+        stReadForm();
+        sCalcLight();
+        sSaveSet();
+      });
+    });
+    $("st_rightsBucket").addEventListener("change", function () {
+      S.setS.rightsBucket = $("st_rightsBucket").value;
+      sCalcRender(); sSaveSet();
+    });
+
+    // ── Positionen: an/aus, Menge, Preis ──
+    $("sPositions").addEventListener("input", function (e) {
+      var id = e.target.dataset.id, k = e.target.dataset.pk;
+      if (!id || !k || !S.setS.catalog[id]) return;
+      if (k === "on") return; // Checkbox läuft über 'change'
+      writePos(id, k === "qty" ? { qty: +e.target.value || 0 } : { price: +e.target.value || 0 });
+      sCalcLight(); sSaveData();
+    });
+    $("sPositions").addEventListener("change", function (e) {
+      var id = e.target.dataset.id, k = e.target.dataset.pk;
+      if (!id || !k || !S.setS.catalog[id]) return;
+      if (k === "on") { writePos(id, { on: e.target.checked }); sSaveData(); }
+      scheduleRender("shooting"); // Untertitel/Zeilenstatus nachziehen
+    });
+
+    // ── Katalog-Editor (team-weit) ──
+    $("sAddCatPos").addEventListener("click", function () {
+      var id = window.fb.ref(BASE).push().key;
+      S.setS.catalog[id] = { name: "Neue Position", unit: "pauschal", price: 0, bucket: "extern", def: false, ord: catKeys().length };
+      sCalcRender(); sSaveSet();
+    });
+    $("sCatEditor").addEventListener("input", function (e) {
+      var id = e.target.dataset.id, k = e.target.dataset.ck2;
+      if (!id || !k || !S.setS.catalog[id]) return;
+      if (k === "name") S.setS.catalog[id].name = e.target.value;   // Label erst auf blur nachziehen
+      else if (k === "price") { S.setS.catalog[id].price = +e.target.value || 0; sCalcLight(); }
+      sSaveSet();
+    });
+    $("sCatEditor").addEventListener("change", function (e) {
+      var id = e.target.dataset.id, k = e.target.dataset.ck2;
+      if (!id || !k || !S.setS.catalog[id]) return;
+      if (k === "unit" || k === "bucket") S.setS.catalog[id][k] = e.target.value;
+      else if (k === "def") S.setS.catalog[id].def = e.target.checked;
+      sSaveSet();
+      scheduleRender("shooting");
+    });
+    $("sCatEditor").addEventListener("click", function (e) {
+      var b = e.target.closest("[data-cact]");
+      if (!b || b.disabled) return;
+      var id = b.dataset.id, act = b.dataset.cact;
+      var keys = catKeys(), i = keys.indexOf(id);
+      if (act === "del") {
+        window.appUI.confirm({
+          title: "Position löschen?",
+          description: '"' + (S.setS.catalog[id].name || "") + '" verschwindet aus dem Katalog — für alle Kunden und alle im Team.',
+          okLabel: "Löschen",
+        }).then(function (ok) {
+          if (!ok) return;
+          delete S.setS.catalog[id];
+          renumberCatalog();
+          sCalcRender(); sSaveSet();
+        });
+        return;
+      }
+      var j = act === "up" ? i - 1 : i + 1;
+      if (j < 0 || j >= keys.length) return;
+      var a = S.setS.catalog[keys[i]], bb = S.setS.catalog[keys[j]];
+      var tmp = a.ord; a.ord = bb.ord; bb.ord = tmp;
+      renumberCatalog();
+      sCalcRender(); sSaveSet();
+    });
+
+    // sCalcLight aktualisiert nur die Summen — nach Commit (change = blur)
+    // Breakdown/Split/Labels per Voll-Render nachziehen.
+    ["sModels", "sCustoms", "sTarifeBody"].forEach(function (cid) {
+      $(cid).addEventListener("change", function () { scheduleRender("shooting"); });
+    });
+    $("sTarifeHead").addEventListener("click", function () {
+      var b = $("sTarifeBody");
+      b.classList.toggle("open");
+      $("sTarifeArrow").textContent = b.classList.contains("open") ? "[ schließen − ]" : "[ anpassen + ]";
+    });
+
+    // Shooting-PDF (Sheet wird per textContent + escaped rows befüllt)
+    $("sPdfBtn").addEventListener("click", function () {
+      if (!sCurrent) return;
+      var d = S.dataS;
+      $("pss_date").textContent = new Date().toLocaleDateString("de-DE", { day: "2-digit", month: "long", year: "numeric" });
+      $("pss_client").textContent = sCurrent.name || "euch";
+      $("pss_rows").innerHTML = sCurrent.rows.map(function (r) {
+        return '<div class="ps-exrow"><div class="en">' + esc(r[0]) + "<small>" + esc(r[1]) + '</small></div><div class="ev">' + eur(r[2]) + "</div></div>";
+      }).join("");
+      $("pss_total").textContent = eur0(sCurrent.total);
+      // Nutzungsrechte aus → kompletter Erklärblock verschwindet aus dem PDF
+      $("pss_rightsBlock").style.display = sCurrent.rightsOn ? "block" : "none";
+      $("pss_rights_scope").textContent = sCurrent.chanNames.join(", ") || "die vereinbarten Kanäle";
+      $("pss_rights_dur").textContent = DUR_LABEL[d.rights.duration];
+      $("pss_rights_excl").textContent = d.rights.exclusive ? ", exklusiv" : "";
+      $("pss_rights_models").textContent = sCurrent.hasModels ? " Die Bildrechte der Models sind über die ausgewiesenen Buyouts bereits abgedeckt." : "";
+      exportSheet("sPdfBtn", "psShooting", "Angebot_Shooting_" + slug(sCurrent.name));
+    });
+
+    function slug(s) {
+      return (s || "Kunde").replace(/[^\wäöüÄÖÜß-]+/g, "_").replace(/_+/g, "_").replace(/^_|_$/g, "") || "Kunde";
+    }
+    function exportSheet(btnId, wrapId, base) {
+      var btn = $(btnId);
+      btn.disabled = true;
+      var name = base + "_" + new Date().toISOString().slice(0, 10) + ".pdf";
+      window.calcExportPdf(document.querySelector("#" + wrapId + " .ps-page"), name).then(function () {
+        btn.disabled = false;
+      });
+    }
+
+    // ═══════════ PREISRECHNER (Port aus preisrechner_1.html, ohne Speichern) ═══════════
+    var PR = {
+      products: {
+        tshirt: { name: "T-Shirt", gsm: {
+          "180 gsm (Standard)": { cn: [5.0, 7.0], tr: [6.0, 8.0] },
+          "220 gsm (Midweight)": { cn: [5.5, 7.5], tr: [7.0, 9.0] },
+          "240 gsm (Heavy)": { cn: [6.5, 8.5], tr: [8.0, 10.0] },
+          "280 gsm (Heavy Boxy)": { cn: [8.0, 10.0], tr: [9.5, 11.5] },
+        } },
+        longsleeve: { name: "Longsleeve", gsm: {
+          "200 gsm": { cn: [6.5, 8.5], tr: [8.0, 10.0] },
+          "240 gsm (Heavy)": { cn: [8.0, 10.0], tr: [9.5, 11.5] },
+        } },
+        tank: { name: "Tanktop", gsm: {
+          "180 gsm": { cn: [3.5, 5.0], tr: [4.5, 6.0] },
+          "220 gsm (Heavy)": { cn: [4.5, 6.0], tr: [5.5, 7.0] },
+        } },
+        polo: { name: "Polo-Shirt", gsm: {
+          "220–260 gsm (Piqué/Elasthan)": { cn: [10.0, 12.0], tr: [12.0, 14.5] },
+        } },
+        hoodie: { name: "Hoodie", gsm: {
+          "320 gsm (Standard)": { cn: [13.5, 16.0], tr: [16.0, 19.0] },
+          "380 gsm (Heavy)": { cn: [15.0, 17.5], tr: [18.0, 21.0] },
+          "450 gsm (Ultra Heavy)": { cn: [17.0, 19.5], tr: [20.5, 23.5] },
+        } },
+        zip: { name: "Zip-Hoodie", gsm: {
+          "320 gsm (Standard)": { cn: [16.0, 18.5], tr: [19.0, 22.0] },
+          "380 gsm (Heavy)": { cn: [18.0, 20.5], tr: [21.5, 24.5] },
+          "450 gsm (Ultra Heavy)": { cn: [20.0, 23.0], tr: [24.0, 27.0] },
+        } },
+        crew: { name: "Crewneck / Sweater", gsm: {
+          "300 gsm": { cn: [12.5, 15.0], tr: [15.0, 18.0] },
+          "380 gsm (Heavy)": { cn: [15.0, 17.5], tr: [18.0, 21.0] },
+        } },
+        jersey: { name: "Jersey / Trikot (Sublimation all-over inkl.)", gsm: {
+          "140–160 gsm Polyester": { cn: [7.0, 9.5], tr: [9.5, 12.5] },
+        } },
+        jogger: { name: "Jogger / Sweatpants", gsm: {
+          "320 gsm": { cn: [12.5, 15.0], tr: [15.0, 18.0] },
+          "400–450 gsm (Heavy)": { cn: [15.0, 17.5], tr: [18.0, 21.0] },
+        } },
+        shorts: { name: "Shorts", gsm: {
+          "Sweat, French Terry 300–350 gsm": { cn: [10.0, 12.5], tr: [12.0, 15.0] },
+          "Mesh, Polyester": { cn: [7.5, 9.5], tr: [9.0, 11.5] },
+        } },
+        beanie: { name: "Beanie (Strick/Jacquard)", gsm: {
+          "Standard-Strick": { cn: [6.0, 8.5], tr: [7.0, 9.5] },
+        } },
+        cap: { name: "Cap", gsm: {
+          "Standard (inkl. Stick)": { cn: [5.0, 7.5], tr: [6.0, 8.5] },
+        } },
+        socks: { name: "Socken (Jacquard-Logo)", gsm: {
+          "200 gsm, 168 Needle": { cn: [3.0, 4.5], tr: [3.6, 5.5] },
+        } },
+      },
+      qtyFactor: { "50": 1.1, "100": 1.0, "300": 0.85, "500": 0.78 },
+      decoQtyFactor: { "50": 1.2, "100": 1.0, "300": 0.85, "500": 0.75 },
+      logistics: { cn: 0.18, tr: 0.08 },
+      labelCost: [0.15, 0.5],
+      deco: {
+        sieb1: { name: "Siebdruck 1-farbig", sizes: { "klein (Brust/Ärmel)": [0.6, 1.2], "groß (Rücken/Front)": [1.0, 1.8] }, setup: "Sieb: ca. 20–40 € pro Farbe (einmalig)" },
+        sieb2: { name: "Siebdruck 2-farbig", sizes: { "klein (Brust/Ärmel)": [1.0, 1.9], "groß (Rücken/Front)": [1.6, 2.8] }, setup: "Siebe: ca. 40–80 € (einmalig)" },
+        sieb3: { name: "Siebdruck 3+ Farben", sizes: { "klein (Brust/Ärmel)": [1.4, 2.6], "groß (Rücken/Front)": [2.2, 3.8] }, setup: "Siebe: ca. 60–120 € (einmalig)" },
+        dtf: { name: "DTF-Transfer", sizes: { "klein (Brust/Ärmel)": [0.8, 1.5], "groß (Rücken/Front)": [1.5, 2.8] }, setup: null },
+        dtg: { name: "DTG-Druck", sizes: { "klein (Brust/Ärmel)": [1.5, 2.8], "groß (Rücken/Front)": [2.5, 4.5] }, setup: null },
+        puff: { name: "Puff-Print (3D-Siebdruck)", sizes: { "klein (Brust/Ärmel)": [1.2, 2.2], "groß (Rücken/Front)": [2.0, 3.5] }, setup: "Sieb: ca. 25–50 € (einmalig)" },
+        stick: { name: "Stick (flach)", sizes: { "klein (Logo bis ~8 cm)": [1.0, 2.5], "mittel (~10–15 cm)": [2.5, 4.0], "groß (Rücken)": [4.0, 8.0] }, setup: "Digitalisierung: ca. 20–60 € (einmalig)" },
+        stick3d: { name: "3D-Stick (Puff)", sizes: { "klein (Logo bis ~8 cm)": [1.8, 3.5], "mittel (~10–15 cm)": [3.5, 5.5], "groß (Rücken)": [5.5, 9.0] }, setup: "Digitalisierung: ca. 30–80 € (einmalig)" },
+        patch: { name: "Patch / Applikation", sizes: { klein: [0.8, 1.6], groß: [1.4, 2.6] }, setup: "Werkzeug/Muster: ca. 20–50 € (einmalig)" },
+      },
+    };
+
+    var prState = { product: "tshirt", gsm: null, origin: "cn", qty: "100", decos: [], cur: "eur" };
+    var prFx = function () { return prState.cur === "usd" ? (parseFloat($("fxRate").value) || 1.16) : 1; };
+    var prSym = function () { return prState.cur === "usd" ? " $" : " €"; };
+    var prFmt = function (v) { return (v * prFx()).toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + prSym(); };
+    var prFmt0 = function (v) { return (v * prFx()).toLocaleString("de-DE", { maximumFractionDigits: 0 }) + prSym(); };
+
+    function prFillProducts() {
+      $("product").innerHTML = Object.keys(PR.products).map(function (k) {
+        return '<option value="' + k + '">' + esc(PR.products[k].name) + "</option>";
+      }).join("");
+      prFillGsm();
+    }
+    function prFillGsm() {
+      var p = PR.products[prState.product];
+      $("gsm").innerHTML = Object.keys(p.gsm).map(function (g) { return "<option>" + esc(g) + "</option>"; }).join("");
+      prState.gsm = Object.keys(p.gsm)[0];
+    }
+    function prRenderDecos() {
+      $("decoList").innerHTML = prState.decos.map(function (d, i) {
+        var opts = Object.keys(PR.deco).map(function (k) {
+          return '<option value="' + k + '"' + (k === d.type ? " selected" : "") + ">" + esc(PR.deco[k].name) + "</option>";
+        }).join("");
+        var sizes = Object.keys(PR.deco[d.type].sizes);
+        if (sizes.indexOf(d.size) < 0) d.size = sizes[0];
+        var sopts = sizes.map(function (s) { return "<option" + (s === d.size ? " selected" : "") + ">" + esc(s) + "</option>"; }).join("");
+        return '<div class="deco-item">' +
+          '<div class="deco-head"><b>Veredelung ' + (i + 1) + '</b><button class="x" data-pract="del" data-i="' + i + '">✕</button></div>' +
+          '<div class="deco-grid">' +
+          '<div><label>Art</label><select data-prk="type" data-i="' + i + '">' + opts + "</select></div>" +
+          '<div><label>Größe / Platzierung</label><select data-prk="size" data-i="' + i + '">' + sopts + "</select></div>" +
+          "</div></div>";
+      }).join("");
+      var setups = prState.decos.map(function (d) { return PR.deco[d.type].setup; }).filter(Boolean);
+      var uniq = setups.filter(function (s, i) { return setups.indexOf(s) === i; });
+      $("setupInfo").style.display = uniq.length ? "block" : "none";
+      $("setupInfo").textContent = uniq.length ? "Einmalige Kosten: " + uniq.join(" · ") : "";
+      prCalc();
+    }
+    $("decoList").addEventListener("change", function (e) {
+      var i = +e.target.dataset.i, k = e.target.dataset.prk;
+      if (isNaN(i) || !k) return;
+      prState.decos[i][k] = e.target.value;
+      if (k === "type") prState.decos[i].size = null;
+      prRenderDecos();
+    });
+    $("decoList").addEventListener("click", function (e) {
+      var b = e.target.closest('[data-pract="del"]');
+      if (!b) return;
+      prState.decos.splice(+b.dataset.i, 1);
+      prRenderDecos();
+    });
+
+    function prRound(v) {
+      var r = $("rounding").value;
+      if (r === "0.5") return Math.ceil(v / 0.5) * 0.5;
+      if (r === "1") return Math.ceil(v);
+      return v;
+    }
+    function prCalc() {
+      var p = PR.products[prState.product];
+      var base = p.gsm[prState.gsm][prState.origin];
+      var qf = PR.qtyFactor[prState.qty];
+      var dqf = PR.decoQtyFactor[prState.qty];
+      var qty = prState.qty === "500" ? 500 : parseInt(prState.qty, 10);
+
+      var blankMin = base[0] * qf, blankMax = base[1] * qf;
+      var decoMin = 0, decoMax = 0;
+      prState.decos.forEach(function (d) {
+        var r = PR.deco[d.type].sizes[d.size];
+        decoMin += r[0] * dqf; decoMax += r[1] * dqf;
+      });
+      var labMin = 0, labMax = 0;
+      if ($("labels").checked) { labMin = PR.labelCost[0]; labMax = PR.labelCost[1]; }
+      var subMin = blankMin + decoMin + labMin, subMax = blankMax + decoMax + labMax;
+      var shipMin = 0, shipMax = 0;
+      if ($("logistics").checked) {
+        var l = PR.logistics[prState.origin];
+        shipMin = subMin * l; shipMax = subMax * l;
+      }
+      var ekMin = subMin + shipMin, ekMax = subMax + shipMax;
+      var f = parseFloat($("factor").value) || 1.5;
+      var vkMinC = prRound(ekMin * f * prFx()), vkMaxC = prRound(ekMax * f * prFx());
+      var fmtC = function (v) { return v.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + prSym(); };
+      var fmtC0 = function (v) { return v.toLocaleString("de-DE", { maximumFractionDigits: 0 }) + prSym(); };
+
+      $("ekOut").textContent = prFmt(ekMin) + " – " + prFmt(ekMax);
+      $("vkOut").textContent = fmtC(vkMinC) + " – " + fmtC(vkMaxC);
+      $("rBlank").textContent = prFmt(blankMin) + " – " + prFmt(blankMax);
+      $("rDeco").textContent = prState.decos.length ? prFmt(decoMin) + " – " + prFmt(decoMax) : "–";
+      $("rLabels").textContent = $("labels").checked ? prFmt(labMin) + " – " + prFmt(labMax) : "–";
+      $("rShip").textContent = $("logistics").checked ? prFmt(shipMin) + " – " + prFmt(shipMax) : "–";
+      $("rTotalEk").textContent = prFmt0(ekMin * qty) + " – " + prFmt0(ekMax * qty);
+      $("rTotalVk").textContent = fmtC0(vkMinC * qty) + " – " + fmtC0(vkMaxC * qty);
+      $("qtyTag").textContent = (prState.qty === "500" ? "500+" : prState.qty) + " Stk";
+    }
+    function prBuildEditor() {
+      var h = '<p style="font-size:10.5px;color:var(--kmuted);margin-bottom:12px;line-height:1.6;">EK-Spannen in € pro Stück, Basis 100 Stk ab Werk. Änderungen wirken sofort, gelten aber nur für diese Sitzung.</p>';
+      h += '<div style="overflow-x:auto;"><table class="edit"><tr><th>Artikel / Stoff</th><th>China min</th><th>China max</th><th>Türkei min</th><th>Türkei max</th></tr>';
+      Object.keys(PR.products).forEach(function (pk) {
+        var p = PR.products[pk];
+        Object.keys(p.gsm).forEach(function (g) {
+          var v = p.gsm[g];
+          h += "<tr><td>" + esc(p.name) + " · " + esc(g) + "</td>" +
+            ["cn0", "cn1", "tr0", "tr1"].map(function (w) {
+              var arr = w.slice(0, 2), idx = +w.slice(2);
+              return '<td><input type="number" step="0.1" value="' + v[arr][idx] + '" data-edit="prod" data-pk="' + pk + '" data-g="' + esc(g) + '" data-arr="' + arr + '" data-idx="' + idx + '"></td>';
+            }).join("") + "</tr>";
+        });
+      });
+      h += "</table></div>";
+      h += '<div style="overflow-x:auto;"><table class="edit"><tr><th>Veredelung / Größe</th><th>min €</th><th>max €</th></tr>';
+      Object.keys(PR.deco).forEach(function (dk) {
+        var d = PR.deco[dk];
+        Object.keys(d.sizes).forEach(function (s) {
+          var v = d.sizes[s];
+          h += "<tr><td>" + esc(d.name) + " · " + esc(s) + "</td>" +
+            '<td><input type="number" step="0.1" value="' + v[0] + '" data-edit="deco" data-dk="' + dk + '" data-s="' + esc(s) + '" data-idx="0"></td>' +
+            '<td><input type="number" step="0.1" value="' + v[1] + '" data-edit="deco" data-dk="' + dk + '" data-s="' + esc(s) + '" data-idx="1"></td></tr>';
+        });
+      });
+      h += "</table></div>";
+      h += '<table class="edit"><tr><th>Faktor</th><th>Wert</th></tr>' +
+        '<tr><td>Menge 50 Stk (Blank ×)</td><td><input type="number" step="0.05" value="' + PR.qtyFactor["50"] + '" data-edit="qty" data-q="50"></td></tr>' +
+        '<tr><td>Menge 300 Stk (Blank ×)</td><td><input type="number" step="0.05" value="' + PR.qtyFactor["300"] + '" data-edit="qty" data-q="300"></td></tr>' +
+        '<tr><td>Menge 500+ Stk (Blank ×)</td><td><input type="number" step="0.05" value="' + PR.qtyFactor["500"] + '" data-edit="qty" data-q="500"></td></tr>' +
+        '<tr><td>Fracht &amp; Zoll China (%)</td><td><input type="number" step="1" value="' + PR.logistics.cn * 100 + '" data-edit="log" data-o="cn"></td></tr>' +
+        '<tr><td>Fracht &amp; Zoll Türkei (%)</td><td><input type="number" step="1" value="' + PR.logistics.tr * 100 + '" data-edit="log" data-o="tr"></td></tr>' +
+        "</table>";
+      $("editorBody").innerHTML = h;
+    }
+    $("editorBody").addEventListener("change", function (e) {
+      var t = e.target, mode = t.dataset.edit;
+      if (!mode) return;
+      var v = +t.value || 0;
+      if (mode === "prod") PR.products[t.dataset.pk].gsm[t.dataset.g][t.dataset.arr][+t.dataset.idx] = v;
+      else if (mode === "deco") PR.deco[t.dataset.dk].sizes[t.dataset.s][+t.dataset.idx] = v;
+      else if (mode === "qty") PR.qtyFactor[t.dataset.q] = v;
+      else if (mode === "log") PR.logistics[t.dataset.o] = v / 100;
+      prCalc();
+    });
+
+    $("product").addEventListener("change", function (e) { prState.product = e.target.value; prFillGsm(); prCalc(); });
+    $("gsm").addEventListener("change", function (e) { prState.gsm = e.target.value; prCalc(); });
+    ["originSeg", "qtySeg", "curSeg"].forEach(function (segId) {
+      $(segId).addEventListener("click", function (e) {
+        var b = e.target.closest("button");
+        if (!b) return;
+        if (segId === "originSeg") prState.origin = b.dataset.o;
+        if (segId === "qtySeg") prState.qty = b.dataset.q;
+        if (segId === "curSeg") prState.cur = b.dataset.c;
+        [].forEach.call($(segId).children, function (x) { x.classList.toggle("on", x === b); });
+        prCalc();
+      });
+    });
+    ["fxRate", "factor"].forEach(function (id) { $(id).addEventListener("input", prCalc); });
+    ["rounding", "logistics", "labels"].forEach(function (id) { $(id).addEventListener("change", prCalc); });
+    $("addDeco").addEventListener("click", function () {
+      prState.decos.push({ type: "stick", size: null });
+      prRenderDecos();
+    });
+    $("showEK").addEventListener("change", function (e) {
+      var show = e.target.checked;
+      $("ekBlock").style.display = show ? "block" : "none";
+      $("rTotalEkLine").style.display = show ? "flex" : "none";
+      var lines = document.querySelectorAll("#secPreis .rline");
+      [].forEach.call(lines, function (el, i) { if (i < 4) el.style.display = show ? "flex" : "none"; });
+    });
+
+    // ═══════════ RENDER-REGISTRY (Focus-Guard) ═══════════
+    var RENDER = { fulfillment: fCalcRender, shooting: sCalcRender };
+
+    // ═══════════ BOOT ═══════════
+    window.appUI.onAuth(function (me) {
+      if (S.me) return;
+      S.me = me;
+
+      // Settings laden (+ einmalig seeden)
+      trackOn(BASE + "/settings/fulfillment", function (snap) {
+        if (!snap.exists()) {
+          S.setF = Object.assign({}, DEF_SET_F);
+          window.fb.safeSet(BASE + "/settings/fulfillment", S.setF);
+          return;
+        }
+        var v = snap.val();
+        if (isEcho(BASE + "/settings/fulfillment", v)) { S.setF = v; return; }
+        S.setF = Object.assign({}, DEF_SET_F, v);
+        scheduleRender("fulfillment");
+      });
+      trackOn(BASE + "/settings/shooting", function (snap) {
+        if (!snap.exists()) {
+          S.setS = JSON.parse(JSON.stringify(DEF_SET_S));
+          window.fb.safeSet(BASE + "/settings/shooting", JSON.parse(JSON.stringify(S.setS)));
+          scheduleRender("shooting");
+          return;
+        }
+        var v = snap.val();
+        if (isEcho(BASE + "/settings/shooting", v)) { S.setS = normSet(v); return; }
+        var merged = JSON.parse(JSON.stringify(DEF_SET_S));
+        Object.keys(v).forEach(function (k) {
+          if (LEGACY_SET_S.indexOf(k) >= 0) return; // alte Festpositionen ignorieren
+          if (k === "rights") {
+            Object.assign(merged.rights.channels, v.rights && v.rights.channels);
+            Object.assign(merged.rights.duration, v.rights && v.rights.duration);
+            if (v.rights && v.rights.exclusive != null) merged.rights.exclusive = v.rights.exclusive;
+          } else {
+            // catalog wird komplett ersetzt, NIE gemerged — sonst tauchen
+            // gelöschte Einträge bei jedem Snapshot wieder auf.
+            merged[k] = v[k];
+          }
+        });
+        S.setS = normSet(merged);
+        // Settings-Objekt aus der Vor-Katalog-Version: Katalog einmalig nachziehen.
+        // Guard auf !v.catalog verhindert eine Schleife.
+        if (!v.catalog) window.fb.safeUpdate(BASE + "/settings/shooting", { catalog: JSON.parse(JSON.stringify(DEF_CATALOG)) });
+        scheduleRender("shooting");
+      });
+
+      // Kunden laden
+      trackOn(BASE + "/clients", function (snap) {
+        var v = snap.val() || {};
+        S.clients = v;
+        S.order = Object.keys(v).sort(function (a, b) {
+          return (v[a].created || 0) - (v[b].created || 0);
+        });
+        if (S.active && !v[S.active]) { S.active = null; }
+        if (!S.active) {
+          var saved = localStorage.getItem("uw.calc.activeClient");
+          var pick = saved && v[saved] ? saved : S.order[0] || null;
+          if (pick) { setActiveClient(pick); }
+        }
+        renderChips();
+        scheduleRender("fulfillment");
+        scheduleRender("shooting");
+      });
+    });
+
+    // Init UI
+    setTab(S.tab);
+    prFillProducts();
+    prBuildEditor();
+    prState.decos.push({ type: "stick", size: null });
+    prRenderDecos();
+    fCalcRender();
+    sCalcRender();
+  })();
+</script>
