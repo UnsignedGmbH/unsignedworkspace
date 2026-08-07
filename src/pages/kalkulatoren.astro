@@ -418,7 +418,10 @@ import AppLayout from "../layouts/AppLayout.astro";
   #kalkRoot .chip.cust.active { background: var(--kred); border-color: var(--kred); color: var(--off); }
   #kalkRoot .chip.add { color: var(--sand); border-style: dashed; }
 
-  #kalkRoot .layout { display: grid; grid-template-columns: 1fr 380px; gap: 24px; align-items: start; }
+  /* minmax(0,…) statt 1fr: sonst weigert sich die linke Spalte, unter ihre
+     Inhaltsbreite zu schrumpfen, und die Ergebnis-Spalte wird aus dem Fenster
+     geschoben statt mitzuschrumpfen. */
+  #kalkRoot .layout { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 24px; align-items: start; }
   #kalkRoot .empty { font-family: "Space Mono", monospace; font-size: 12px; color: var(--kmuted); border: 1px dashed var(--kline); padding: 28px 20px; text-align: center; line-height: 1.7; }
 
   #kalkRoot .card { background: var(--panel); border: 1px solid var(--kline); padding: 22px 22px 24px; margin-bottom: 20px; }
@@ -482,10 +485,10 @@ import AppLayout from "../layouts/AppLayout.astro";
   #kalkRoot .item-grid label { display: block; font-size: 10px; color: var(--kmuted); margin-bottom: 4px; }
 
   /* ── Positions-Zeilen (Katalog an/aus pro Kunde) ── */
-  #kalkRoot .pos-row { display: grid; grid-template-columns: 22px 1fr 62px 90px 92px; gap: 10px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--kline); opacity: 0.45; transition: opacity 0.12s; }
+  #kalkRoot .pos-row { display: grid; grid-template-columns: 22px minmax(0, 1fr) 62px 90px 92px; gap: 10px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--kline); opacity: 0.45; transition: opacity 0.12s; }
   #kalkRoot .pos-row:last-child { border-bottom: none; }
   #kalkRoot .pos-row.on { opacity: 1; }
-  #kalkRoot .pos-row.pauschal { grid-template-columns: 22px 1fr 90px 92px; }
+  #kalkRoot .pos-row.pauschal { grid-template-columns: 22px minmax(0, 1fr) 90px 92px; }
   #kalkRoot .pos-tog { display: flex; align-items: center; margin: 0; }
   #kalkRoot .pos-tog input { width: 17px; height: 17px; accent-color: var(--kred); cursor: pointer; }
   #kalkRoot .pos-tog.hdr { margin-left: 2px; }
@@ -527,7 +530,28 @@ import AppLayout from "../layouts/AppLayout.astro";
   #kalkRoot .print-btn:disabled { opacity: 0.5; cursor: wait; }
   #kalkRoot .print-hint { font-family: "Space Mono", monospace; font-size: 8.5px; color: var(--kmuted); line-height: 1.6; margin-top: 10px; text-align: center; }
 
-  #kalkRoot .sticky-total { display: none; }
+  /* Summenleiste: position:sticky statt fixed. Der Scroll-Container der App
+     traegt eine fade-up-Animation mit bleibendem transform und wird dadurch
+     zum Bezugsrahmen fuer position:fixed — eine fixe Leiste scrollte deshalb
+     mitten durchs Bild statt unten zu kleben.
+     Muss VOR den Media-Queries stehen, sonst ueberschreibt display:none sie. */
+  #kalkRoot .sticky-total {
+    display: none;
+    /* Negatives bottom heftet die Leiste ueber die untere Polsterung des
+       App-Scrollbereichs (py-[22px] ab md, py-4 darunter) — mit bottom:0 bliebe
+       darunter ein Spalt, durch den sichtbar Inhalt scrollt. Das zusaetzliche
+       padding gleicht den Versatz aus, damit der Text mittig bleibt. */
+    position: sticky; bottom: -22px; z-index: 20;
+    margin: 16px -20px 0;
+    background: var(--jet); border-top: 1px solid var(--kline);
+    padding: 13px 18px calc(35px + env(safe-area-inset-bottom));
+    font-family: "Anton", sans-serif; font-size: 15px; letter-spacing: 1px;
+    text-transform: uppercase; text-align: center; color: var(--off);
+  }
+  @media (max-width: 767px) {
+    #kalkRoot .sticky-total { bottom: -16px; padding-bottom: calc(29px + env(safe-area-inset-bottom)); }
+  }
+  #kalkRoot .sticky-total b { color: var(--kred); font-size: 18px; margin-left: 6px; }
 
   /* Preisrechner-spezifisch (Unsigned-Look) */
   #kalkRoot .pr-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
@@ -563,32 +587,70 @@ import AppLayout from "../layouts/AppLayout.astro";
   #kalkRoot .kfoot { margin-top: 30px; font-family: "Space Mono", monospace; font-size: 9px; letter-spacing: 0.5px; color: var(--kmuted); text-transform: uppercase; text-align: center; line-height: 1.8; }
   #kalkRoot .kfoot .mk { color: var(--kred); }
 
-  /* ── Mobile ── */
-  @media (max-width: 860px) {
-    #kalkRoot { padding: 14px 12px 90px; border-radius: 12px; }
-    #kalkRoot .layout { grid-template-columns: 1fr; }
+  /* ── Einspaltig, sobald die zweite Spalte nicht mehr sauber passt ──
+     Der Umbruchpunkt liegt bewusst hoch: die Sidebar belegt ~215px, das
+     Ergebnis-Panel 380px. Bei 1180px Fensterbreite bleiben der linken Spalte
+     noch ~440px — darunter wird es gequetscht. */
+  @media (max-width: 1180px) {
+    #kalkRoot .layout { grid-template-columns: minmax(0, 1fr); }
     #kalkRoot .result { position: static; }
-    #kalkRoot .card { padding: 16px 14px 18px; }
-    #kalkRoot input[type="text"], #kalkRoot input[type="number"], #kalkRoot select { font-size: 16px; }
-    #kalkRoot .item-grid { grid-template-columns: 1fr 1fr; }
-    #kalkRoot .item-grid.cat { grid-template-columns: 1fr 1fr; }
-    #kalkRoot .checks { grid-template-columns: 1fr; }
+    #kalkRoot .sticky-total { display: block; }
+  }
+
+  /* ── Handy ── */
+  @media (max-width: 860px) {
+    #kalkRoot { padding: 12px 10px 6px; border-radius: 12px; }
+    #kalkRoot .ktabs { gap: 6px; padding-bottom: 12px; margin-bottom: 12px; }
+    #kalkRoot .ktab { font-size: 14px; padding: 11px 15px; }
+    #kalkRoot .card { padding: 15px 13px 17px; margin-bottom: 14px; }
+    /* Karten-Ueberschrift ist ein Flex-Zeile aus Nummer + Titel + Hinweis +
+       Aufklapp-Pfeil — auf schmalen Schirmen muss die umbrechen duerfen. */
+    #kalkRoot .card h2 { flex-wrap: wrap; row-gap: 4px; gap: 8px; }
+    #kalkRoot .card h2 .hint { flex: 1 1 auto; }
+    #kalkRoot .tarife-head .arrow { flex: 0 0 auto; }
+    /* 16px verhindert den Auto-Zoom von iOS beim Fokussieren */
+    #kalkRoot input[type="text"], #kalkRoot input[type="number"], #kalkRoot select { font-size: 16px; padding: 11px 12px; }
+
+    /* Alles einspaltig — nebeneinander wird auf 360px zu eng */
+    #kalkRoot .two, #kalkRoot .three, #kalkRoot .checks { grid-template-columns: 1fr; }
+    #kalkRoot .item-grid, #kalkRoot .item-grid.cat, #kalkRoot .deco-grid { grid-template-columns: 1fr 1fr; }
+    #kalkRoot .btnrow { flex-direction: column; }
+
+    /* Label und Hinweis dürfen umbrechen statt sich zu überlagern
+       ("Wareneingänge" + "Kartons/Monat" liefen ineinander) */
+    #kalkRoot .field > label { flex-wrap: wrap; gap: 2px 10px; }
+    #kalkRoot .field > label .hint { flex-basis: 100%; }
+
+    /* Größere Schieberegler-Griffe für den Daumen */
+    #kalkRoot input[type="range"] { height: 3px; }
+    #kalkRoot input[type="range"]::-webkit-slider-thumb { width: 24px; height: 24px; }
+    #kalkRoot input[type="range"]::-moz-range-thumb { width: 24px; height: 24px; }
+
+    #kalkRoot .trow { grid-template-columns: 1fr 96px; gap: 10px; }
+    #kalkRoot .breakdown, #kalkRoot .result-head, #kalkRoot .total,
+    #kalkRoot .setup-note, #kalkRoot .printbar { padding-left: 15px; padding-right: 15px; }
+    #kalkRoot .metric { padding: 12px 14px; }
+    #kalkRoot .print-btn { padding: 16px; }
+
     /* Positions-Zeile zweizeilig: Name oben, Eingaben darunter */
     #kalkRoot .pos-row {
-      grid-template-columns: 22px 1fr 1fr 1fr;
+      grid-template-columns: 26px minmax(0, 1fr) 1fr 1fr;
       grid-template-areas: "tog name name name" ". qty price line";
-      row-gap: 8px; padding: 12px 0;
+      row-gap: 8px; padding: 11px 0;
     }
     #kalkRoot .pos-row.pauschal { grid-template-areas: "tog name name name" ". . price line"; }
     #kalkRoot .pos-tog { grid-area: tog; }
+    #kalkRoot .pos-tog input { width: 21px; height: 21px; }
     #kalkRoot .pos-name { grid-area: name; }
     #kalkRoot .pos-qty { grid-area: qty; }
     #kalkRoot .pos-price { grid-area: price; }
     #kalkRoot .pos-line { grid-area: line; align-self: center; }
-    #kalkRoot .sticky-total { display: block; position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; background: var(--jet); border-top: 1px solid var(--kline); padding: 12px 18px calc(12px + env(safe-area-inset-bottom)); font-family: "Anton", sans-serif; font-size: 14px; letter-spacing: 1px; text-transform: uppercase; text-align: center; color: var(--off); }
-    #kalkRoot .sticky-total b { color: var(--kred); font-size: 17px; margin-left: 6px; }
-    #kalkRoot .three { grid-template-columns: 1fr; }
+    #kalkRoot .checkrow { padding: 12px 13px; }
+    #kalkRoot .checkrow input { width: 19px; height: 19px; }
+    #kalkRoot .seg button { padding: 12px 8px; }
+    #kalkRoot .sticky-total { margin-left: -10px; margin-right: -10px; }
   }
+
 
   /* ═══════════ A4-Print-Sheets (nur für PDF-Snapshot, nie sichtbar) ═══════════ */
   .ps-wrap { display: none; }
