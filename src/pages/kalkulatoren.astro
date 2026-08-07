@@ -716,18 +716,24 @@ import AppLayout from "../layouts/AppLayout.astro";
     var DEF_CATALOG = {
       studiomiete: { name: "Studiomiete", unit: "pauschal", price: 400, bucket: "studio", def: true, ord: 0 },
       equipment: { name: "Equipment-Pauschale", unit: "pauschal", price: 200, bucket: "studio", def: true, ord: 1 },
-      shooting: { name: "Shooting + Bearbeitung", unit: "pauschal", price: 1400, bucket: "fotograf", def: true, ord: 2 },
-      zusatztag: { name: "Zusatztag Shooting", unit: "tag", price: 800, bucket: "fotograf", def: false, ord: 3 },
-      retusche: { name: "Extra-Retusche", unit: "bild", price: 25, bucket: "fotograf", def: false, ord: 4 },
-      hmu: { name: "Hair & Make-up", unit: "tag", price: 350, bucket: "extern", def: false, ord: 5 },
-      stylist: { name: "Stylist", unit: "tag", price: 350, bucket: "extern", def: false, ord: 6 },
-      assistent: { name: "Foto-Assistent", unit: "tag", price: 200, bucket: "extern", def: false, ord: 7 },
-      location: { name: "Location-Miete extern", unit: "pauschal", price: 400, bucket: "extern", def: false, ord: 8 },
-      props: { name: "Requisiten / Props", unit: "pauschal", price: 100, bucket: "extern", def: false, ord: 9 },
-      video: { name: "Videograf / BTS", unit: "tag", price: 600, bucket: "extern", def: false, ord: 10 },
-      catering: { name: "Catering am Set", unit: "person", price: 20, bucket: "extern", def: false, ord: 11 },
-      anfahrt: { name: "Anfahrt / Reisekosten", unit: "pauschal", price: 0, bucket: "extern", def: false, ord: 12 },
+      fotograf: { name: "Fotograf", unit: "pauschal", price: 1000, bucket: "fotograf", def: true, ord: 2 },
+      bearbeitung: { name: "Bearbeitung", unit: "pauschal", price: 400, bucket: "fotograf", def: true, ord: 3 },
+      zusatztag: { name: "Zusatztag Shooting", unit: "tag", price: 800, bucket: "fotograf", def: false, ord: 4 },
+      retusche: { name: "Extra-Retusche", unit: "bild", price: 25, bucket: "fotograf", def: false, ord: 5 },
+      hmu: { name: "Hair & Make-up", unit: "tag", price: 350, bucket: "extern", def: false, ord: 6 },
+      stylist: { name: "Stylist", unit: "tag", price: 350, bucket: "extern", def: false, ord: 7 },
+      assistent: { name: "Foto-Assistent", unit: "tag", price: 200, bucket: "extern", def: false, ord: 8 },
+      location: { name: "Location-Miete extern", unit: "pauschal", price: 400, bucket: "extern", def: false, ord: 9 },
+      props: { name: "Requisiten / Props", unit: "pauschal", price: 100, bucket: "extern", def: false, ord: 10 },
+      video: { name: "Videograf / BTS", unit: "tag", price: 600, bucket: "extern", def: false, ord: 11 },
+      catering: { name: "Catering am Set", unit: "person", price: 20, bucket: "extern", def: false, ord: 12 },
+      anfahrt: { name: "Anfahrt / Reisekosten", unit: "pauschal", price: 0, bucket: "extern", def: false, ord: 13 },
     };
+    // Frueher war "Shooting + Bearbeitung" EINE Position (Key "shooting", 1400 €).
+    // Sie wurde in "Fotograf" + "Bearbeitung" geteilt. Bestehende Kalkulationen
+    // erben den An/Aus-Zustand des Vorgaengers — den Preis nicht, der galt fuer
+    // beide zusammen.
+    var POS_VORGAENGER = { fotograf: "shooting", bearbeitung: "shooting" };
     // unit -> [Label im Editor, Singular, Plural]. "pauschal" hat kein Mengenfeld.
     var UNITS = {
       pauschal: ["Pauschal", null, null],
@@ -1219,11 +1225,19 @@ import AppLayout from "../layouts/AppLayout.astro";
     // redundant gespeichert — ein neuer Kunde rendert ohne einen einzigen Write.
     function effPos(key) {
       var cat = (S.setS.catalog || {})[key] || {};
-      var p = (S.dataS.positions || {})[key] || {};
+      var alle = S.dataS.positions || {};
+      var p = alle[key], geerbt = false;
+      // Kein eigener Eintrag, aber einer vom aufgeteilten Vorgaenger? Dann nur
+      // dessen An/Aus uebernehmen, Menge und Preis kommen aus dem Katalog.
+      if (!p && POS_VORGAENGER[key] && alle[POS_VORGAENGER[key]]) {
+        p = alle[POS_VORGAENGER[key]];
+        geerbt = true;
+      }
+      p = p || {};
       return {
         on: p.on != null ? !!p.on : !!cat.def,
-        qty: p.qty != null ? +p.qty : 1,
-        price: p.price != null ? +p.price : (+cat.price || 0),
+        qty: !geerbt && p.qty != null ? +p.qty : 1,
+        price: !geerbt && p.price != null ? +p.price : (+cat.price || 0),
       };
     }
     // Untertitel der Positionszeile: "Pauschale" oder "2 Tage × 800,00 €"
@@ -1236,9 +1250,13 @@ import AppLayout from "../layouts/AppLayout.astro";
     // entsprechen werden gelöscht, damit die Position dem Katalog weiter folgt.
     function writePos(key, patch) {
       var cat = (S.setS.catalog || {})[key] || {};
+      // Erbt diese Position noch den An/Aus-Zustand eines aufgeteilten
+      // Vorgaengers, muss "on" explizit gespeichert bleiben — sonst wuerde das
+      // Aufraeumen unten es loeschen und der geerbte Zustand griffe wieder.
+      var erbt = !!(POS_VORGAENGER[key] && (S.dataS.positions || {})[POS_VORGAENGER[key]]);
       var p = S.dataS.positions[key] || (S.dataS.positions[key] = {});
       Object.keys(patch).forEach(function (k) { p[k] = patch[k]; });
-      if (p.on != null && !!p.on === !!cat.def) delete p.on;
+      if (!erbt && p.on != null && !!p.on === !!cat.def) delete p.on;
       if (p.qty != null && +p.qty === 1) delete p.qty;
       if (p.price != null && +p.price === (+cat.price || 0)) delete p.price;
       if (!Object.keys(p).length) delete S.dataS.positions[key];
@@ -1945,7 +1963,25 @@ import AppLayout from "../layouts/AppLayout.astro";
         S.setS = normSet(merged);
         // Settings-Objekt aus der Vor-Katalog-Version: Katalog einmalig nachziehen.
         // Guard auf !v.catalog verhindert eine Schleife.
-        if (!v.catalog) window.fb.safeUpdate(BASE + "/settings/shooting", { catalog: JSON.parse(JSON.stringify(DEF_CATALOG)) });
+        if (!v.catalog) {
+          window.fb.safeUpdate(BASE + "/settings/shooting", { catalog: JSON.parse(JSON.stringify(DEF_CATALOG)) });
+        } else if (v.catalog.shooting && !v.catalog.fotograf && !v.catalog.bearbeitung) {
+          // Einmalige Umstellung des bereits gespeicherten Katalogs:
+          // "Shooting + Bearbeitung" wird zu zwei Positionen. Nur dieser eine
+          // Eintrag wird angefasst, alles andere bleibt wie vom Team gepflegt.
+          var alt = v.catalog.shooting;
+          var ord = typeof alt.ord === "number" ? alt.ord : 2;
+          var neu = {
+            shooting: null,
+            fotograf: { name: "Fotograf", unit: "pauschal", price: 1000, bucket: alt.bucket || "fotograf", def: alt.def !== false, ord: ord },
+            bearbeitung: { name: "Bearbeitung", unit: "pauschal", price: 400, bucket: alt.bucket || "fotograf", def: alt.def !== false, ord: ord + 0.5 },
+          };
+          // Lokal sofort anwenden, damit schon dieser Render zweizeilig ist.
+          delete S.setS.catalog.shooting;
+          S.setS.catalog.fotograf = neu.fotograf;
+          S.setS.catalog.bearbeitung = neu.bearbeitung;
+          window.fb.safeUpdate(BASE + "/settings/shooting/catalog", neu);
+        }
         scheduleRender("shooting");
       });
 
